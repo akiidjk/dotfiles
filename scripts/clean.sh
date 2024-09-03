@@ -12,6 +12,11 @@ sudo pacman -Scc
 yay -Sc
 
 
+echo "Cleaning docker"
+docker-start
+sudo docker system prune -a
+docker-stop
+
 echo "Cleaning process completed"
 echo "Now check your self big files in your system"
-ncdu ~/
+sudo ncdu /
