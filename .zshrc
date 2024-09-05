@@ -128,12 +128,13 @@ alias docker-start='sudo systemctl start docker.service'
 alias docker-stop='sudo systemctl stop docker.service'
 alias docker-status='sudo systemctl status docker.service'
 
-alias start-vpn='sudo openvpn --config ~/Utils/Tools/protonvpn/protonvpn.tcp.ovpn --auth-user-pass ~/Utils/Tools/protonvpn/.vpn_creds'
+alias start-vpn='sudo openvpn --config ~/WorkSpace/Utils/protonvpn/protonvpn.tcp.ovpn --auth-user-pass ~/WorkSpace/Utils/protonvpn/.vpn_creds'
 alias stop-vpn='sudo killall openvpn'
 alias vimage='kitty +kitten icat'
 
 alias home='cd ~'
 alias webtemplate='python3 ~/WorkSpace/Utils/scripts/webtemplate/main.py'
+alias webup='python3 -m http.server 6969'
 alias upgradesys='~/WorkSpace/Utils/scripts/upgrade_sys.sh'
 # Set-up FZF key bindings (CTRL R for fuzzy history finder)
 source <(fzf --zsh)
