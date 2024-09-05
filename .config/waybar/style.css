@@ -82,35 +82,35 @@ window#waybar.hidden {
   color: #e5e5e5;
   /* color: #bf616a; */
   border-radius: 9.5px;
-  background-color: #1f2530;
+  background-color: rgba(26, 27, 38, 0.5);
 }
 
 #window,
 #workspaces {
   margin: 0 4px;
   border-radius: 7.8px;
-  background-color: #1f2530;
+  background-color: rgba(26, 27, 38, 0.5);
 }
 
 #cpu {
   color: #fb958b;
-  background-color: #1f2530;
+  background-color: rgba(26, 27, 38, 0.5);
 }
 
 #memory {
   color: #ebcb8b;
-  background-color: #1f2530;
+  background-color: rgba(26, 27, 38, 0.5);
 }
 
 #custom-power-menu {
   border-radius: 9.5px;
-  background-color: #1b242b;
+  background-color: rgba(26, 27, 38, 0.5);
   border-radius: 7.5px;
   padding: 0 5px;
 }
 
 #custom-launcher {
-  background-color: #1b242b;
+  background-color: rgba(26, 27, 38, 0.5);
   color: #6a92d7;
   border-radius: 7.5px;
   padding: 0 3px;

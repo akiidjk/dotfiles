@@ -5,7 +5,7 @@
     "margin-left": 10,
     "margin-bottom": 0,
     "margin-right": 10,
-    "spacing": 5, // Gaps between modules (4px)
+    "spacing": 10, // Gaps between modules (4px)
     "modules-left": [
         "custom/launcher",
         "cpu",
@@ -29,11 +29,11 @@
         "format": "{icon}",
         "on-click": "activate",
         "format-icons": {
-            "1": "",
-            "2": "",
-            "3": "",
-            "4": "",
-            "5": "",
+            "1": " ",
+            "2": " ",
+            "3": " " ,
+            "4": " ",
+            "5": " ",
             "urgent": "",
             "active": "",
             "default": ""
@@ -46,8 +46,8 @@
         "spacing": 10
     },
     "clock": {
-        "format-alt": "<span color='#bf616a'> </span>{:%a %b %d}",
-        "format": "<span color='#bf616a'> </span>{:%I:%M %p}",
+        "format-alt": "<span color='#5456C4'> </span>{:%a %b %d}",
+        "format": "<span color='#5456C4'> </span>{:%I:%M %p}",
         "tooltip-format": "<big>{:%B %Y}</big>\n<tt><small>{calendar}</small></tt>",
     },
     "cpu": {
@@ -149,10 +149,10 @@
     },
     "custom/power-menu": {
         "format": " <span color='#6a92d7'>⏻ </span>",
-        "on-click": "bash ~/.config/waybar/scripts/power-menu/powermenu.sh",
+        "on-click": "bash ~/.config/rofi/powermenu/type-1/powermenu.sh",
     },
     "custom/launcher": {
-        "format": " <span color='#6a92d7'> </span>",
+        "format": " <span color='#6a92d7'>  </span>",
         "on-click": "rofi -show drun",
     },
 }

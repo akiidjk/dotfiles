@@ -132,6 +132,9 @@ alias start-vpn='sudo openvpn --config ~/Utils/Tools/protonvpn/protonvpn.tcp.ovp
 alias stop-vpn='sudo killall openvpn'
 alias vimage='kitty +kitten icat'
 
+alias home='cd ~'
+alias webtemplate='python3 ~/WorkSpace/Utils/scripts/webtemplate/main.py'
+alias upgradesys='~/WorkSpace/Utils/scripts/upgrade_sys.sh'
 # Set-up FZF key bindings (CTRL R for fuzzy history finder)
 source <(fzf --zsh)
 
@@ -151,4 +154,10 @@ eval "$(starship init zsh)"
 export PATH=$PATH:/home/akiidjk/.cargo/bin
 export PATH=$PATH:/home/akiidjk/.spicetify
 
+# Pyenv
+
+eval "$(pyenv init -)"
+export WORKON_HOME=$HOME/.virtualenvs
+source /bin/virtualenvwrapper.sh
+export PYENV_VIRTUALENVWRAPPER_PREFER_PYVENV="true"
 
