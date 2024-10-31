@@ -32,3 +32,16 @@ wireshark
 xfce4
 xsettingsd
 yay
+QtProject.conf
+
+
+# Some random image IDK
+
+volume_down.png
+volume_up.png
+volume_muted.svg
+speaker.png
+scrot.png
+fallback.png
+brightness_down.png
+brightness_up.png
