@@ -36,6 +36,7 @@ QtProject.conf
 lazygit
 GIMP
 byobu
+gtkfilechooser.ini
 
 
 # Some random image IDK
