@@ -19,7 +19,7 @@
   "theme": {
     "mode": "system",
     "light": "One Light",
-    "dark": "Andromeda"
+    "dark": "One Dark Pro Extended"
   },
   "confirm_quit": true,
   "autosave": "on_focus_change",

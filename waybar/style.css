@@ -1,3 +1,7 @@
+@import "./colors.css";
+/* @import "/home/akiidjk/.cache/wal/colors-waybar.css"; */
+
+
 * {
   /* `otf-font-awesome` is required to be installed for icons */
   font-family: JetBrainsMono Nerd Font;
@@ -5,8 +9,8 @@
 }
 
 window#waybar {
-  background-color: rgba(26, 27, 38, 0.5);
-  color: #ffffff;
+  background-color: rgba(26, 27, 38, 0);
+  color: @foreground;
   transition-property: background-color;
   transition-duration: 0.5s;
   border-top: 8px transparent;
@@ -21,7 +25,7 @@ window#waybar.hidden {
 
 #workspaces button {
   padding: 0 5px;
-  color: #7984A4;
+  color: @color0;
   background-color: transparent;
   /* Use box-shadow instead of border so the text isn't offset */
   box-shadow: inset 0 -3px transparent;
@@ -31,23 +35,17 @@ window#waybar.hidden {
 }
 
 #workspaces button.focused {
-  color: #bf616a;
+  color: @color1;
 }
 
 #workspaces button.active {
-  color: #6a92d7;
+  color: @color2;
 }
 
 #workspaces button.urgent {
   background-color: #eb4d4b;
 }
 
-#window {
-  /* border-radius: 20px; */
-  /* padding-left: 10px; */
-  /* padding-right: 10px; */
-  color: #64727d;
-}
 
 #clock,
 #battery,
@@ -79,45 +77,48 @@ window#waybar.hidden {
 #custom-weather.snowyIcyNight,
 #custom-weather.default {
   padding: 0 10px;
-  color: #e5e5e5;
-  /* color: #bf616a; */
+  color: @color3;
   border-radius: 9.5px;
-  background-color: rgba(26, 27, 38, 0.5);
+  background-color: @background;
 }
 
 #window,
 #workspaces {
   margin: 0 4px;
   border-radius: 7.8px;
-  background-color: rgba(26, 27, 38, 0.5);
+  padding-right: 5px;
+  background-color: @background;
 }
 
 #cpu {
-  color: #fb958b;
-  background-color: rgba(26, 27, 38, 0.5);
+  color: @color4;
+  background-color: @background;
 }
 
 #memory {
-  color: #ebcb8b;
-  background-color: rgba(26, 27, 38, 0.5);
+  color: @color5;
+  background-color: @background;
 }
 
 #custom-power-menu {
   border-radius: 9.5px;
-  background-color: rgba(26, 27, 38, 0.5);
+  background-color: @background;
   border-radius: 7.5px;
-  padding: 0 5px;
+  color: @color2;
+  padding: 0 3px;
+  padding-right: 5px;
 }
 
 #custom-launcher {
-  background-color: rgba(26, 27, 38, 0.5);
-  color: #6a92d7;
+  background-color: @background;
+  color: @color2;
   border-radius: 7.5px;
-  padding: 0 3px;
+  padding: 0 0px;
+  padding-left: 3px;
 }
 
 #custom-weather.severe {
-  color: #eb937d;
+  color: @color8;
 }
 
 #custom-weather.sunnyDay {
@@ -158,21 +159,20 @@ window#waybar.hidden {
 }
 
 #pulseaudio {
-  color: #7d9bba;
+  color: @color9;
 }
 
 #backlight {
-  /* color: #EBCB8B; */
-  color: #8fbcbb;
+  color: @color10;
 }
 
 #clock {
-  color: #c8d2e0;
+  color: @color13;
   /* background-color: #14141e; */
 }
 
 #battery {
-  color: #c0caf5;
+  color: @color14;
   /* background-color: #90b1b1; */
 }
 
@@ -208,7 +208,7 @@ label:focus {
 }
 
 #bluetooth {
-  color: #707d9d;
+  color: @color12;
 }
 
 #bluetooth.disconnected {
