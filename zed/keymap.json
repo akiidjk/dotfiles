@@ -12,7 +12,7 @@
       "shift shift": "file_finder::Toggle",
       "ctrl-alt-b ": "workspace::ToggleLeftDock",
       "ctrl-b": "workspace::ToggleRightDock",
-      "ctrl-t": "terminal::Toggle"
+      "ctrl-t": "workspace::NewTerminal"
     }
   },
   {
