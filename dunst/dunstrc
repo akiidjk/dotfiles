@@ -9,7 +9,7 @@
 	#
 	# for a complete reference see http://developer.gnome.org/pango/stable/PangoMarkupFormat.html
 	# If markup is not allowed, those tags will be stripped out of the message.
-	allow_markup = yes
+	# allow_markup = yes
 
 	# The format of the message. Possible variables are:
 	#   %a  appname
@@ -35,7 +35,7 @@
 	# window allows bounces back and forth.
 	# This option conflicts with 'word_wrap'.
 	# Set to 0 to disable
-	bounce_freq = 0
+	# bounce_freq = 0
 
 	# Specify where to make an ellipsis in long lines.
 	# Possible values are "start", "middle" and "end".
@@ -56,16 +56,16 @@
 	# dynamic width from 0 to 300
 	# width = (0, 300)
 	# constant width of 300
-	width = 320
+	width = (0,320)
 
 	# The maximum height of a single notification, excluding the frame.
-	height = 500
+	height = (0,500)
 
 	# Position of the notification
 	origin = top-right
 
 	# Offset from the origin
-	offset = 10x12
+	offset = (10, 12)
 
     # Turn on the progess bar. It appears when a progress hint is passed with
     # for example dunstify -h int:value:12
@@ -148,7 +148,7 @@
 	# Print a notification on startup
 	# This is mainly for error detection, since dbus (re-)starts dunst
 	# automatically after a crash.
-	startup_notification = false
+	# startup_notification = false
 
 	# Align icons left/right/off
 	icon_position = left
