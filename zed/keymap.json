@@ -20,5 +20,18 @@
     "bindings": {
       // "j k": ["workspace::SendKeystrokes", "escape"]
     }
+  },
+  {
+    "context": "Editor && edit_prediction_conflict",
+    "bindings": {
+      "ctrl-enter": "editor::AcceptEditPrediction"
+    }
+  },
+  {
+    "context": "Editor && edit_prediction",
+    "bindings": {
+      // Here we also allow `alt-enter` to accept the prediction
+      "alt-enter": "editor::AcceptEditPrediction"
+    }
   }
 ]

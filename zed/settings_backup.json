@@ -8,7 +8,7 @@
 // command palette
 {
   "features": {
-    "edit_prediction_provider": "zed"
+    "inline_completion_provider": "zed"
   },
   "icon_theme": "Material Icon Theme",
   "assistant": {
@@ -94,7 +94,7 @@
   },
   "languages": {
     "Go": {
-      "show_edit_predictions": true
+      "show_inline_completions": true
     }
   }
 }
