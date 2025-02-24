@@ -73,13 +73,18 @@ ZSH_THEME="xiong-chiamiov-plus"
 plugins=(
   aliases
   cp
-  web-search
   zsh-autosuggestions
   zsh-syntax-highlighting
   git
+  docker
   last-working-dir
   history-substring-search
   history
+  pylint
+  pip
+  golang
+  ssh
+  encode64
   extract
   )
 
@@ -138,6 +143,11 @@ alias webup='python3 -m http.server 6969'
 alias upgradesys='~/WorkSpace/Utils/scripts/upgrade_sys.sh'
 alias pymain='echo -e "\n\ndef main():\n pass\n\nif __name__ == \"__main__\":\n main()" > main.py'
 
+alias mp4ToMov='~/WorkSpace/Utils/scripts/mp4ToMov.sh'
+alias movToMp4='~/WorkSpace/Utils/scripts/movToMp4.sh'
+
+alias jwt_tool='~/WorkSpace/Tools/jwt_tool/env/bin/python3 ~/WorkSpace/Tools/jwt_tool/jwt_tool.py'
+
 # Set-up FZF key bindings (CTRL R for fuzzy history finder)
 source <(fzf --zsh)
 
@@ -163,5 +173,18 @@ eval "$(pyenv init -)"
 export WORKON_HOME=$HOME/.virtualenvs
 source /bin/virtualenvwrapper.sh
 export PYENV_VIRTUALENVWRAPPER_PREFER_PYVENV="true"
-
+export PATH="$PATH:$HOME/go/bin"
 export PATH="$PATH:/home/akiidjk/.modular/bin"
+
+
+
+TIMEFMT=$'\n================\nCPU\t%P\nuser\t%*U\nsystem\t%*S\ntotal\t%*E'
+
+. "$HOME/.local/bin/env"
+
+# bun completions
+[ -s "/home/akiidjk/.bun/_bun" ] && source "/home/akiidjk/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
