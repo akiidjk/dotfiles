@@ -7,6 +7,33 @@
 // custom settings, run `zed: open default settings` from the
 // command palette
 {
+  "ssh_connections": [
+    {
+      "host": "158.180.230.169",
+      "username": "ubuntu",
+      "args": [
+        "-i",
+        "~/WorkSpace/Utils/sshkey-vm/main/ssh-key-2025-03-01.key"
+      ],
+      "projects": [
+        {
+          "paths": [
+            "/etc/nginx"
+          ]
+        },
+        {
+          "paths": [
+            "~/DiscordCTFHelper"
+          ]
+        },
+        {
+          "paths": [
+            "~/umami"
+          ]
+        }
+      ]
+    }
+  ],
   "features": {
     "edit_prediction_provider": "zed"
   },
@@ -14,7 +41,7 @@
   "assistant": {
     "default_model": {
       "provider": "copilot_chat",
-      "model": "claude-3-5-sonnet"
+      "model": "o1"
     },
     "version": "2"
   },

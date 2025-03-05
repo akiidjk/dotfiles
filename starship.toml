@@ -87,7 +87,7 @@ RedHatEnterprise = "󱄛"
 
 [username]
 show_always = true
-style_user = "fg:lavender"
+style_user = "fg:#ffffff"
 style_root = "fg:green"
 format = '[ $user ]($style)'
 

@@ -1,8 +1,8 @@
 [manager]
-cwd = { fg = "#5456C4" }
+cwd = { fg = "#ffffff" }
 
 # Hovered
-hovered         = { fg = "#cdd6f4", bg = "#35356a" }
+hovered         = { fg = "#cdd6f4", bg = "#000000" }
 preview_hovered = { underline = true }
 
 # Find
@@ -42,7 +42,7 @@ mode_select = { fg = "#1e1e2e", bg = "#a6e3a1", bold = true }
 mode_unset  = { fg = "#1e1e2e", bg = "#f2cdcd", bold = true }
 
 # Progress
-progress_label  = { fg = "#ffffff", bold = true }
+progress_label  = { fg = "#646464", bold = true }
 progress_normal = { fg = "#A8A9EF", bg = "#45475a" }
 progress_error  = { fg = "#f38ba8", bg = "#45475a" }
 
