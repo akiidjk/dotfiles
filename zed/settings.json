@@ -40,8 +40,8 @@
   "icon_theme": "Material Icon Theme",
   "assistant": {
     "default_model": {
-      "provider": "copilot_chat",
-      "model": "o1"
+      "provider": "zed.dev",
+      "model": "claude-3-7-sonnet-latest"
     },
     "version": "2"
   },
