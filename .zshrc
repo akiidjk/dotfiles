@@ -148,6 +148,10 @@ alias movToMp4='~/WorkSpace/Utils/scripts/movToMp4.sh'
 
 alias jwt_tool='~/WorkSpace/Tools/jwt_tool/env/bin/python3 ~/WorkSpace/Tools/jwt_tool/jwt_tool.py'
 
+alias cat='bat'
+alias connectmain='ssh -i ~/WorkSpace/Utils/sshkey-vm/main/ssh-key-2025-03-01.key ubuntu@158.180.230.169'
+alias togglemirror='./WorkSpace/Utils/scripts/toggle_mirror.sh'
+
 # Set-up FZF key bindings (CTRL R for fuzzy history finder)
 source <(fzf --zsh)
 
@@ -188,3 +192,5 @@ TIMEFMT=$'\n================\nCPU\t%P\nuser\t%*U\nsystem\t%*S\ntotal\t%*E'
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+
+. "$HOME/.cargo/env"
