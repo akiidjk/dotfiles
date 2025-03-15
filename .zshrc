@@ -141,6 +141,7 @@ alias vmw11='quickemu --vm ~/WorkSpace/VM/windows-11.conf --display spice'
 alias webtemplate='python3 ~/WorkSpace/Utils/scripts/webtemplate/main.py'
 alias webup='python3 -m http.server 6969'
 alias upgradesys='~/WorkSpace/Utils/scripts/upgrade_sys.sh'
+alias cleansys='~/WorkSpace/Utils/scripts/clean.sh'
 alias pymain='echo -e "\n\ndef main():\n pass\n\nif __name__ == \"__main__\":\n main()" > main.py'
 
 alias mp4ToMov='~/WorkSpace/Utils/scripts/mp4ToMov.sh'
@@ -151,6 +152,8 @@ alias jwt_tool='~/WorkSpace/Tools/jwt_tool/env/bin/python3 ~/WorkSpace/Tools/jwt
 alias cat='bat'
 alias connectmain='ssh -i ~/WorkSpace/Utils/sshkey-vm/main/ssh-key-2025-03-01.key ubuntu@158.180.230.169'
 alias togglemirror='./WorkSpace/Utils/scripts/toggle_mirror.sh'
+
+alias mdtopdf='docker run -it --rm -v "`pwd`":/workdir plass/mdtopdf mdtopdf'
 
 # Set-up FZF key bindings (CTRL R for fuzzy history finder)
 source <(fzf --zsh)
