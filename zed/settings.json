@@ -40,8 +40,8 @@
   "icon_theme": "Material Icon Theme",
   "assistant": {
     "default_model": {
-      "provider": "zed.dev",
-      "model": "claude-3-7-sonnet-latest"
+      "provider": "copilot_chat",
+      "model": "o3-mini"
     },
     "version": "2"
   },
@@ -120,6 +120,12 @@
     }
   },
   "languages": {
+    "PHP": {
+      "show_edit_predictions": true
+    },
+    "SQL": {
+      "show_edit_predictions": true
+    },
     "Go": {
       "show_edit_predictions": true
     }
