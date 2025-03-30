@@ -105,6 +105,15 @@
     },
     "working_directory": "current_project_directory"
   },
+  "lsp": {
+    "pyright": {
+      "settings": {
+        "python": {
+          "pythonPath": "~/.venv/bin/python"
+        }
+      }
+    }
+  },
   "project_panel": {
     "button": true,
     "default_width": 240,

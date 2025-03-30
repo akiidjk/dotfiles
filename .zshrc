@@ -127,7 +127,7 @@ fastfetch
 
 alias ls='eza -a --icons'
 alias ll='eza -al --icons'
-alias lt='eza -a --tree --level=1 --icons'
+alias ltr='eza -a --tree --level=1 --icons'
 
 alias docker-start='sudo systemctl start docker.service'
 alias docker-stop='sudo systemctl stop docker.service'
@@ -197,3 +197,5 @@ export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
 . "$HOME/.cargo/env"
+
+source ~/.venv/bin/activate
