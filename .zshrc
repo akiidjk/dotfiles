@@ -1,20 +1,6 @@
-# If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 
-# Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
-
-# Set name of the theme to load --- if set to "random", it will
-# load a random theme each time Oh My Zsh is loaded, in which case,
-# to know which specific one was loaded, run: echo $RANDOM_THEME
-# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
 ZSH_THEME="xiong-chiamiov-plus"
-
-# Set list of themes to pick from when loading at random
-# Setting this variable when ZSH_THEME=random will cause zsh to load
-# a theme from this variable instead of looking in $ZSH/themes/
-# If set to an empty array, this variable will have no effect.
-# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
 
 # Uncomment the following line to use case-sensitive completion.
 # CASE_SENSITIVE="true"
@@ -92,8 +78,6 @@ source $ZSH/oh-my-zsh.sh
 
 # User configuration
 
-# export MANPATH="/usr/local/man:$MANPATH"
-
 # You may need to manually set your language environment
 # export LANG=en_US.UTF-8
 
@@ -104,30 +88,20 @@ source $ZSH/oh-my-zsh.sh
 #   export EDITOR='mvim'
 # fi
 
-# Compilation flags
-# export ARCHFLAGS="-arch $(uname -m)"
+# Starship
+eval "$(starship init zsh)"
 
-# Set personal aliases, overriding those provided by Oh My Zsh libs,
-# plugins, and themes. Aliases can be placed here, though Oh My Zsh
-# users are encouraged to define aliases within a top-level file in
-# the $ZSH_CUSTOM folder, with .zsh extension. Examples:
-# - $ZSH_CUSTOM/aliases.zsh
-# - $ZSH_CUSTOM/macos.zsh
-# For a full list of active aliases, run `alias`.
-#
-# Example aliases
-# alias zshconfig="mate ~/.zshrc"
-# alias ohmyzsh="mate ~/.oh-my-zsh"
-
-# NeoFetch
-
+# Startup
 fastfetch
 
 # Aliases
-
-alias ls='eza -a --icons'
+alias ls='eza --icons'
 alias ll='eza -al --icons'
 alias ltr='eza -a --tree --level=1 --icons'
+alias c='clear'
+alias cat='bat'
+alias activate='source ~/.venv/bin/activate'
+alias vimage='kitty +kitten icat'
 
 alias docker-start='sudo systemctl start docker.service'
 alias docker-stop='sudo systemctl stop docker.service'
@@ -135,29 +109,24 @@ alias docker-status='sudo systemctl status docker.service'
 
 alias start-vpn='sudo openvpn --config ~/WorkSpace/Utils/protonvpn/protonvpn.tcp.ovpn --auth-user-pass ~/WorkSpace/Utils/protonvpn/.vpn_creds'
 alias stop-vpn='sudo killall openvpn'
-alias vimage='kitty +kitten icat'
-
-alias vmw11='quickemu --vm ~/WorkSpace/VM/windows-11.conf --display spice'
-alias webtemplate='python3 ~/WorkSpace/Utils/scripts/webtemplate/main.py'
-alias webup='python3 -m http.server 6969'
 alias upgradesys='~/WorkSpace/Utils/scripts/upgrade_sys.sh'
 alias cleansys='~/WorkSpace/Utils/scripts/clean.sh'
-alias pymain='echo -e "\n\ndef main():\n pass\n\nif __name__ == \"__main__\":\n main()" > main.py'
+
+alias webtemplate='python3 ~/WorkSpace/Utils/scripts/webtemplate/main.py'
+alias webup='python3 -m http.server 6969'
+alias pymain='echo -e "\n\ndef main():\n    pass\n\nif __name__ == \"__main__\":\n    main()" > main.py'
 
 alias mp4ToMov='~/WorkSpace/Utils/scripts/mp4ToMov.sh'
 alias movToMp4='~/WorkSpace/Utils/scripts/movToMp4.sh'
-
+alias vmw11='quickemu --vm ~/WorkSpace/VM/windows-11.conf --display spice'
 alias jwt_tool='~/WorkSpace/Tools/jwt_tool/env/bin/python3 ~/WorkSpace/Tools/jwt_tool/jwt_tool.py'
-
-alias cat='bat'
 alias connectmain='ssh -i ~/WorkSpace/Utils/sshkey-vm/main/ssh-key-2025-03-01.key ubuntu@158.180.230.169'
 alias togglemirror='./WorkSpace/Utils/scripts/toggle_mirror.sh'
-
 alias mdtopdf='docker run -it --rm -v "`pwd`":/workdir plass/mdtopdf mdtopdf'
+alias start-aperisolve='~/WorkSpace/Tools/AperiSolve/start.sh'
 
 # Set-up FZF key bindings (CTRL R for fuzzy history finder)
 source <(fzf --zsh)
-
 HISTFILE=~/.zsh_history
 HISTSIZE=10000
 SAVEHIST=10000
@@ -166,28 +135,22 @@ setopt appendhistory
 # FZF
 export FZF_DEFAULT_OPTS="--ansi --preview-window 'right:60%' --preview 'bat --color=always --style=header,grid --line-range :300 {}'"
 
-# Starship
-eval "$(starship init zsh)"
-
 # Path
-
 export PATH=$PATH:/home/akiidjk/.cargo/bin
 export PATH=$PATH:/home/akiidjk/.spicetify
 
 # Pyenv
-
 eval "$(pyenv init -)"
 export WORKON_HOME=$HOME/.virtualenvs
 source /bin/virtualenvwrapper.sh
 export PYENV_VIRTUALENVWRAPPER_PREFER_PYVENV="true"
+
 export PATH="$PATH:$HOME/go/bin"
 export PATH="$PATH:/home/akiidjk/.modular/bin"
-
-
-
-TIMEFMT=$'\n================\nCPU\t%P\nuser\t%*U\nsystem\t%*S\ntotal\t%*E'
+export XDG_CONFIG_HOME="$HOME/.config"
 
 . "$HOME/.local/bin/env"
+. "$HOME/.cargo/env"
 
 # bun completions
 [ -s "/home/akiidjk/.bun/_bun" ] && source "/home/akiidjk/.bun/_bun"
@@ -196,6 +159,6 @@ TIMEFMT=$'\n================\nCPU\t%P\nuser\t%*U\nsystem\t%*S\ntotal\t%*E'
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
-. "$HOME/.cargo/env"
+TIMEFMT=$'\n================\nCPU\t%P\nuser\t%*U\nsystem\t%*S\ntotal\t%*E'
 
-source ~/.venv/bin/activate
+[ -f "/home/akiidjk/.ghcup/env" ] && . "/home/akiidjk/.ghcup/env" # ghcup-env

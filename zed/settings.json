@@ -5,7 +5,6 @@
 //
 // To see all of Zed's default settings without changing your
 // custom settings, run `zed: open default settings` from the
-// command palette
 {
   "ssh_connections": [
     {
@@ -126,17 +125,6 @@
     "auto_fold_dirs": true,
     "scrollbar": {
       "show": "always"
-    }
-  },
-  "languages": {
-    "PHP": {
-      "show_edit_predictions": true
-    },
-    "SQL": {
-      "show_edit_predictions": true
-    },
-    "Go": {
-      "show_edit_predictions": true
     }
   }
 }
