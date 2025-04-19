@@ -17,9 +17,7 @@
   },
   {
     "context": "Editor",
-    "bindings": {
-      // "j k": ["workspace::SendKeystrokes", "escape"]
-    }
+    "bindings": {}
   },
   {
     "context": "Editor && edit_prediction_conflict",
