@@ -124,6 +124,7 @@ alias connectmain='ssh -i ~/WorkSpace/Utils/sshkey-vm/main/ssh-key-2025-03-01.ke
 alias togglemirror='./WorkSpace/Utils/scripts/toggle_mirror.sh'
 alias mdtopdf='docker run -it --rm -v "`pwd`":/workdir plass/mdtopdf mdtopdf'
 alias start-aperisolve='~/WorkSpace/Tools/AperiSolve/start.sh'
+alias stop-aperisolve='~/WorkSpace/Tools/AperiSolve/stop.sh'
 
 # Set-up FZF key bindings (CTRL R for fuzzy history finder)
 source <(fzf --zsh)
@@ -156,7 +157,7 @@ export XDG_CONFIG_HOME="$HOME/.config"
 [ -s "/home/akiidjk/.bun/_bun" ] && source "/home/akiidjk/.bun/_bun"
 
 # bun
-export BUN_INSTALL="$HOME/.bun"
+export BUN_INSTALL="/"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
 TIMEFMT=$'\n================\nCPU\t%P\nuser\t%*U\nsystem\t%*S\ntotal\t%*E'

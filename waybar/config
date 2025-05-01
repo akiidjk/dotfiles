@@ -20,7 +20,6 @@
         "tray",
         "backlight",
         "pulseaudio",
-        "network",
         "battery",
         "clock",
         "custom/power-menu"

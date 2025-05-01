@@ -1,8 +1,8 @@
 {
   "assistant": {
     "default_model": {
-      "model": "claude-3-7-sonnet-latest",
-      "provider": "zed.dev"
+      "model": "gpt-4o",
+      "provider": "copilot_chat"
     },
     "version": "2"
   },
