@@ -12,7 +12,7 @@
       "shift shift": "file_finder::Toggle",
       "ctrl-alt-b ": "workspace::ToggleLeftDock",
       "ctrl-b": "workspace::ToggleRightDock",
-      "ctrl-t": "workspace::NewTerminal",
+      "ctrl-t": "workspace::NewTerminal"
     }
   },
   {
@@ -30,6 +30,18 @@
     "bindings": {
       // Here we also allow `alt-enter` to accept the prediction
       "alt-enter": "editor::AcceptEditPrediction"
+    }
+  },
+  {
+    "context": "ProjectPanel",
+    "bindings": {
+      "ctrl-r": "project_panel::Rename"
+    }
+  },
+  {
+    "context": "Editor",
+    "bindings": {
+      "ctrl-r": "editor::Rename"
     }
   }
 ]
