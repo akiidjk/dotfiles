@@ -5,7 +5,7 @@
     "default_profile": "write",
     "inline_assistant_model": {
       "provider": "copilot_chat",
-      "model": "claude-sonnet-4"
+      "model": "gpt-4o"
     },
     "default_model": {
       "model": "claude-sonnet-4",
