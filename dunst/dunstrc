@@ -98,7 +98,7 @@
 	idle_threshold = 0
 
 	# Which monitor should the notifications be displayed on.
-	monitor = 1
+	monitor = 0
 
 	# Display notification on focused monitor. Possible modes are:
 	# mouse: follow mouse pointer
@@ -187,7 +187,7 @@
 	highlight = "#7ba5dd"
 
 [urgency_normal]
-	script = ~/.config/dunst/scripts/playNotificationSound.sh
+	# script = ~/.config/dunst/scripts/playNotificationSound.sh
 	timeout = 6
 	background = "#0d0f16"
 	foreground = "#CDD6F4"

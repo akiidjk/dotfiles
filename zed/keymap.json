@@ -17,7 +17,10 @@
   },
   {
     "context": "Editor",
-    "bindings": {}
+    "bindings": {
+      // "j k": ["workspace::SendKeystrokes", "escape"]
+      "ctrl-r": "editor::Rename"
+    }
   },
   {
     "context": "Editor && edit_prediction_conflict",
@@ -31,18 +34,5 @@
       // Here we also allow `alt-enter` to accept the prediction
       "alt-enter": "editor::AcceptEditPrediction"
     }
-  },
-  {
-    "context": "ProjectPanel",
-    "bindings": {
-      "ctrl-r": "project_panel::Rename"
-    }
-  },
-  {
-    "context": "Editor",
-    "bindings": {
-      "ctrl-r": "editor::Rename"
-    }
   }
 ]
-// CTRL-W close active item (file)
