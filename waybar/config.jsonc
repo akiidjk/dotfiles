@@ -1,0 +1,129 @@
+{
+  "layer": "top",
+  "position": "top",
+  "reload_style_on_change": true,
+  "modules-left": [
+    "clock",
+    "cpu",
+    "memory"
+  ],
+  "modules-right": [
+    "tray",
+    "custom/kitty",
+    "pulseaudio",
+    "battery",
+    "custom/power"
+  ],
+  "pulseaudio": {
+    "format": "{icon} {volume}%",
+    "format-bluetooth": "  {volume}%",
+    "format-bluetooth-muted": " ",
+    "format-muted": "婢",
+    "format-icons": {
+      "headphone": "",
+      "hands-free": "",
+      "headset": "",
+      "phone": "",
+      "portable": "",
+      "car": "",
+      "default": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "on-scroll-up": "pactl set-sink-volume @DEFAULT_SINK@ +5%",
+    "on-scroll-down": "pactl set-sink-volume @DEFAULT_SINK@ -5%",
+    "on-click": "pavucontrol",
+    "tooltip": true
+  },
+  "cpu": {
+    "interval": 10,
+    "format": " {}%",
+    "max-length": 10,
+    "on-click": "",
+  },
+  "custom/display": {
+    "format": "󱄄 ",
+    "tooltip-format": "󱄄  display settings",
+    "on-click": "nwg-displays",
+  },
+  "memory": {
+    "interval": 30,
+    "format": " {}%",
+    "format-alt": " {used:0.1f}G",
+    "max-length": 10,
+  },
+  "modules-center": [
+    "hyprland/workspaces"
+  ],
+  "battery": {
+    "format": "{capacity}% ",
+    "format-charging": "{capacity}% ",
+    "format-plugged": "{capacity}% ",
+    "tooltip": true,
+    "interval": 30,
+    "exec": "cat /sys/class/power_supply/BAT0/capacity"
+  },
+  "tray": {
+    "spacing": 10
+  },
+  "hyprland/workspaces": {
+    "persistent-workspaces": {
+      "*": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    }
+  },
+  "custom/kitty": {
+    // "format": "",
+    // "on-click": "kitty"
+    "format": "󱄄 ",
+    "tooltip-format": "󱄄  display settings",
+    "on-click": "nwg-displays",
+  },
+  "custom/control": {
+    "format": "  ",
+    "on-click": "control"
+  },
+  "custom/thunar": {
+    "format": "  ",
+    "on-click": "nautilus"
+  },
+  "custom/code": {
+    "format": "  ",
+    "on-click": "zeditor"
+  },
+  "custom/firefox": {
+    "format": "    ┃",
+    "on-click": "zen-browser"
+  },
+  "custom/power": {
+    "format": " ",
+    "on-click": "shutdown -h now"
+  },
+  "clock": {
+    "format-alt": "<span> </span>{:%a %b %d}",
+    "tooltip-format": "<big>{:%B %Y}</big>\n<tt><small>{calendar}</small></tt>",
+    "format": " {:%I:%M:%S %p}",
+    "interval": 1
+  },
+  "network": {
+    "format-wifi": " ",
+    "on-click": "control --minimal --wifi",
+    "tooltip": false
+  },
+  "bluetooth": {
+    "format-on": "  {status}",
+    "on-click": "~/.config/waybar/scripts/rofi-bluetooth &",
+    "tooltip": false
+  },
+  "custom/expand": {
+    "format": "",
+    "tooltip": false
+  }
+}
