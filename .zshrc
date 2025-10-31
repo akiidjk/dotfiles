@@ -72,7 +72,7 @@ plugins=(
   ssh
   encode64
   extract
-  )
+)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -141,7 +141,6 @@ export FZF_DEFAULT_OPTS="--ansi --preview-window 'right:60%' --preview 'bat --co
 
 # Path
 export PATH=$PATH:/home/akiidjk/.cargo/bin
-export PATH=$PATH:/home/akiidjk/.spicetify
 
 export PATH="$PATH:$HOME/go/bin"
 export PATH="$PATH:/home/akiidjk/.modular/bin"
