@@ -102,6 +102,7 @@ alias c='clear'
 alias cat='bat'
 alias activate='source ~/.venv/bin/activate'
 alias vimage='kitty +kitten icat'
+alias cpu='auto-cpufreq --stats'
 
 alias docker-start='sudo systemctl start docker.service'
 alias docker-stop='sudo systemctl stop docker.service'
@@ -111,6 +112,8 @@ alias start-vpn='sudo openvpn --config ~/WorkSpace/Utils/protonvpn/protonvpn.tcp
 alias stop-vpn='sudo killall openvpn'
 alias upgradesys='~/WorkSpace/Utils/scripts/upgrade_sys.sh'
 alias cleansys='~/WorkSpace/Utils/scripts/clean.sh'
+alias get_report='~/WorkSpace/Utils/scripts/get_hw_report.sh'
+
 
 alias webtemplate='python3 ~/WorkSpace/Utils/scripts/webtemplate/main.py'
 alias webup='python3 -m http.server 6969'
@@ -140,24 +143,18 @@ export FZF_DEFAULT_OPTS="--ansi --preview-window 'right:60%' --preview 'bat --co
 export PATH=$PATH:/home/akiidjk/.cargo/bin
 export PATH=$PATH:/home/akiidjk/.spicetify
 
-# Pyenv
-eval "$(pyenv init -)"
-export WORKON_HOME=$HOME/.virtualenvs
-source /bin/virtualenvwrapper.sh
-export PYENV_VIRTUALENVWRAPPER_PREFER_PYVENV="true"
-
 export PATH="$PATH:$HOME/go/bin"
 export PATH="$PATH:/home/akiidjk/.modular/bin"
 export XDG_CONFIG_HOME="$HOME/.config"
 
-. "$HOME/.local/bin/env"
+#. "$HOME/.local/bin/env"
 . "$HOME/.cargo/env"
 
 # bun completions
 [ -s "/home/akiidjk/.bun/_bun" ] && source "/home/akiidjk/.bun/_bun"
 
 # bun
-export BUN_INSTALL="/"
+export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
 TIMEFMT=$'\n================\nCPU\t%P\nuser\t%*U\nsystem\t%*S\ntotal\t%*E'

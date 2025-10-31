@@ -1,14 +1,18 @@
 {
+  "use_smartcase_search": false,
+  "restore_on_startup": "last_session",
+  "use_system_prompts": true,
+  "disable_ai": false,
   "agent": {
     "play_sound_when_agent_done": true,
     "always_allow_tool_actions": true,
     "default_profile": "write",
     "inline_assistant_model": {
       "provider": "copilot_chat",
-      "model": "gpt-4o"
+      "model": "gpt-4.1"
     },
     "default_model": {
-      "model": "claude-sonnet-4",
+      "model": "claude-sonnet-4.5",
       "provider": "copilot_chat"
     }
   },
@@ -32,14 +36,14 @@
   "format_on_save": "on",
   "formatter": "language_server",
   "hide_mouse": "on_typing_and_movement",
-  "icon_theme": "Material Icon Theme",
+  "icon_theme": "Catppuccin Latte",
   "indent_guides": {
     "coloring": "fixed",
     "enabled": true
   },
   "inlay_hints": {
     "edit_debounce_ms": 700,
-    "enabled": false,
+    "enabled": true,
     "scroll_debounce_ms": 50,
     "show_other_hints": true,
     "show_parameter_hints": true,
@@ -61,6 +65,9 @@
     "languages": {}
   },
   "languages": {
+    "Zig": {
+      "show_edit_predictions": false
+    },
     "TypeScript": {
       "formatter": {
         "external": {
