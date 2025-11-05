@@ -37,21 +37,11 @@ tooltip * {
     text-shadow: none;
 }
 
-#custom-kitty:hover,
-#custom-control:hover,
-#custom-gimp:hover,
-#custom-thunar:hover,
-#custom-code:hover,
-#custom-firefox:hover,
 #clock:hover,
-#bluetooth:hover,
-#network:hover,
 #custom-cpu:hover,
+#custom-spotify:hover,
 #custom-memory:hover,
-#custom-gpu:hover,
-#custom-colorpicker:hover,
-#custom-power:hover,
-#wireplumber:hover {
+#custom-gpu:hover {
     transition: all 0.3s ease;
     color: @color7;
 }
@@ -112,22 +102,14 @@ tooltip * {
     color: @color7;
 }
 
-#custom-colorpicker,
+
 #custom-cpu,
 #custom-memory,
 #custom-display,
 #custom-gpu,
-#wireplumber,
-#bluetooth,
-#network,
-#custom-power,
 #clock,
-#custom-kitty,
-#custom-control,
-#custom-gimp,
-#custom-thunar,
-#custom-code,
-#custom-firefox {
+#custom-display-settings,
+#custom-spotify {
     padding: 0px 5px;
     color: @color7;
     transition: all 0.3s ease;
@@ -140,19 +122,8 @@ tooltip * {
 #cpu,
 #memory,
 #disk,
-#temperature,
-#backlight,
-#network,
 #pulseaudio,
-#custom-display,
-#custom-media,
 #tray,
-#mode,
-#idle_inhibitor,
-#mpd,
-#bluetooth,
-#custom-hyprPicker,
-#custom-power-menu,
 #custom-spotify {
     padding: 0 10px;
     color: @color3;
@@ -181,4 +152,17 @@ tooltip * {
 #tray>.needs-attention {
     -gtk-icon-effect: highlight;
     background-color: #eb4d4b;
+}
+
+#custom-spotify {
+    border-radius: 9.5px;
+    background-color: @background;
+    color: @color15;
+}
+
+#custom-spotify:hover {
+    border-radius: 9.5px;
+    padding: 0 10px;
+    background-color: @color15;
+    color: @color3;
 }
