@@ -1,97 +1,61 @@
-@import url('/home/mkhmtcore/.cache/wal/colors-waybar.css');
-
-/* Global styles */
-window {
-  margin: 0px;
-  border: 2px solid @color7;
-  border-radius: 10px;
-  background-color: @color0;
-  font-family: JetBrains Mono, monospace;
-  color: @color7;
+/* The name of the window itself */
+#window {
+    background-color: rgba(24, 24, 24, 0.8);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    border-radius: 1rem;
+    font-size: 1.2rem;
+    /* The name of the box that contains everything */
 }
 
-/* Input box */
-#input {
-  margin: 5px;
-  border: 1px solid @color7;
-  color: @color7;
-  background-color: @color0;
-  padding: 6px;
-  border-radius: 5px;
+#window #outer-box {
+    /* The name of the search bar */
+    /* The name of the scrolled window containing all of the entries */
 }
 
-#input::placeholder {
-  color: @color7;
+#window #outer-box #input {
+    background-color: rgba(24, 24, 24, 0.8);
+    color: #f2f2f2;
+    border: none;
+    border-bottom: 1px solid rgba(24, 24, 24, 0.2);
+    padding: 0.8rem 1rem;
+    font-size: 1.5rem;
+    border-radius: 1rem 1rem 0 0;
 }
 
-#input:focus {
-  color: @color7;
+#window #outer-box #input:focus,
+#window #outer-box #input:focus-visible,
+#window #outer-box #input:active {
+    border: none;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
 }
 
-#input prompt {
-  color: @color7;
+#window #outer-box #scroll {
+    /* The name of the box containing all of the entries */
 }
 
-#input image {
-  color: @color7;
+#window #outer-box #scroll #inner-box {
+    /* The name of all entries */
+    /* The name of all boxes shown when expanding  */
+    /* entries with multiple actions */
 }
 
-#prompt {
-  color: @color7;
+#window #outer-box #scroll #inner-box #entry {
+    color: #fff;
+    background-color: rgba(24, 24, 24, 0.1);
+    padding: 0.6rem 1rem;
+    /* The name of all images in entries displayed in image mode */
+    /* The name of all the text in entries */
 }
 
-/* Inner box */
-#inner-box {
-  margin: 5px;
-  border: none;
-  color: @color7;
-  padding: 0px;
+#window #outer-box #scroll #inner-box #entry #img {
+    width: 1rem;
+    margin-right: 0.5rem;
 }
 
-/* Outer box */
-#outer-box {
-  margin: 5px;
-  border: none;
-  padding: 5px;
+#window #outer-box #scroll #inner-box #entry:selected {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.1);
+    outline: none;
+    border-radius: 0.5rem;
 }
-
-/* Scroll area */
-#scroll {
-  margin: 0px;
-}
-
-/* Text styling */
-#text {
-  margin: 5px;
-  border: none;
-  color: @color7;
-  font-size: 14px;
-}
-
-#entry.activatable #text {
-  color: @color7;
-}
-
-#entry > * {
-  color: @color7;
-}
-
-/* Active entry */
-#entry:selected {
-  background-color: @color8;
-  border-radius: 5px;
-}
-
-#entry:selected #text {
-  font-weight: bold;
-  color: @color7;
-}
-
-#entry:hover {
-  background-color: @color10;
-}
-
-#entry:hover #text {
-  color: @color11;
-}
-
