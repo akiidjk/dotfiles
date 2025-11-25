@@ -5,7 +5,7 @@
 * {
     font-size: 16px;
     font-weight: bold;
-    font-family: JetBrains Mono Nerd Font;
+    font-family: JetBrains Mono Nerd Font Propo;
     color: @color1;
 }
 
@@ -32,7 +32,7 @@ window#waybar {
 
 tooltip * {
     color: @color15;
-    font-family: JetBrains Mono Nerd Font;
+    font-family: JetBrains Mono Nerd Font Propo;
     background-color: @color1;
     text-shadow: none;
 }
