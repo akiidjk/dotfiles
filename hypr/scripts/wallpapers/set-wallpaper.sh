@@ -22,7 +22,7 @@ SELECTED_FILE=$(echo "$FILE_LIST" | wofi --dmenu --prompt "Select wallpaper")
 # Полный путь к выбранному файлу
 WALL="$WALL_DIR/$SELECTED_FILE"
 
-echo $WALL_DIR/$SELECTED_FILE > "$HOME/.cache/current_wallpaper.txt"
+cp "$WALL" "$HOME/.current_wallpaper"
 
 echo "Setting wallpaper: $SELECTED_FILE"
 
@@ -37,8 +37,7 @@ if command -v wal >/dev/null 2>&1; then
     echo "Applying pywal colors..."
     wal -i "$WALL"
     echo "Pywal applied successfully"
-    "$HOME/.config/mako/update-colors.sh"
+    swaync-client -rs
 else
     echo "Pywal not installed, skipping"
 fi
-
