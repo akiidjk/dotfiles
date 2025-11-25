@@ -1,5 +1,6 @@
 {
     "closeOnFocusLoss": false,
+    "considerPreedit": false,
     "faviconService": "twenty",
     "font": {
         "normal": "JetBrainsMono Nerd Font",
@@ -13,7 +14,7 @@
         "searchFiles": false
     },
     "theme": {
-        "name": "vicinae-dark"
+        "name": "ayu-dark"
     },
     "window": {
         "csd": true,

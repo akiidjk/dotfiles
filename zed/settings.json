@@ -12,7 +12,7 @@
       "model": "gpt-4.1"
     },
     "default_model": {
-      "model": "claude-sonnet-4.5",
+      "model": "gpt-5.1-codex-mini",
       "provider": "copilot_chat"
     }
   },
@@ -65,6 +65,9 @@
     "languages": {}
   },
   "languages": {
+    "C": {
+      "show_edit_predictions": false
+    },
     "Zig": {
       "show_edit_predictions": false
     },
