@@ -12,7 +12,7 @@ This repository contains my personal configuration files for Hyprland and variou
 sudo pacman -Syu
 
 # Install Hyprland and core dependencies
-sudo pacman -S hyprland hyprpaper hypridle hyprlock hyprshade xdg-desktop-portal-hyprland
+sudo pacman -S hyprland hyprpaper hypridle hyprlock hyprshade xdg-desktop-portal-hyprland swaync
 
 # Display and graphics
 sudo pacman -S wl-clipboard wl-clip-persist cliphist grim slurp swappy
@@ -39,7 +39,7 @@ sudo pacman -S neovim zed
 sudo pacman -S python-pywal
 
 # Other utilities
-sudo pacman -S fastfetch brightnessctl playerctl pamixer swaylock wofi
+sudo pacman -S fastfetch brightnessctl playerctl pamixer wofi
 ```
 
 ### AUR Packages
@@ -84,7 +84,6 @@ fc-cache -fv
 git clone https://github.com/akiidjk/dotfiles.git ~/.config
 
 # Make scripts executable
-chmod +x ~/.config/dunst/scripts/*.sh
 chmod +x ~/.config/hypr/scripts/*.sh
 chmod +x ~/.config/hypr/scripts/wallpapers/*.sh
 
