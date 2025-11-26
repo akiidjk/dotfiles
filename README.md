@@ -1,4 +1,4 @@
-# dotfiles
+# Dotfiles
 Personal Dotfiles Configuration
 
 ## Overview
@@ -21,7 +21,7 @@ sudo pacman -S wl-clipboard wl-clip-persist cliphist grim slurp swappy
 sudo pacman -S pipewire pipewire-pulse pipewire-alsa wireplumber pavucontrol
 
 # Notifications
-sudo pacman -S dunst libnotify
+sudo pacman -S swaync libnotify
 
 # Terminal and shell
 sudo pacman -S kitty starship tmux
@@ -103,7 +103,7 @@ chmod +x install.sh
 
 ## Configuration Structure
 
-- **dunst/** - Notification daemon configuration
+- **swaync/** - Notification daemon and notification center configuration
 - **fastfetch/** - System information tool config
 - **fonts/** - Custom Nerd Fonts (JetBrains Mono, Iosevka, etc.)
 - **hypr/** - Hyprland window manager configuration
@@ -151,6 +151,7 @@ sudo systemctl start sddm
 | `SUPER + W` | Set wallpaper + color schema |
 | `SUPER + SHIFT + C` | Open color picker (hyprpicker) |
 | `SUPER + SHIFT + S` | Screenshot area (grim + slurp + swappy) |
+| `SUPER + K` | Hide waybar |
 
 ### Media Controls
 | Keybind | Action |
