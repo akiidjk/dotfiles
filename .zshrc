@@ -53,7 +53,7 @@ alias docker-start='sudo systemctl start docker.service'
 alias docker-stop='sudo systemctl stop docker.service'
 alias docker-status='sudo systemctl status docker.service'
 
-alias start-vpn='sudo openvpn --config ~/WorkSpace/Utils/protonvpn/protonvpn.tcp.ovpn --auth-user-pass ~/WorkSpace/Utils/protonvpn/.vpn_creds'
+alias start-vpn='sudo openvpn --config <path_to_config> --auth-user-pass <path_to_creds>'
 alias stop-vpn='sudo killall openvpn'
 alias upgradesys='~/WorkSpace/Utils/scripts/upgrade_sys.sh'
 alias cleansys='~/WorkSpace/Utils/scripts/clean.sh'
@@ -61,8 +61,6 @@ alias cleansys='~/WorkSpace/Utils/scripts/clean.sh'
 alias webtemplate='python3 ~/WorkSpace/Utils/scripts/webtemplate/main.py'
 alias webup='python3 -m http.server 6969'
 alias pymain='echo -e "\n\ndef main():\n    pass\n\nif __name__ == \"__main__\":\n    main()" > main.py'
-
-alias togglemirror='./WorkSpace/Utils/scripts/toggle_mirror.sh'
 
 # Set-up FZF key bindings (CTRL R for fuzzy history finder)
 source <(fzf --zsh)

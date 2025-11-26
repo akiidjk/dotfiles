@@ -12,7 +12,7 @@ This repository contains my personal configuration files for Hyprland and variou
 sudo pacman -Syu
 
 # Install Hyprland and core dependencies
-sudo pacman -S hyprland hyprpaper hypridle hyprlock hyprshade xdg-desktop-portal-hyprland swaync
+sudo pacman -S hyprland hyprpaper hypridle hyprlock hyprshade xdg-desktop-portal-hyprland
 
 # Display and graphics
 sudo pacman -S wl-clipboard wl-clip-persist cliphist grim slurp swappy
@@ -39,7 +39,7 @@ sudo pacman -S neovim zed
 sudo pacman -S python-pywal
 
 # Other utilities
-sudo pacman -S fastfetch brightnessctl playerctl pamixer wofi
+sudo pacman -S fastfetch brightnessctl playerctl pamixer wofi fzf ripgrep
 ```
 
 ### AUR Packages
@@ -122,6 +122,10 @@ chmod +x install.sh
 - **yazi/** - Terminal file manager config
 - **zed/** - Zed editor configuration
 
+> **Warning**
+> 
+> The Neovim (`nvim/`) configuration is currently **broken** and may not work as expected.
+
 ## Post-Installation
 
 ### Set up user directories
@@ -152,6 +156,7 @@ sudo systemctl start sddm
 | `SUPER + SHIFT + C` | Open color picker (hyprpicker) |
 | `SUPER + SHIFT + S` | Screenshot area (grim + slurp + swappy) |
 | `SUPER + K` | Hide waybar |
+| `SUPER + N` | Show notification center |
 
 ### Media Controls
 | Keybind | Action |
@@ -179,7 +184,6 @@ sudo systemctl start sddm
 | `SUPER + TAB` | Switch to previous workspace |
 | `SUPER + ALT + Left/Right` | Switch to prev/next workspace |
 | `SUPER + Left/Right` | Switch to prev/next workspace |
-| `SUPER + Mouse Wheel` | Scroll through workspaces |
 
 ### Mouse Actions
 | Keybind | Action |
@@ -213,6 +217,7 @@ Based on various dotfile configurations and customized for personal use.
 - [JaKooLit - Arch Hyprland Installer](https://github.com/JaKooLit/Arch-Hyprland)
 - [Invincible-Dots by mkhmtolzhas](https://github.com/mkhmtolzhas/Invincible-Dots)
 - [dots by 1amSimp1e (Hyprland section)](https://github.com/1amSimp1e/dots?tab=readme-ov-file#hypr)
+- [Sddm theme](https://github.com/Keyitdev/sddm-astronaut-theme)
 
 ## License
 
