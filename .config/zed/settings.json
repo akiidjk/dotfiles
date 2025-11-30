@@ -103,33 +103,6 @@
   "show_edit_predictions": true,
   "show_wrap_guides": true,
   "soft_wrap": "editor_width",
-  "ssh_connections": [
-    {
-      "args": [
-        "-i",
-        "~/WorkSpace/Utils/sshkey-vm/main/ssh-key-2025-03-01.key"
-      ],
-      "host": "158.180.230.169",
-      "projects": [
-        {
-          "paths": [
-            "/etc/nginx"
-          ]
-        },
-        {
-          "paths": [
-            "~/DiscordCTFHelper"
-          ]
-        },
-        {
-          "paths": [
-            "~/umami"
-          ]
-        }
-      ],
-      "username": "ubuntu"
-    }
-  ],
   "tabs": {
     "close_position": "right",
     "file_icons": true,
