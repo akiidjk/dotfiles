@@ -33,10 +33,13 @@ sudo pacman -S nautilus yazi
 sudo pacman -S waybar
 
 # Text editor
-sudo pacman -S neovim zed
+sudo pacman -S vim neovim zed
 
 # Color management
 sudo pacman -S python-pywal
+
+# Browser
+yay -S zen-browser
 
 # Other utilities
 sudo pacman -S fastfetch brightnessctl playerctl pamixer wofi fzf ripgrep
@@ -101,6 +104,72 @@ chmod +x install.sh
 ./install.sh
 ```
 
+### Zen Browser setup
+
+Once installed via yay, you can set Zen Browser as your default browser:
+
+```bash
+xdg-settings set default-web-browser zen-browser.desktop
+```
+### Setup: 
+  - import your bookmarks and settings from your previous browser.
+  - customize Zen Browser settings to your preference.
+  - import zen mods from .config/.zen/zen-mods-export.json
+  
+
+
+## Setup default mime apps
+```bash
+# PDF → Zen Browser
+xdg-mime default zen-browser.desktop application/pdf
+
+# Images → qimgv
+xdg-mime default qimgv.desktop image/jpeg
+xdg-mime default qimgv.desktop image/png
+xdg-mime default qimgv.desktop image/webp
+xdg-mime default qimgv.desktop image/gif
+
+# SVG → Zen Browser
+xdg-mime default zen-browser.desktop image/svg+xml
+
+# Video → mpv
+xdg-mime default mpv.desktop video/mp4
+xdg-mime default mpv.desktop video/x-matroska
+xdg-mime default mpv.desktop video/webm
+xdg-mime default mpv.desktop video/x-msvideo
+
+# Audio → mpv
+xdg-mime default mpv.desktop audio/mpeg
+xdg-mime default mpv.desktop audio/mp3
+xdg-mime default mpv.desktop audio/wav
+xdg-mime default mpv.desktop audio/flac
+xdg-mime default mpv.desktop audio/ogg
+xdg-mime default mpv.desktop audio/aac
+xdg-mime default mpv.desktop audio/x-m4a
+xdg-mime default mpv.desktop audio/webm
+
+# Source code (generic) → Zed
+xdg-mime default zed.desktop text/x-source
+xdg-mime default zed.desktop text/x-script
+
+# Common programming languages → Zed
+xdg-mime default zed.desktop text/x-python
+xdg-mime default zed.desktop text/x-c
+xdg-mime default zed.desktop text/x-csrc
+xdg-mime default zed.desktop text/x-chdr
+xdg-mime default zed.desktop text/x-c++
+xdg-mime default zed.desktop text/x-c++src
+xdg-mime default zed.desktop text/x-java
+xdg-mime default zed.desktop text/x-go
+xdg-mime default zed.desktop text/x-rustsrc
+xdg-mime default zed.desktop text/x-php
+xdg-mime default zed.desktop text/x-shellscript
+xdg-mime default zed.desktop application/javascript
+xdg-mime default zed.desktop text/javascript
+xdg-mime default zed.desktop text/css
+xdg-mime default zed.desktop text/html
+```
+
 ## Configuration Structure
 
 - **swaync/** - Notification daemon and notification center configuration
@@ -148,9 +217,10 @@ sudo systemctl start sddm
 ### Applications & Scripts
 | Keybind | Action |
 |---------|--------|
-| `SUPER + RETURN` | Open terminal (Kitty) |
-| `SUPER + E` | Open file manager (Nautilus) |
-| `ALT + L` | Lock screen (swaylock) |
+| `SUPER + RETURN` | Open terminal (kitty) |
+| `SUPER + SPACE` | Open launcher (vicinae) |
+| `SUPER + E` | Open file manager (nautilus) |
+| `ALT + L` | Lock screen (hyprlock) |
 | `SUPER + R` | Reload Waybar |
 | `SUPER + W` | Set wallpaper + color schema |
 | `SUPER + SHIFT + C` | Open color picker (hyprpicker) |
@@ -217,8 +287,8 @@ Based on various dotfile configurations and customized for personal use.
 - [JaKooLit - Arch Hyprland Installer](https://github.com/JaKooLit/Arch-Hyprland)
 - [Invincible-Dots by mkhmtolzhas](https://github.com/mkhmtolzhas/Invincible-Dots)
 - [dots by 1amSimp1e (Hyprland section)](https://github.com/1amSimp1e/dots?tab=readme-ov-file#hypr)
-- [Sddm theme](https://github.com/Keyitdev/sddm-astronaut-theme)
+- [SDDM theme](https://github.com/Keyitdev/sddm-astronaut-theme)
 
 ## License
 
-Feel free to use and modify as needed.
+Feel free to use and modify as needed (btw tag me, i want to see the edits).
