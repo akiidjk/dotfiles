@@ -3,9 +3,7 @@ set -eu
 
 WALL=$1
 echo "setting $WALL as wallpaper"
-hyprctl hyprpaper unload all
-hyprctl hyprpaper preload "$WALL"
-hyprctl hyprpaper wallpaper ", $WALL"
+awww img $WALL --transition-type wipe
 echo "set $WALL as wallpaper sucessfuly"
 
 
@@ -17,4 +15,3 @@ if command -v wal >/dev/null 2>&1; then
 else
     echo "pywal not installed, skipping"
 fi
-
