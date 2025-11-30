@@ -27,9 +27,8 @@ cp "$WALL" "$HOME/.current_wallpaper"
 echo "Setting wallpaper: $SELECTED_FILE"
 
 # Устанавливаем обои через hyprpaper
-hyprctl hyprpaper unload all
-hyprctl hyprpaper preload "$WALL"
-hyprctl hyprpaper wallpaper ", $WALL"
+echo "setting $WALL as wallpaper"
+awww img $WALL --transition-type wipe
 echo "Wallpaper set successfully"
 
 # Применяем pywal
