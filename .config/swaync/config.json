@@ -59,10 +59,7 @@
       "max-lines": 1,
       "text": " "
     },
-    "mpris": {
-      "image-size": 96,
-      "image-radius": 12
-    },
+    "mpris": {},
     "volume": {
       "label": "󰕾",
       "show-per-app": true,
