@@ -95,6 +95,14 @@ cp -r ~/.config/fonts/* ~/.local/share/fonts/
 fc-cache -fv
 ```
 
+### Hyprshare Installation (Optional)
+Not required, but if you are interest to bluelight filter:
+
+```bash
+hyprshade install
+systemctl --user enable --now hyprshade.timer
+```
+
 ### Hyprland Installation
 For a complete Hyprland setup, you can use JaKooLit's script:
 ```bash
