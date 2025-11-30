@@ -122,7 +122,7 @@ chmod +x install.sh
 - **yazi/** - Terminal file manager config
 - **zed/** - Zed editor configuration
 
-> **Warning**
+> [!Warning]
 > 
 > The Neovim (`nvim/`) configuration is currently **broken** and may not work as expected.
 
