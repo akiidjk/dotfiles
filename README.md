@@ -134,7 +134,7 @@ xdg-settings set default-web-browser zen-browser.desktop
   - import your bookmarks and settings from your previous browser.
   - customize Zen Browser settings to your preference.
   - import zen mods from .config/.zen/zen-mods-export.json
-  
+
 
 
 ## Setup default mime apps
@@ -189,6 +189,33 @@ xdg-mime default zed.desktop text/css
 xdg-mime default zed.desktop text/html
 ```
 
+## Alias Reference (`.zshrc`)
+
+This section explains the custom shell aliases defined in [`.zshrc`](./dotfiles/.zshrc). These aliases are designed to speed up common tasks and improve your terminal workflow.
+
+| Alias           | Command / Description                                                                                   |
+|-----------------|-------------------------------------------------------------------------------------------------------|
+| `ls`            | `eza --icons` — List files with icons (replacement for `ls`)                                          |
+| `ll`            | `eza -al --icons` — List all files (including hidden) in long format with icons                       |
+| `ltr`           | `eza -a --tree --level=1 --icons` — Tree view of files/folders, one level deep, with icons            |
+| `c`             | `clear` — Clear the terminal                                                                          |
+| `cat`           | `bat` — Show file contents with syntax highlighting and paging (replacement for `cat`)                |
+| `activate`      | `source ~/.venv/bin/activate` — Activate Python virtual environment                                   |
+| `vimage`        | `kitty +kitten icat` — Display images directly in Kitty terminal                                      |
+| `cpu`           | `auto-cpufreq --stats` — Show CPU frequency and stats                                                 |
+| `docker-start`  | `sudo systemctl start docker.service` — Start Docker daemon                                           |
+| `docker-stop`   | `sudo systemctl stop docker.service` — Stop Docker daemon                                             |
+| `docker-status` | `sudo systemctl status docker.service` — Show Docker service status                                   |
+| `start-vpn`     | `sudo openvpn --config <path_to_config> --auth-user-pass <path_to_creds>` — Start VPN connection      |
+| `stop-vpn`      | `sudo killall openvpn` — Stop all OpenVPN processes                                                   |
+| `upgradesys`    | `~/WorkSpace/Utils/scripts/upgrade_sys.sh` — Run system upgrade script                                |
+| `cleansys`      | `~/WorkSpace/Utils/scripts/clean.sh` — Run system cleanup script                                      |
+| `webtemplate`   | `python3 ~/WorkSpace/Utils/scripts/webtemplate/main.py` — Generate a web project template             |
+| `webup`         | `python3 -m http.server 6969` — Start a local web server on port 6969                                 |
+| `pymain`        | Create a Python `main.py` template with a main function                                               |
+
+See [`.zshrc`](./dotfiles/.zshrc) for the full list and details.
+
 ## Configuration Structure
 
 - **swaync/** - Notification daemon and notification center configuration
@@ -215,11 +242,6 @@ xdg-mime default zed.desktop text/html
 > The Neovim (`nvim/`) configuration is currently **broken** and may not work as expected.
 
 ## Post-Installation
-
-### Set up user directories
-```bash
-xdg-user-dirs-update
-```
 
 ### Start Hyprland
 ```bash
