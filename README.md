@@ -4,6 +4,18 @@ Personal Dotfiles Configuration
 ## Overview
 This repository contains my personal configuration files for Hyprland and various applications on Arch Linux.
 
+## Showcase
+
+<video width="630" height="300" src="https://www.youtube.com/embed/qNrk3T5tkvM"></video>
+
+
+![Hyprland setup with multiple terminals](assets/img1.png)
+![Custom status bar showcasing Waybar](assets/img2.png)
+![Zen Browser in dark mode](assets/img3.png)
+![Zen Browser in dark mode](assets/img4.png)
+![Screenshot of a themed terminal session](assets/img5.png)
+
+
 ## Dependencies
 
 ### Core System
