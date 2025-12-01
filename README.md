@@ -6,8 +6,7 @@ This repository contains my personal configuration files for Hyprland and variou
 
 ## Showcase
 
-<video width="630" height="300" src="https://www.youtube.com/embed/qNrk3T5tkvM"></video>
-
+![Watch the video](assets/video1.gif)
 
 ![Hyprland setup with multiple terminals](assets/img1.png)
 ![Custom status bar showcasing Waybar](assets/img2.png)
