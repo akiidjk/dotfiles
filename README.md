@@ -140,7 +140,7 @@ xdg-settings set default-web-browser zen-browser.desktop
 ## Setup default mime apps
 ```bash
 # PDF → Zen Browser
-xdg-mime default zen-browser.desktop application/pdf
+xdg-mime default zen.desktop application/pdf
 
 # Images → qimgv
 xdg-mime default qimgv.desktop image/jpeg
@@ -149,7 +149,7 @@ xdg-mime default qimgv.desktop image/webp
 xdg-mime default qimgv.desktop image/gif
 
 # SVG → Zen Browser
-xdg-mime default zen-browser.desktop image/svg+xml
+xdg-mime default zen.desktop image/svg+xml
 
 # Video → mpv
 xdg-mime default mpv.desktop video/mp4
