@@ -17,6 +17,15 @@ This repository contains my personal configuration files for Hyprland and variou
 
 ## Dependencies
 
+### Hyprland Installation
+For a complete Hyprland setup, you can use JaKooLit's script:
+```bash
+git clone --depth=1 https://github.com/JaKooLit/Arch-Hyprland.git
+cd Arch-Hyprland
+chmod +x install.sh
+./install.sh
+```
+
 ### Core System
 ```bash
 # Update system first
@@ -112,15 +121,6 @@ Not required, but if you are interest to bluelight filter:
 ```bash
 hyprshade install
 systemctl --user enable --now hyprshade.timer
-```
-
-### Hyprland Installation
-For a complete Hyprland setup, you can use JaKooLit's script:
-```bash
-git clone --depth=1 https://github.com/JaKooLit/Arch-Hyprland.git
-cd Arch-Hyprland
-chmod +x install.sh
-./install.sh
 ```
 
 ### Zen Browser setup
