@@ -17,6 +17,16 @@ This repository contains my personal configuration files for Hyprland and variou
 
 ## Dependencies
 
+> [!Warning]
+>
+> I haven’t verified that every dependency is listed and i have not tested for now this on a clean distro, so some may still be missing.
+> Also note that some packages may have additional dependencies that need to be installed separately.
+> Please refer to the official documentation of each package for more details.
+> This setup is tailored for Arch Linux; adjustments may be needed for other distributions.
+> Some packages are installed via AUR, so ensure you have an AUR helper like `yay` installed.
+> This setup assumes you have basic knowledge of Linux command line and package management.
+> Make sure to back up your existing configuration files before applying these dotfiles.
+
 ### Hyprland Installation
 For a complete Hyprland setup, you can use JaKooLit's script:
 ```bash
