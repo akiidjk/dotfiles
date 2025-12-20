@@ -48,6 +48,7 @@ alias cat='bat'
 alias activate='source ~/.venv/bin/activate'
 alias vimage='kitty +kitten icat'
 alias cpu='auto-cpufreq --stats'
+alias zed='zeditor'
 
 alias docker-start='sudo systemctl start docker.service'
 alias docker-stop='sudo systemctl stop docker.service'
@@ -61,6 +62,7 @@ alias cleansys='~/WorkSpace/Utils/scripts/clean.sh'
 alias webtemplate='python3 ~/WorkSpace/Utils/scripts/webtemplate/main.py'
 alias webup='python3 -m http.server 6969'
 alias pymain='echo -e "\n\ndef main():\n    pass\n\nif __name__ == \"__main__\":\n    main()" > main.py'
+alias togglemirror='~/WorkSpace/Utils/scripts/toggle_mirror.sh'
 
 # Set-up FZF key bindings (CTRL R for fuzzy history finder)
 source <(fzf --zsh)
