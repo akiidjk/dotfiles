@@ -2,7 +2,7 @@
 Personal Dotfiles Configuration
 
 ## Overview
-This repository contains my personal configuration files for Hyprland and various applications on Arch Linux.
+This repository contains my personal configuration files for Hyprland on Arch.
 
 ## Showcase
 
