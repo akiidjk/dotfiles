@@ -64,6 +64,14 @@ alias webup='python3 -m http.server 6969'
 alias pymain='echo -e "\n\ndef main():\n    pass\n\nif __name__ == \"__main__\":\n    main()" > main.py'
 alias togglemirror='~/WorkSpace/Utils/scripts/toggle_mirror.sh'
 
+# Alias for network forwarding wifi to ethernet
+# nmcli connection add type ethernet ifname enp3s0 con-name eth-shared ipv4.method shared ipv6.method ignore
+# nmcli connection up eth-shared
+# sudo sysctl -w net.ipv4.ip_forward=1
+
+alias up_forward='nmcli connection up eth-shared'
+alias down_forward='nmcli connection down eth-shared'
+
 # Set-up FZF key bindings (CTRL R for fuzzy history finder)
 source <(fzf --zsh)
 HISTFILE=~/.zsh_history
