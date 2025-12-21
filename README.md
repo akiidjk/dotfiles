@@ -18,7 +18,6 @@ This repository contains my personal configuration files for Hyprland and variou
 
 > [!Warning]
 >
-> I haven’t verified that every dependency is listed and i have not tested for now this on a clean distro, so some may still be missing.
 > Also note that some packages may have additional dependencies that need to be installed separately.
 > Please refer to the official documentation of each package for more details.
 > This setup is tailored for Arch Linux; adjustments may be needed for other distributions.
@@ -27,10 +26,10 @@ This repository contains my personal configuration files for Hyprland and variou
 > Make sure to back up your existing configuration files before applying these dotfiles.
 
 ### Hyprland Installation
-For a complete Hyprland setup, you can use JaKooLit's script:
+For a complete Hyprland setup, you can use JaKooLit's script (raccomandend for this dotfiles):
 ```bash
-git clone --depth=1 https://github.com/JaKooLit/Arch-Hyprland.git
-cd Arch-Hyprland
+git clone --depth=1 https://github.com/JaKooLit/Arch-Hyprland.git ~/Arch-Hyprland
+cd ~/Arch-Hyprland
 chmod +x install.sh
 ./install.sh
 ```
@@ -41,7 +40,7 @@ chmod +x install.sh
 sudo pacman -Syu
 
 # Install Hyprland and core dependencies
-sudo pacman -S hyprland hyprpaper hypridle hyprlock hyprshade xdg-desktop-portal-hyprland
+sudo pacman -S hyprland hyprpaper hypridle hyprlock xdg-desktop-portal-hyprland
 
 # Display and graphics
 sudo pacman -S wl-clipboard wl-clip-persist cliphist grim slurp swappy
@@ -65,43 +64,31 @@ sudo pacman -S waybar
 sudo pacman -S vim neovim zed
 
 # Color management
-sudo pacman -S python-pywal
-
-# Browser
-yay -S zen-browser
+yay -S python-pywal16
 
 # Other utilities
-sudo pacman -S fastfetch brightnessctl playerctl pamixer wofi fzf ripgrep
-```
+sudo pacman -S fastfetch brightnessctl playerctl pamixer wofi fzf ripgrep bat
+```# Create fonts directory if it doesn't exist
+mkdir -p ~/.local/share/fonts
+
+# Copy custom fonts to system fonts directory
+cp -r ~/.config/fonts/* ~/.local/share/fonts/
 
 ### AUR Packages
 ```bash
 # Install yay (AUR helper) if not installed
-sudo pacman -S --needed git base-devel
-git clone https://aur.archlinux.org/yay.git
-cd yay
-makepkg -si
-cd ..
-rm -rf yay
+
+# Browser
+yay -S zen-browser-bin
 
 # Install AUR packages
-yay -S hyprpicker
-yay -S vicinae-bin  # If using vicinae
-yay -S cava  # Audio visualizer (if needed)
+yay -S hyprpicker vicinae-bin hyprshade cava awww
 ```
 
 ### Fonts Installation
 ```bash
 # Install font dependencies
 sudo pacman -S fontconfig
-
-# Create fonts directory if it doesn't exist
-mkdir -p ~/.local/share/fonts
-
-# Copy custom fonts to system fonts directory
-cp -r ~/.config/fonts/* ~/.local/share/fonts/
-
-# Or install via package manager
 sudo pacman -S ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-mono
 
 # Refresh font cache
@@ -113,18 +100,25 @@ fc-cache -fv
 ### Quick Install
 ```bash
 # Clone the repository
-git clone https://github.com/akiidjk/dotfiles.git ~/.config
+git clone https://github.com/akiidjk/dotfiles.git
+
+# Copy dotfiles to home directory
+cd dotfiles
+cp -r . ~/
 
 # Make scripts executable
+chmod +x ~/scripts/*.sh
 chmod +x ~/.config/hypr/scripts/*.sh
+chmod +x ~/.config/hypr/scripts/hyprpicker
 chmod +x ~/.config/hypr/scripts/wallpapers/*.sh
 
 # Install fonts
+mkdir -p ~/.local/share/fonts
 cp -r ~/.config/fonts/* ~/.local/share/fonts/
 fc-cache -fv
 ```
 
-### Hyprshare Installation (Optional)
+### Hyprshade Installation (Optional)
 Not required, but if you are interest to bluelight filter:
 
 ```bash
@@ -145,8 +139,16 @@ xdg-settings set default-web-browser zen-browser.desktop
   - import zen mods from .config/.zen/zen-mods-export.json
 
 
+## Post install
 
-## Setup default mime apps
+Change some paths (required for pywal):
+```bash
+grep -rl '/home/user' ~/.config | while read file; do
+    awk '{gsub("/home/user","'"$HOME"'"); print}' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+done
+```
+
+### Setup default mime apps
 ```bash
 # PDF → Zen Browser
 xdg-mime default zen.desktop application/pdf
@@ -217,9 +219,9 @@ This section explains the custom shell aliases defined in [`.zshrc`](./dotfiles/
 | `docker-status` | `sudo systemctl status docker.service` — Show Docker service status                                   |
 | `start-vpn`     | `sudo openvpn --config <path_to_config> --auth-user-pass <path_to_creds>` — Start VPN connection      |
 | `stop-vpn`      | `sudo killall openvpn` — Stop all OpenVPN processes                                                   |
-| `upgradesys`    | `~/WorkSpace/Utils/scripts/upgrade_sys.sh` — Run system upgrade script                                |
-| `cleansys`      | `~/WorkSpace/Utils/scripts/clean.sh` — Run system cleanup script                                      |
-| `webtemplate`   | `python3 ~/WorkSpace/Utils/scripts/webtemplate/main.py` — Generate a web project template             |
+| `upgradesys`    | `~/scripts/upgrade_sys.sh` — Run system upgrade script                                |
+| `cleansys`      | `~//scripts/clean.sh` — Run system cleanup script                                      |
+| `webtemplate`   | `python3 ~/scripts/webtemplate/main.py` — Generate a web project template             |
 | `webup`         | `python3 -m http.server 6969` — Start a local web server on port 6969                                 |
 | `pymain`        | Create a Python `main.py` template with a main function                                               |
 

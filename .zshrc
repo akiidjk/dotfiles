@@ -83,22 +83,4 @@ setopt appendhistory
 export FZF_DEFAULT_OPTS="--ansi --preview-window 'right:60%' --preview 'bat --color=always --style=header,grid --line-range :300 {}'"
 
 # Path
-export PATH=$PATH:/home/akiidjk/.cargo/bin
-
-export PATH="$PATH:$HOME/go/bin"
-export PATH="$PATH:/home/akiidjk/.modular/bin"
 export XDG_CONFIG_HOME="$HOME/.config"
-
-#. "$HOME/.local/bin/env"
-. "$HOME/.cargo/env"
-
-# bun completions
-[ -s "/home/akiidjk/.bun/_bun" ] && source "/home/akiidjk/.bun/_bun"
-
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-
-TIMEFMT=$'\n================\nCPU\t%P\nuser\t%*U\nsystem\t%*S\ntotal\t%*E'
-
-[ -f "/home/akiidjk/.ghcup/env" ] && . "/home/akiidjk/.ghcup/env" # ghcup-env
