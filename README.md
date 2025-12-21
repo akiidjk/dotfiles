@@ -26,7 +26,7 @@ This repository contains my personal configuration files for Hyprland and variou
 > Make sure to back up your existing configuration files before applying these dotfiles.
 
 ### Hyprland Installation
-For a complete Hyprland setup, you can use JaKooLit's script (raccomandend for this dotfiles):
+For a complete Hyprland setup, you can use JaKooLit's script (raccomanded for this dotfiles):
 ```bash
 git clone --depth=1 https://github.com/JaKooLit/Arch-Hyprland.git ~/Arch-Hyprland
 cd ~/Arch-Hyprland
@@ -40,7 +40,7 @@ chmod +x install.sh
 sudo pacman -Syu
 
 # Install Hyprland and core dependencies
-sudo pacman -S hyprland hyprpaper hypridle hyprlock xdg-desktop-portal-hyprland
+sudo pacman -S hyprland hypridle hyprlock xdg-desktop-portal-hyprland
 
 # Display and graphics
 sudo pacman -S wl-clipboard wl-clip-persist cliphist grim slurp swappy
@@ -68,11 +68,6 @@ yay -S python-pywal16
 
 # Other utilities
 sudo pacman -S fastfetch brightnessctl playerctl pamixer wofi fzf ripgrep bat
-```# Create fonts directory if it doesn't exist
-mkdir -p ~/.local/share/fonts
-
-# Copy custom fonts to system fonts directory
-cp -r ~/.config/fonts/* ~/.local/share/fonts/
 
 ### AUR Packages
 ```bash
@@ -95,7 +90,7 @@ sudo pacman -S ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols ttf-nerd-fonts-sym
 fc-cache -fv
 ```
 
-## Installation
+## Installation dotfiles
 
 ### Quick Install
 ```bash
