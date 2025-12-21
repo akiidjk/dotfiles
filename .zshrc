@@ -56,13 +56,13 @@ alias docker-status='sudo systemctl status docker.service'
 
 alias start-vpn='sudo openvpn --config <path_to_config> --auth-user-pass <path_to_creds>'
 alias stop-vpn='sudo killall openvpn'
-alias upgradesys='~/WorkSpace/Utils/scripts/upgrade_sys.sh'
-alias cleansys='~/WorkSpace/Utils/scripts/clean.sh'
+alias upgradesys='~/scripts/upgrade_sys.sh'
+alias cleansys='~/scripts/clean.sh'
 
-alias webtemplate='python3 ~/WorkSpace/Utils/scripts/webtemplate/main.py'
+alias webtemplate='python3 ~/scripts/webtemplate/main.py'
 alias webup='python3 -m http.server 6969'
 alias pymain='echo -e "\n\ndef main():\n    pass\n\nif __name__ == \"__main__\":\n    main()" > main.py'
-alias togglemirror='~/WorkSpace/Utils/scripts/toggle_mirror.sh'
+alias togglemirror='~/scripts/toggle_mirror.sh'
 
 # Alias for network forwarding wifi to ethernet
 # nmcli connection add type ethernet ifname enp3s0 con-name eth-shared ipv4.method shared ipv6.method ignore

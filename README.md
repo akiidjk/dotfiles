@@ -14,7 +14,6 @@ This repository contains my personal configuration files for Hyprland and variou
 ![Zen Browser in dark mode](assets/img4.png)
 ![Screenshot of a themed terminal session](assets/img5.png)
 
-
 ## Dependencies
 
 > [!Warning]
@@ -225,6 +224,25 @@ This section explains the custom shell aliases defined in [`.zshrc`](./dotfiles/
 | `pymain`        | Create a Python `main.py` template with a main function                                               |
 
 See [`.zshrc`](./dotfiles/.zshrc) for the full list and details.
+
+## Some utility scripts I use in my configuration
+
+This repository includes several utility scripts and shell aliases to make daily tasks easier and more efficient. Most scripts are located in `~/scripts/` or `~/.config/hypr/scripts/`.
+
+### Aliases
+
+Here are some useful aliases defined in my shell configuration:
+
+| Alias         | Command                                                                                                                         | Description                                               |
+|---------------|---------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|
+| upgradesys    | `~/scripts/upgrade_sys.sh`                                                                                                      | Upgrade the system packages                               |
+| cleansys      | `~/scripts/clean.sh`                                                                                                            | Clean unnecessary files from the system                   |
+| webtemplate   | `python3 ~/scripts/webtemplate/main.py`                                                                                         | Generate a basic web template                             |
+| togglemirror  | `~/scripts/toggle_mirror.sh`                                                                                                    | Toggle display mirror                                     |
+| webup         | `python3 -m http.server 6969`                                                                                                   | Start a simple web server on port 6969                    |
+| pymain        | `echo -e "\n\ndef main():\n    pass\n\nif __name__ == \"__main__\":\n    main()" > main.py`                                    | Create a basic Python main function template in main.py   |
+| mp4ToMov      | `~/scripts/mp4ToMov.sh`                                                                                                         | Convert MP4 files to MOV format                           |
+| movToMp4      | `~/scripts/movToMp4.sh`                                                                                                         | Convert MOV files to MP4 format                           |
 
 ## Configuration Structure
 
