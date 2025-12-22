@@ -215,11 +215,6 @@ This section explains the custom shell aliases defined in [`.zshrc`](./dotfiles/
 | `docker-status` | `sudo systemctl status docker.service` — Show Docker service status                                   |
 | `start-vpn`     | `sudo openvpn --config <path_to_config> --auth-user-pass <path_to_creds>` — Start VPN connection      |
 | `stop-vpn`      | `sudo killall openvpn` — Stop all OpenVPN processes                                                   |
-| `upgradesys`    | `~/scripts/upgrade_sys.sh` — Run system upgrade script                                |
-| `cleansys`      | `~//scripts/clean.sh` — Run system cleanup script                                      |
-| `webtemplate`   | `python3 ~/scripts/webtemplate/main.py` — Generate a web project template             |
-| `webup`         | `python3 -m http.server 6969` — Start a local web server on port 6969                                 |
-| `pymain`        | Create a Python `main.py` template with a main function                                               |
 
 See [`.zshrc`](./dotfiles/.zshrc) for the full list and details.
 
@@ -233,14 +228,14 @@ Here are some useful aliases defined in my shell configuration:
 
 | Alias         | Command                                                                                                                         | Description                                               |
 |---------------|---------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|
-| upgradesys    | `~/scripts/upgrade_sys.sh`                                                                                                      | Upgrade the system packages                               |
-| cleansys      | `~/scripts/clean.sh`                                                                                                            | Clean unnecessary files from the system                   |
-| webtemplate   | `python3 ~/scripts/webtemplate/main.py`                                                                                         | Generate a basic web template                             |
-| togglemirror  | `~/scripts/toggle_mirror.sh`                                                                                                    | Toggle display mirror                                     |
-| webup         | `python3 -m http.server 6969`                                                                                                   | Start a simple web server on port 6969                    |
-| pymain        | `echo -e "\n\ndef main():\n    pass\n\nif __name__ == \"__main__\":\n    main()" > main.py`                                    | Create a basic Python main function template in main.py   |
-| mp4ToMov      | `~/scripts/mp4ToMov.sh`                                                                                                         | Convert MP4 files to MOV format                           |
-| movToMp4      | `~/scripts/movToMp4.sh`                                                                                                         | Convert MOV files to MP4 format                           |
+| `upgradesys`    | `~/scripts/upgrade_sys.sh`                                                                                                      | Upgrade the system packages                               |
+| `cleansys`      | `~/scripts/clean.sh`                                                                                                            | Clean unnecessary files from the system                   |
+| `webtemplate`   | `python3 ~/scripts/webtemplate/main.py`                                                                                         | Generate a basic web template                             |
+| `togglemirror`  | `~/scripts/toggle_mirror.sh`                                                                                                    | Toggle display mirror                                     |
+| `webup`         | `python3 -m http.server 6969`                                                                                                   | Start a simple web server on port 6969                    |
+| `pymain`        | `echo -e "\n\ndef main():\n    pass\n\nif __name__ == \"__main__\":\n    main()" > main.py`                                    | Create a basic Python main function template in main.py   |
+| `mp4ToMov`      | `~/scripts/mp4ToMov.sh`                                                                                                         | Convert MP4 files to MOV format                           |
+| `movToMp4`      | `~/scripts/movToMp4.sh`                                                                                                         | Convert MOV files to MP4 format                           |
 
 ## Configuration Structure
 
