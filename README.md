@@ -6,7 +6,8 @@ This repository contains my personal configuration files for Hyprland on Arch.
 
 ## Showcase
 
-[Video showcase](https://youtu.be/PYrdxSZ8US0)
+https://github.com/user-attachments/assets/9a608031-0263-4c9c-b976-111d3118ebb8
+
 
 ![Hyprland setup with multiple terminals](assets/img1.png)
 ![Custom status bar showcasing Waybar](assets/img2.png)
