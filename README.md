@@ -6,7 +6,9 @@ This repository contains my personal configuration files for Hyprland on Arch.
 
 ## Showcase
 
-https://github.com/user-attachments/assets/9a608031-0263-4c9c-b976-111d3118ebb8
+
+https://github.com/user-attachments/assets/62f05d78-2d2d-497f-88f0-93c0326aff3a
+
 
 
 ![Hyprland setup with multiple terminals](assets/img1.png)
