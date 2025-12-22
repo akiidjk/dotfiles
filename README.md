@@ -10,10 +10,6 @@ https://github.com/user-attachments/assets/9a608031-0263-4c9c-b976-111d3118ebb8
 
 
 ![Hyprland setup with multiple terminals](assets/img1.png)
-![Custom status bar showcasing Waybar](assets/img2.png)
-![Zen Browser in dark mode](assets/img3.png)
-![Zen Browser in dark mode](assets/img4.png)
-![Screenshot of a themed terminal session](assets/img5.png)
 
 ## Dependencies
 
@@ -34,6 +30,8 @@ cd ~/Arch-Hyprland
 chmod +x install.sh
 ./install.sh
 ```
+
+![Custom status bar showcasing Waybar](assets/img2.png)
 
 ### Core System
 ```bash
@@ -134,6 +132,8 @@ xdg-settings set default-web-browser zen-browser.desktop
   - customize Zen Browser settings to your preference.
   - import zen mods from .config/.zen/zen-mods-export.json
 
+![Zen Browser in dark mode](assets/img3.png)
+![Zen Browser in dark mode](assets/img4.png)
 
 ## Post install
 
@@ -236,6 +236,8 @@ Here are some useful aliases defined in my shell configuration:
 | `pymain`        | `echo -e "\n\ndef main():\n    pass\n\nif __name__ == \"__main__\":\n    main()" > main.py`                                    | Create a basic Python main function template in main.py   |
 | `mp4ToMov`      | `~/scripts/mp4ToMov.sh`                                                                                                         | Convert MP4 files to MOV format                           |
 | `movToMp4`      | `~/scripts/movToMp4.sh`                                                                                                         | Convert MOV files to MP4 format                           |
+
+![Screenshot of a themed terminal session](assets/img5.png)
 
 ## Configuration Structure
 
