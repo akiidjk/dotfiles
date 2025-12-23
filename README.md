@@ -1,4 +1,4 @@
-# Dotfiles
+# Hyprland Dotfiles for Arch based distro
 Personal Dotfiles Configuration
 
 ## Overview
