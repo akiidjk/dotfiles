@@ -89,8 +89,10 @@
           "update-command": ""
         },
         {
-          "label": "",
-          "command": "obs"
+          "label": "",
+          "command": "bash -c ~/.config/hypr/scripts/nightmode.sh",
+          "type": "toggle",
+          "update-command": ""
         },
         {
           "label": "",

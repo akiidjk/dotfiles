@@ -49,6 +49,9 @@ sudo pacman -S wl-clipboard wl-clip-persist cliphist grim slurp swappy
 # Audio
 sudo pacman -S pipewire pipewire-pulse pipewire-alsa wireplumber pavucontrol
 
+# Blue light filter
+sudo pacman -S hyprsunset
+
 # Notifications
 sudo pacman -S swaync libnotify
 
@@ -78,7 +81,16 @@ sudo pacman -S fastfetch brightnessctl playerctl pamixer wofi fzf ripgrep bat
 yay -S zen-browser-bin
 
 # Install AUR packages
-yay -S hyprpicker vicinae-bin hyprshade cava awww
+yay -S hyprpicker vicinae-bin cava awww
+```
+
+### Hyprplugin download
+```bash
+hyprpm update
+hyprpm add https://github.com/hyprwm/hyprland-plugins
+hyprpm enable hyprexpo
+hyprpm add https://github.com/virtcode/hypr-dynamic-cursors
+hyprpm enable dynamic-cursors
 ```
 
 ### Fonts Installation
@@ -311,6 +323,8 @@ sudo systemctl start sddm
 | `SUPER + J` | Toggle split direction |
 | `SUPER + Arrow Keys` | Move focus between windows |
 | `SUPER + SHIFT + Arrow Keys` | Resize active window |
+| `SUPER + G` | Toggle of HyprExpo View |
+| `SUPER + X` | Select workspace focused in HyprExpo view |
 
 ### Workspace Management
 | Keybind | Action |
@@ -336,6 +350,7 @@ sudo systemctl start sddm
 | `XF86AudioMicMute` | Toggle microphone mute |
 | `XF86MonBrightnessUp` | Increase brightness by 30% |
 | `XF86MonBrightnessDown` | Decrease brightness by 30% |
+| `SUPERSHIFT + M` | Enable night-mode |
 
 For the complete keybinding configuration, see `~/.config/hypr/keybinds.conf`
 
