@@ -119,14 +119,6 @@ cp -r ~/.config/fonts/* ~/.local/share/fonts/
 fc-cache -fv
 ```
 
-### Hyprshade Installation (Optional)
-Not required, but if you are interest to bluelight filter:
-
-```bash
-hyprshade install
-systemctl --user enable --now hyprshade.timer
-```
-
 ### Zen Browser setup
 
 Once installed via yay, you can set Zen Browser as your default browser:
