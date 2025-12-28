@@ -1,17 +1,10 @@
-# Hyprland Dotfiles for Arch based distro
-Personal Dotfiles Configuration
-
-## Overview
-This repository contains my personal configuration files for Hyprland on Arch.
-
-## Showcase
-
-
 https://github.com/user-attachments/assets/62f05d78-2d2d-497f-88f0-93c0326aff3a
 
+# Hyprland Dotfiles for Arch based distro
+This repository contains my personal configuration files for Hyprland on Arch.
 
+<img width="1920" height="1080" alt="img1" src="https://github.com/user-attachments/assets/5dc2aa3e-436f-4930-ad90-bf7a8b87f3b6" />
 
-![Hyprland setup with multiple terminals](assets/img1.png)
 
 ## Dependencies
 
@@ -33,7 +26,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-![Custom status bar showcasing Waybar](assets/img2.png)
+<img width="1919" height="1080" alt="img2" src="https://github.com/user-attachments/assets/4202681a-0c3f-46de-9b15-c2c2554fbe16" />
 
 ### Core System
 ```bash
@@ -146,8 +139,11 @@ xdg-settings set default-web-browser zen-browser.desktop
   - customize Zen Browser settings to your preference.
   - import zen mods from .config/.zen/zen-mods-export.json
 
-![Zen Browser in dark mode](assets/img3.png)
-![Zen Browser in dark mode](assets/img4.png)
+<img width="1919" height="1078" alt="image" src="https://github.com/user-attachments/assets/88f133a2-45ae-4d2a-95f5-6a4537753ef9" />
+
+
+<img width="1918" height="1080" alt="image" src="https://github.com/user-attachments/assets/4063159a-4010-4fd1-b877-88e3917ef7af" />
+
 
 ## Post install
 
@@ -251,7 +247,7 @@ Here are some useful aliases defined in my shell configuration:
 | `mp4ToMov`      | `~/scripts/mp4ToMov.sh`                                                                                                         | Convert MP4 files to MOV format                           |
 | `movToMp4`      | `~/scripts/movToMp4.sh`                                                                                                         | Convert MOV files to MP4 format                           |
 
-![Screenshot of a themed terminal session](assets/img5.png)
+<img width="1692" height="960" alt="img5" src="https://github.com/user-attachments/assets/0140de84-fa86-487f-8d7d-8a5215fcf792" />
 
 ## Configuration Structure
 
@@ -353,6 +349,9 @@ sudo systemctl start sddm
 | `SUPERSHIFT + M` | Enable night-mode |
 
 For the complete keybinding configuration, see `~/.config/hypr/keybinds.conf`
+
+<img width="1919" height="1080" alt="image" src="https://github.com/user-attachments/assets/b1737917-ce02-4572-8761-3bb25ea17904" />
+
 
 ## Resources
 
