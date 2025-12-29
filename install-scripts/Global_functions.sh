@@ -10,8 +10,8 @@ if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
   exit 1
 fi
 
-# Expect logger.sh to set LOG_FILE and the color / LOG helper functions.
-: "${LOG_FILE:?LOG_FILE is not set by logger.sh}"
+# Set the name of the log file to include the current date and time
+LOG_FILE="Install-Logs/install-$(date +%d-%H%M%S)_global.log"
 
 # Create Directory for Install Logs
 if [ ! -d Install-Logs ]; then
