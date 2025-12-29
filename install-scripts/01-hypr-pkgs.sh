@@ -37,6 +37,7 @@ hypr_package=(
   curl
   grim
   gvfs
+  cmake
   gvfs-mtp
   hyprpolkitagent
   imagemagick

@@ -79,9 +79,8 @@ yay -S hyprpicker vicinae-bin cava awww
 
 ### Hyprplugin download
 ```bash
+sudo pacman -S cmake # Required for hyprpm
 hyprpm update
-hyprpm add https://github.com/hyprwm/hyprland-plugins
-hyprpm enable hyprexpo
 hyprpm add https://github.com/virtcode/hypr-dynamic-cursors
 hyprpm enable dynamic-cursors
 ```
@@ -311,8 +310,6 @@ sudo systemctl start sddm
 | `SUPER + J` | Toggle split direction |
 | `SUPER + Arrow Keys` | Move focus between windows |
 | `SUPER + SHIFT + Arrow Keys` | Resize active window |
-| `SUPER + G` | Toggle of HyprExpo View |
-| `SUPER + X` | Select workspace focused in HyprExpo view |
 
 ### Workspace Management
 | Keybind | Action |

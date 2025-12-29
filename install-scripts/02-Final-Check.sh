@@ -9,6 +9,7 @@ packages=(
   rofi-wayland
   imagemagick
   swaync
+  cmake
   wallust
   waybar
   wl-clipboard
