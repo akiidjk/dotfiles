@@ -15,14 +15,14 @@ nvidia_pkg=(
   libva-nvidia-driver
 )
 
+if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
+  echo "Failed to source logger.sh"
+  exit 1
+fi
+
 # Set the name of the log file to include the current date and time
 LOG_FILE="Install-Logs/install-$(date +%d-%H%M%S)_nvidia.log"
 SET_LOG_FILE "$LOG_FILE"
-
-if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
-  ERROR "Failed to source logger.sh"
-  exit 1
-fi
 
 # Source the global functions script
 if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then

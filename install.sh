@@ -2,15 +2,16 @@
 # https://github.com/JaKooLit + a little bit of @akiidjk
 
 clear
-# Set the name of the log file to include the current date and time
-LOG_FILE="Install-Logs/01-Hyprland-Install-Scripts-$(date +%d-%H%M%S).log"
-SET_LOG_FILE "$LOG_FILE"
 
 # Source the logger script
 if ! source "$(dirname "$(readlink -f "$0")")/install-scripts/logger.sh"; then
-	ERROR "Failed to source logger.sh"
+	echo "Failed to source logger.sh"
 	exit 1
 fi
+
+# Set the name of the log file to include the current date and time
+LOG_FILE="Install-Logs/01-Hyprland-Install-Scripts-$(date +%d-%H%M%S).log"
+SET_LOG_FILE "$LOG_FILE"
 
 # Create Directory for Install Logs
 if [ ! -d Install-Logs ]; then
