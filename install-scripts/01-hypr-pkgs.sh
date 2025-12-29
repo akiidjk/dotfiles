@@ -46,7 +46,6 @@ hypr_package=(
   kitty
   kvantum
   libspng
-  nano
   network-manager-applet
   pamixer
   pavucontrol
