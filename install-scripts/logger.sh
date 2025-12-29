@@ -14,7 +14,7 @@ BLUE="$(tput setaf 4)"
 SKY_BLUE="$(tput setaf 6)"
 RESET="$(tput sgr0)"
 
-$LOG_FILE = ""
+LOG_FILE=""
 
 LOG(){
     echo -e "$(date '+%Y-%m-%d %H:%M:%S') $1 $2" | tee -a "$LOG_FILE"

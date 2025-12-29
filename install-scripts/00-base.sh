@@ -8,8 +8,6 @@ base=(
   findutils
 )
 
-
-
 if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
   echo "Failed to source logger.sh"
   exit 1
