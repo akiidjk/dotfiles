@@ -5,26 +5,11 @@ This repository contains my personal configuration files for Hyprland on Arch.
 
 <img width="1920" height="1080" alt="img1" src="https://github.com/user-attachments/assets/5dc2aa3e-436f-4930-ad90-bf7a8b87f3b6" />
 
-
-## Dependencies
-
-> [!Warning]
->
-> Also note that some packages may have additional dependencies that need to be installed separately.
-> Please refer to the official documentation of each package for more details.
-> This setup is tailored for Arch Linux; adjustments may be needed for other distributions.
-> Some packages are installed via AUR, so ensure you have an AUR helper like `yay` installed.
-> This setup assumes you have basic knowledge of Linux command line and package management.
-> Make sure to back up your existing configuration files before applying these dotfiles.
-
-<img width="1919" height="1080" alt="img2" src="https://github.com/user-attachments/assets/4202681a-0c3f-46de-9b15-c2c2554fbe16" />
-
 ## Quick Install
 
 > [!Warning]
 > This script do a full installation of the dotfiles and required packages included Hyprland and SDDM.
 > It will overwrite existing configuration files in your home directory.
-> IF YOU HAVE PREINSTALLED HYPRLAND, PLEASE FOLLOW THE MANUAL INSTALLATION STEPS BELOW.
 
 ```bash
 # Clone the repository
@@ -36,7 +21,21 @@ cd dotfiles
 chmod +x install.sh
 ./install.sh
 ```
+
 ## Manual Installation Steps
+
+### Dependencies
+
+> [!Warning]
+>
+> Also note that some packages may have additional dependencies that need to be installed separately.
+> Please refer to the official documentation of each package for more details.
+> This setup is tailored for Arch Linux; adjustments may be needed for other distributions.
+> Some packages are installed via AUR, so ensure you have an AUR helper like `yay` installed.
+> This setup assumes you have basic knowledge of Linux command line and package management.
+> Make sure to back up your existing configuration files before applying these dotfiles.
+
+<img width="1919" height="1080" alt="img2" src="https://github.com/user-attachments/assets/4202681a-0c3f-46de-9b15-c2c2554fbe16" />
 
 ### Core System dependencies
 ```bash
@@ -74,7 +73,8 @@ sudo pacman -S vim neovim zed
 yay -S python-pywal16
 
 # Other utilities
-sudo pacman -S fastfetch brightnessctl playerctl pamixer wofi fzf ripgrep bat
+sudo pacman -S fastfetch brightnessctl playerctl pamixer wofi fzf ripgrep bat eza
+```
 
 ### AUR Packages
 ```bash
@@ -90,8 +90,22 @@ yay -S hyprpicker vicinae-bin cava awww
 ### Fonts Installation
 ```bash
 # Install font dependencies
-sudo pacman -S fontconfig
-sudo pacman -S ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-mono
+sudo pacman -S adobe-source-code-pro-fonts \
+  noto-fonts-emoji \
+  otf-font-awesome \
+  ttf-droid \
+  ttf-fira-code \
+  ttf-fantasque-nerd \
+  ttf-jetbrains-mono \
+  ttf-jetbrains-mono-nerd \
+  ttf-nerd-fonts-symbols-mono \
+  ttf-victor-mono \
+  ttf-nerd-fonts-symbols \ 
+  noto-fonts \
+  fontconfig \
+
+mkdir -p ~/.local/share/fonts
+cp -r ~/.config/fonts/* ~/.local/share/fonts/
 
 # Refresh font cache
 fc-cache -fv
@@ -233,6 +247,13 @@ Here are some useful aliases defined in my shell configuration:
   - `keybinds.conf` - Keyboard shortcuts
   - `animations.conf` - Animation settings
   - `monitors.conf` - Monitor configuration
+  - `hypridle.conf` - Config for hypridle
+  - `autostart.conf` - All startup script and app to run
+  - `hyprcolors.conf` - Color configuration with pywal
+  - `hyprlock.conf` - Hyprlock config
+  - `vicinae.conf` - Vicinae config
+  - `plugins.conf` - Hyprland plugin config
+  - `windowrule.conf` - Window rule for hyprland
   - `scripts/` - Utility scripts
 - **kitty/** - Terminal emulator configuration
 - **nvim/** - Neovim configuration with Lazy.vim
@@ -243,12 +264,7 @@ Here are some useful aliases defined in my shell configuration:
 - **waybar/** - Status bar configuration
 - **yazi/** - Terminal file manager config
 - **zed/** - Zed editor configuration
-
-> [!Warning]
-> 
-> The Neovim (`nvim/`) configuration is currently **broken** and may not work as expected.
-
-## Post-Installation
+- **wallpaper/** - Collection of wallpaper and images used in the configuration
 
 ### Start Hyprland
 ```bash
@@ -268,6 +284,8 @@ sudo systemctl start sddm
 | `SUPER + RETURN` | Open terminal (kitty) |
 | `SUPER + SPACE` | Open launcher (vicinae) |
 | `SUPER + E` | Open file manager (nautilus) |
+| `SUPER + B` | Open browser (zen-browser) |
+| `SUPER + Z` | Open text editor (zed) |
 | `ALT + L` | Lock screen (hyprlock) |
 | `SUPER + R` | Reload Waybar |
 | `SUPER + W` | Set wallpaper + color schema |
@@ -287,6 +305,7 @@ sudo systemctl start sddm
 | Keybind | Action |
 |---------|--------|
 | `SUPER + Q` | Close active window |
+| `SUPERSHIFT + Q` | Quit Hyprland |
 | `SUPER + F` | Fullscreen (keep bar visible) |
 | `SUPER + SHIFT + F` | Fullscreen (hide everything) |
 | `SUPER + T` | Toggle floating mode |
