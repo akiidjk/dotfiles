@@ -12,39 +12,44 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Change the working directory to the parent directory of the script
 PARENT_DIR="$SCRIPT_DIR/.."
-cd "$PARENT_DIR" || { echo "${ERROR} Failed to change directory to $PARENT_DIR"; exit 1; }
+cd "$PARENT_DIR" || { echo "Failed to change directory to $PARENT_DIR"; exit 1; }
 
-# Source the global functions script
-if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
-  echo "Failed to source Global_functions.sh"
+# Source logger
+if ! source "$PARENT_DIR/logger.sh"; then
+  echo "Failed to source logger.sh"
   exit 1
 fi
 
+# Source the global functions script
+if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
+  ERROR "Failed to source Global_functions.sh"
+  exit 1
+fi
 
 # Set the name of the log file to include the current date and time
-LOG="Install-Logs/install-$(date +%d-%H%M%S)_themes.log"
-
+LOG_FILE="Install-Logs/install-$(date +%d-%H%M%S)_themes.log"
+set_log_file "$LOG_FILE"
 
 # installing engine needed for gtk themes
 for PKG1 in "${engine[@]}"; do
-    install_package "$PKG1" "$LOG"
+    install_package "$PKG1"
 done
 
 # Check if the directory exists and delete it if present
 if [ -d "GTK-themes-icons" ]; then
-    echo "$NOTE GTK themes and Icons directory exist..deleting..." 2>&1 | tee -a "$LOG"
-    rm -rf "GTK-themes-icons" 2>&1 | tee -a "$LOG"
+    NOTE "GTK themes and Icons directory exist..deleting..."
+    rm -rf "GTK-themes-icons"
 fi
 
-echo "$NOTE Cloning ${SKY_BLUE}GTK themes and Icons${RESET} repository..." 2>&1 | tee -a "$LOG"
-if git clone --depth=1 https://github.com/JaKooLit/GTK-themes-icons.git ; then
-    cd GTK-themes-icons
+NOTE "Cloning GTK themes and Icons repository..."
+if git clone --depth=1 https://github.com/JaKooLit/GTK-themes-icons.git >>"$LOG_FILE" 2>&1; then
+    cd GTK-themes-icons || { ERROR "Failed to enter GTK-themes-icons directory"; exit 1; }
     chmod +x auto-extract.sh
-    ./auto-extract.sh
+    ./auto-extract.sh >>"$LOG_FILE" 2>&1
     cd ..
-    echo "$OK Extracted GTK Themes & Icons to ~/.icons & ~/.themes directories" 2>&1 | tee -a "$LOG"
+    OK "Extracted GTK Themes & Icons to ~/.icons & ~/.themes directories"
 else
-    echo "$ERROR Download failed for GTK themes and Icons.." 2>&1 | tee -a "$LOG"
+    ERROR "Download failed for GTK themes and Icons.."
 fi
 
 printf "\n%.0s" {1..2}

@@ -15,24 +15,31 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PARENT_DIR="$SCRIPT_DIR/.."
 cd "$PARENT_DIR" || { echo "${ERROR} Failed to change directory to $PARENT_DIR"; exit 1; }
 
-# Source the global functions script
-if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
-  echo "Failed to source Global_functions.sh"
+# Source logger and global functions scripts
+if ! source "$PARENT_DIR/logger.sh"; then
+  echo "Failed to source logger.sh"
   exit 1
 fi
 
-
+if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
+  ERROR "Failed to source Global_functions.sh"
+  exit 1
+fi
 
 # Set the name of the log file to include the current date and time
-LOG="Install-Logs/install-$(date +%d-%H%M%S)_bluetooth.log"
+LOGFILE="Install-Logs/install-$(date +%d-%H%M%S)_bluetooth.log"
 
 # Bluetooth
-printf "${NOTE} Installing ${SKY_BLUE}Bluetooth${RESET} Packages...\n"
- for BLUE in "${blue[@]}"; do
-   install_package "$BLUE" "$LOG"
-  done
+NOTE "Installing Bluetooth Packages..."
+for BLUE in "${blue[@]}"; do
+  install_package "$BLUE" "$LOGFILE"
+done
 
-printf " Activating ${YELLOW}Bluetooth${RESET} Services...\n"
-sudo systemctl enable --now bluetooth.service 2>&1 | tee -a "$LOG"
+ACTION "Activating Bluetooth Services..."
+if sudo systemctl enable --now bluetooth.service >>"$LOGFILE" 2>&1; then
+  OK "Bluetooth service enabled and started"
+else
+  ERROR "Failed to enable/start bluetooth.service"
+fi
 
 printf "\n%.0s" {1..2}

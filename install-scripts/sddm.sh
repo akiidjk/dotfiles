@@ -26,23 +26,30 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Change the working directory to the parent directory of the script
 PARENT_DIR="$SCRIPT_DIR/.."
 cd "$PARENT_DIR" || {
-  echo "${ERROR} Failed to change directory to $PARENT_DIR"
+  ERROR "Failed to change directory to $PARENT_DIR"
   exit 1
 }
 
+# Source logger
+if ! source "$PARENT_DIR/logger.sh"; then
+  echo "Failed to source logger.sh"
+  exit 1
+fi
+
 # Source the global functions script
 if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
-  echo "Failed to source Global_functions.sh"
+  ERROR "Failed to source Global_functions.sh"
   exit 1
 fi
 
 # Set the name of the log file to include the current date and time
-LOG="Install-Logs/install-$(date +%d-%H%M%S)_sddm.log"
+LOG_FILE="Install-Logs/install-$(date +%d-%H%M%S)_sddm.log"
+set_log_file "$LOG_FILE"
 
 # Install SDDM and SDDM theme
-printf "${NOTE} Installing sddm and dependencies........\n"
+NOTE "Installing sddm and dependencies........"
 for package in "${sddm[@]}"; do
-  install_package "$package" "$LOG"
+  install_package "$package" "$LOG_FILE"
 done
 
 printf "\n%.0s" {1..1}
@@ -50,28 +57,36 @@ printf "\n%.0s" {1..1}
 # Check if other login managers installed and disabling its service before enabling sddm
 for login_manager in "${login[@]}"; do
   if pacman -Qs "$login_manager" >/dev/null 2>&1; then
-    sudo systemctl disable "$login_manager.service" >>"$LOG" 2>&1
-    echo "$login_manager disabled." >>"$LOG" 2>&1
+    if sudo systemctl disable "$login_manager.service" >>"$LOG_FILE" 2>&1; then
+      INFO "$login_manager disabled."
+    else
+      WARN "Failed to disable $login_manager.service"
+    fi
   fi
 done
 
 # Double check with systemctl
 for manager in "${login[@]}"; do
   if systemctl is-active --quiet "$manager" >/dev/null 2>&1; then
-    echo "$manager is active, disabling it..." >>"$LOG" 2>&1
-    sudo systemctl disable "$manager" --now >>"$LOG" 2>&1
+    WARN "$manager is active, disabling it..."
+    if ! sudo systemctl disable "$manager" --now >>"$LOG_FILE" 2>&1; then
+      ERROR "Failed to disable $manager"
+    fi
   fi
 done
 
 printf "\n%.0s" {1..1}
-printf "${INFO} Activating sddm service........\n"
-sudo systemctl enable sddm
+INFO "Activating sddm service........"
+if ! sudo systemctl enable sddm >>"$LOG_FILE" 2>&1; then
+  ERROR "Failed to enable sddm service"
+fi
 
 wayland_sessions_dir=/usr/share/wayland-sessions
 [ ! -d "$wayland_sessions_dir" ] && {
-  printf "$CAT - $wayland_sessions_dir not found, creating...\n"
-  sudo mkdir "$wayland_sessions_dir" 2>&1 | tee -a "$LOG"
+  ACTION "$wayland_sessions_dir not found, creating..."
+  if ! sudo mkdir -p "$wayland_sessions_dir" >>"$LOG_FILE" 2>&1; then
+    ERROR "Failed to create $wayland_sessions_dir"
+  fi
 }
 
 printf "\n%.0s" {1..2}
-

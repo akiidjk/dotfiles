@@ -10,6 +10,8 @@ if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
   exit 1
 fi
 
+# Expect logger.sh to set LOG_FILE and the color / LOG helper functions.
+: "${LOG_FILE:?LOG_FILE is not set by logger.sh}"
 
 # Create Directory for Install Logs
 if [ ! -d Install-Logs ]; then
@@ -25,9 +27,9 @@ show_progress() {
     local i=0
 
     tput civis
-    printf "\r${NOTE} Installing ${YELLOW}%s${RESET} ..." "$package_name"
+    NOTE "Installing ${YELLOW}${package_name}${RESET} ..."
 
-    while ps -p $pid &> /dev/null; do
+    while ps -p "$pid" &> /dev/null; do
         printf "\r${NOTE} Installing ${YELLOW}%s${RESET} %s" "$package_name" "${spin_chars[i]}"
         i=$(( (i + 1) % 10 ))
         sleep 0.3
@@ -37,26 +39,26 @@ show_progress() {
     tput cnorm
 }
 
-
-
 # Function to install packages with pacman
 install_package_pacman() {
+  local pkg="$1"
+
   # Check if package is already installed
-  if pacman -Q "$1" &>/dev/null ; then
-    echo -e "${INFO} ${MAGENTA}$1${RESET} is already installed. Skipping..."
+  if pacman -Q "$pkg" &>/dev/null ; then
+    INFO "${MAGENTA}${pkg}${RESET} is already installed. Skipping..."
   else
     # Run pacman and redirect all output to a log file
     (
-      stdbuf -oL sudo pacman -S --noconfirm "$1" 2>&1
-    ) >> "$LOG" 2>&1 &
+      stdbuf -oL sudo pacman -S --noconfirm "$pkg" 2>&1
+    ) >> "$LOG_FILE" 2>&1 &
     PID=$!
-    show_progress $PID "$1"
+    show_progress "$PID" "$pkg"
 
     # Double check if package is installed
-    if pacman -Q "$1" &>/dev/null ; then
-      echo -e "${OK} Package ${YELLOW}$1${RESET} has been successfully installed!"
+    if pacman -Q "$pkg" &>/dev/null ; then
+      OK "Package ${YELLOW}${pkg}${RESET} has been successfully installed!"
     else
-      echo -e "\n${ERROR} ${YELLOW}$1${RESET} failed to install. Please check the $LOG. You may need to install manually."
+      ERROR "${YELLOW}${pkg}${RESET} failed to install. Please check the ${LOG_FILE}. You may need to install manually."
     fi
   fi
 }
@@ -64,42 +66,45 @@ install_package_pacman() {
 ISAUR=$(command -v yay)
 # Function to install packages with either yay or paru
 install_package() {
-  if $ISAUR -Q "$1" &>> /dev/null ; then
-    echo -e "${INFO} ${MAGENTA}$1${RESET} is already installed. Skipping..."
+  local pkg="$1"
+
+  if "$ISAUR" -Q "$pkg" &>> /dev/null ; then
+    INFO "${MAGENTA}${pkg}${RESET} is already installed. Skipping..."
   else
     (
-      stdbuf -oL $ISAUR -S --noconfirm "$1" 2>&1
-    ) >> "$LOG" 2>&1 &
+      stdbuf -oL "$ISAUR" -S --noconfirm "$pkg" 2>&1
+    ) >> "$LOG_FILE" 2>&1 &
     PID=$!
-    show_progress $PID "$1"
+    show_progress "$PID" "$pkg"
 
     # Double check if package is installed
-    if $ISAUR -Q "$1" &>> /dev/null ; then
-      echo -e "${OK} Package ${YELLOW}$1${RESET} has been successfully installed!"
+    if "$ISAUR" -Q "$pkg" &>> /dev/null ; then
+      OK "Package ${YELLOW}${pkg}${RESET} has been successfully installed!"
     else
       # Something is missing, exiting to review log
-      echo -e "\n${ERROR} ${YELLOW}$1${RESET} failed to install :( , please check the install.log. You may need to install manually! Sorry I have tried :("
+      ERROR "${YELLOW}${pkg}${RESET} failed to install :( , please check the ${LOG_FILE}. You may need to install manually! Sorry I have tried :("
     fi
   fi
 }
 
 # Function to just install packages with either yay or paru without checking if installed
 install_package_f() {
+  local pkg="$1"
+
   (
-    stdbuf -oL $ISAUR -S --noconfirm "$1" 2>&1
-  ) >> "$LOG" 2>&1 &
+    stdbuf -oL "$ISAUR" -S --noconfirm "$pkg" 2>&1
+  ) >> "$LOG_FILE" 2>&1 &
   PID=$!
-  show_progress $PID "$1"
+  show_progress "$PID" "$pkg"
 
   # Double check if package is installed
-  if $ISAUR -Q "$1" &>> /dev/null ; then
-    echo -e "${OK} Package ${YELLOW}$1${RESET} has been successfully installed!"
+  if "$ISAUR" -Q "$pkg" &>> /dev/null ; then
+    OK "Package ${YELLOW}${pkg}${RESET} has been successfully installed!"
   else
     # Something is missing, exiting to review log
-    echo -e "\n${ERROR} ${YELLOW}$1${RESET} failed to install :( , please check the install.log. You may need to install manually! Sorry I have tried :("
+    ERROR "${YELLOW}${pkg}${RESET} failed to install :( , please check the ${LOG_FILE}. You may need to install manually! Sorry I have tried :("
   fi
 }
-
 
 # Function for removing packages
 uninstall_package() {
@@ -107,17 +112,19 @@ uninstall_package() {
 
   # Checking if package is installed
   if pacman -Qi "$pkg" &>/dev/null; then
-    echo -e "${NOTE} removing $pkg ..."
-    sudo pacman -R --noconfirm "$pkg" 2>&1 | tee -a "$LOG" | grep -v "error: target not found"
+    NOTE "removing ${pkg} ..."
+    sudo pacman -R --noconfirm "$pkg" 2>&1 | tee -a "$LOG_FILE" | grep -v "error: target not found"
 
     if ! pacman -Qi "$pkg" &>/dev/null; then
-      echo -e "\e[1A\e[K${OK} $pkg removed."
+      echo -e "\e[1A\e[K"
+      OK "$pkg removed."
     else
-      echo -e "\e[1A\e[K${ERROR} $pkg Removal failed. No actions required."
+      echo -e "\e[1A\e[K"
+      ERROR "$pkg Removal failed. No actions required."
       return 1
     fi
   else
-    echo -e "${INFO} Package $pkg not installed, skipping."
+    INFO "Package ${pkg} not installed, skipping."
   fi
   return 0
 }

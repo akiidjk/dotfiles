@@ -29,23 +29,26 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PARENT_DIR="$SCRIPT_DIR/.."
 cd "$PARENT_DIR" || { echo "${ERROR} Failed to change directory to $PARENT_DIR"; exit 1; }
 
-# Source the global functions script
-if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
-  echo "Failed to source Global_functions.sh"
+# Use the shared logger
+if ! source "$PARENT_DIR/install-scripts/logger.sh"; then
+  echo "Failed to source logger.sh"
   exit 1
 fi
 
-
+# Source the global functions script
+if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
+  ERROR "Failed to source Global_functions.sh"
+  exit 1
+fi
 
 # Set the name of the log file to include the current date and time
-LOG="Install-Logs/install-$(date +%d-%H%M%S)_fonts.log"
-
+LOG_FILE="Install-Logs/install-$(date +%d-%H%M%S)_fonts.log"
 
 # Installation of main components
-printf "\n%s - Installing necessary ${SKY_BLUE}fonts${RESET}.... \n" "${NOTE}"
+NOTE "Installing necessary fonts...."
 
 for PKG1 in "${fonts[@]}"; do
-  install_package "$PKG1" "$LOG"
+  install_package "$PKG1" "$LOG_FILE"
 done
 
 printf "\n%.0s" {1..2}

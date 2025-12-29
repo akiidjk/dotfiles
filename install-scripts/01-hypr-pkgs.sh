@@ -108,38 +108,43 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PARENT_DIR="$SCRIPT_DIR/.."
 cd "$PARENT_DIR" || { echo "${ERROR} Failed to change directory to $PARENT_DIR"; exit 1; }
 
-# Source the global functions script
-if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
-  echo "Failed to source Global_functions.sh"
+# Source the logger and global functions scripts
+if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
+  echo "Failed to source logger.sh"
   exit 1
 fi
 
-
+if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
+  ERROR "Failed to source Global_functions.sh"
+  exit 1
+fi
 
 # Set the name of the log file to include the current date and time
-LOG="Install-Logs/install-$(date +%d-%H%M%S)_hypr-pkgs.log"
+LOG_FILE="Install-Logs/install-$(date +%d-%H%M%S)_hypr-pkgs.log"
+SET_LOG_FILE "$LOG_FILE"
 
 # conflicting packages removal
 overall_failed=0
-printf "\n%s - ${SKY_BLUE}Removing some packages${RESET} as it conflicts with KooL's Hyprland Dots \n" "${NOTE}"
+NOTE "Removing some packages as it conflicts with KooL's Hyprland Dots"
+
 for PKG in "${uninstall[@]}"; do
-  uninstall_package "$PKG" 2>&1 | tee -a "$LOG"
-  if [ $? -ne 0 ]; then
+  uninstall_package "$PKG" 2>&1 | tee -a "$LOG_FILE"
+  if [ "${PIPESTATUS[0]}" -ne 0 ]; then
     overall_failed=1
   fi
 done
 
 if [ $overall_failed -ne 0 ]; then
-  echo -e "${ERROR} Some packages failed to uninstall. Please check the log."
+  ERROR "Some packages failed to uninstall. Please check the log."
 fi
 
 printf "\n%.0s" {1..1}
 
 # Installation of main components
-printf "\n%s - Installing ${SKY_BLUE}KooL's Hyprland necessary packages${RESET} .... \n" "${NOTE}"
+NOTE "Installing KooL's Hyprland necessary packages ...."
 
 for PKG1 in "${hypr_package[@]}" "${hypr_package_2[@]}" "${Extra[@]}"; do
-  install_package "$PKG1" "$LOG"
+  install_package "$PKG1" "$LOG_FILE"
 done
 
 printf "\n%.0s" {1..2}

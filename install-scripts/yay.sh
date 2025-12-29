@@ -15,7 +15,6 @@ if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
   exit 1
 fi
 
-
 # Create Directory for Install Logs
 if [ ! -d Install-Logs ]; then
     mkdir -p Install-Logs
@@ -24,17 +23,29 @@ fi
 # Check for AUR helper and install if not found
 ISAUR=$(command -v yay)
 if [ -n "$ISAUR" ]; then
-  printf "\n%s - ${SKY_BLUE}AUR helper${RESET} already installed, moving on.\n" "${OK}"
+  OK "AUR helper already installed, moving on."
 else
-  printf "\n%s - Installing ${SKY_BLUE}$pkg${RESET} from AUR\n" "${NOTE}"
+  NOTE "Installing $pkg from AUR"
 
-# Check if directory exists and remove it
-if [ -d "$pkg" ]; then
-    rm -rf "$pkg"
-fi
-  git clone https://aur.archlinux.org/$pkg.git || { printf "%s - Failed to clone ${YELLOW}$pkg${RESET} from AUR\n" "${ERROR}"; exit 1; }
-  cd $pkg || { printf "%s - Failed to enter $pkg directory\n" "${ERROR}"; exit 1; }
-  makepkg -si --noconfirm 2>&1 | tee -a "$LOG" || { printf "%s - Failed to install ${YELLOW}$pkg${RESET} from AUR\n" "${ERROR}"; exit 1; }
+  # Check if directory exists and remove it
+  if [ -d "$pkg" ]; then
+      rm -rf "$pkg"
+  fi
+
+  if ! git clone "https://aur.archlinux.org/$pkg.git"; then
+    ERROR "Failed to clone $pkg from AUR"
+    exit 1
+  fi
+
+  if ! cd "$pkg"; then
+    ERROR "Failed to enter $pkg directory"
+    exit 1
+  fi
+
+  if ! makepkg -si --noconfirm 2>&1 | tee -a "$LOG"; then
+    ERROR "Failed to install $pkg from AUR"
+    exit 1
+  fi
 
   # moving install logs in to Install-Logs directory
   mv install*.log ../Install-Logs/ || true
@@ -42,9 +53,12 @@ fi
 fi
 
 # Update system before proceeding
-printf "\n%s - Performing a full system update to avoid issues.... \n" "${NOTE}"
+NOTE "Performing a full system update to avoid issues...."
 ISAUR=$(command -v yay || command -v paru)
 
-$ISAUR -Syu --noconfirm 2>&1 | tee -a "$LOG" || { printf "%s - Failed to update system\n" "${ERROR}"; exit 1; }
+if ! $ISAUR -Syu --noconfirm 2>&1 | tee -a "$LOG"; then
+  ERROR "Failed to update system"
+  exit 1
+fi
 
 printf "\n%.0s" {1..2}

@@ -18,9 +18,15 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PARENT_DIR="$SCRIPT_DIR/.."
 cd "$PARENT_DIR" || { echo "${ERROR} Failed to change directory to $PARENT_DIR"; exit 1; }
 
+# Source logger
+if ! source "$PARENT_DIR/logger.sh"; then
+  echo "Failed to source logger.sh"
+  exit 1
+fi
+
 # Source the global functions script
 if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
-  echo "Failed to source Global_functions.sh"
+  ERROR "Failed to source Global_functions.sh"
   exit 1
 fi
 
@@ -29,22 +35,22 @@ LOG="Install-Logs/install-$(date +%d-%H%M%S)_hyprland.log"
 
 # Check if Hyprland is installed
 if command -v Hyprland >/dev/null 2>&1; then
-  printf "$NOTE - ${YELLOW} Hyprland is already installed.${RESET} No action required.\n"
+  NOTE "Hyprland is already installed. No action required."
 else
-  printf "$INFO - Hyprland not found. ${SKY_BLUE} Installing Hyprland...${RESET}\n"
+  INFO "Hyprland not found. Installing Hyprland..."
   for HYPRLAND in "${hypr[@]}"; do
     install_package "$HYPRLAND" "$LOG"
   done
 fi
 
 # Hyprland -eco packages
-printf "${NOTE} - Installing ${SKY_BLUE}other Hyprland-eco packages${RESET} .......\n"
+NOTE "Installing other Hyprland-eco packages..."
 for HYPR in "${hypr_eco[@]}"; do
   if ! command -v "$HYPR" >/dev/null 2>&1; then
-    printf "$INFO - ${YELLOW}$HYPR${RESET} not found. Installing ${YELLOW}$HYPR...${RESET}\n"
+    INFO "$HYPR not found. Installing $HYPR..."
     install_package "$HYPR" "$LOG"
   else
-    printf "$NOTE - ${YELLOW} $HYPR is already installed.${RESET} No action required.\n"
+    NOTE "$HYPR is already installed. No action required."
   fi
 done
 

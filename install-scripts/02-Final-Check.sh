@@ -33,13 +33,14 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PARENT_DIR="$SCRIPT_DIR/.."
 cd "$PARENT_DIR" || { echo "${ERROR} Failed to change directory to $PARENT_DIR"; exit 1; }
 
-# Source the global functions script
+# Source the logger and global functions scripts
+source "$PARENT_DIR/logger.sh"
 source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"
 
 # Set the name of the log file to include the current date and time
-LOG="Install-Logs/00_CHECK-$(date +%d-%H%M%S)_installed.log"
+LOG_FILE="Install-Logs/00_CHECK-$(date +%d-%H%M%S)_installed.log"
 
-printf "\n%s - Final Check if all ${SKY_BLUE}Essential packages${RESET} were installed \n" "${NOTE}"
+NOTE "Final Check if all Essential packages were installed"
 # Initialize an empty array to hold missing packages
 missing=()
 local_missing=()
@@ -66,23 +67,25 @@ done
 
 # Log missing packages
 if [ ${#missing[@]} -eq 0 ] && [ ${#local_missing[@]} -eq 0 ]; then
-    echo "${OK} GREAT! All ${YELLOW}essential packages${RESET} have been successfully installed." | tee -a "$LOG"
+    OK "GREAT! All essential packages have been successfully installed."
+    echo "GREAT! All essential packages have been successfully installed." >> "$LOG_FILE"
 else
     if [ ${#missing[@]} -ne 0 ]; then
-        echo "${WARN} The following packages are not installed and will be logged:"
+        WARN "The following packages are not installed and will be logged:"
         for pkg in "${missing[@]}"; do
-            echo "${WARNING}$pkg${RESET}"
-            echo "$pkg" >> "$LOG"
+            WARNING "$pkg"
+            echo "$pkg" >> "$LOG_FILE"
         done
     fi
 
     if [ ${#local_missing[@]} -ne 0 ]; then
-        echo "${WARN} The following local packages are missing from /usr/local/bin/ and will be logged:"
+        WARN "The following local packages are missing from /usr/local/bin/ and will be logged:"
         for pkg1 in "${local_missing[@]}"; do
-            echo "${WARNING}$pkg1${REST} is not installed. Can't find it in /usr/local/bin/"
-            echo "$pkg1" >> "$LOG"
+            WARNING "$pkg1 is not installed. Can't find it in /usr/local/bin/"
+            echo "$pkg1" >> "$LOG_FILE"
         done
     fi
 
-    echo "${NOTE} Missing packages logged at $(date)" >> "$LOG"
+    NOTE "Missing packages logged at $(date)"
+    echo "Missing packages logged at $(date)" >> "$LOG_FILE"
 fi

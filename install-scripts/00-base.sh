@@ -15,9 +15,14 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PARENT_DIR="$SCRIPT_DIR/.."
 cd "$PARENT_DIR" || { echo "${ERROR} Failed to change directory to $PARENT_DIR"; exit 1; }
 
-# Source the global functions script
+# Source logger and global functions script
+if ! source "$PARENT_DIR/logger.sh"; then
+  echo "Failed to source logger.sh"
+  exit 1
+fi
+
 if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
-  echo "Failed to source Global_functions.sh"
+  ERROR "Failed to source Global_functions.sh"
   exit 1
 fi
 
@@ -25,10 +30,10 @@ fi
 LOG="Install-Logs/install-$(date +%d-%H%M%S)_base.log"
 
 # Installation of main components with pacman
-echo -e "\nInstalling ${SKY_BLUE}base-devel${RESET} and ${SKY_BLUE}archlinux-keyring${RESET}..."
+INFO "Installing base-devel, archlinux-keyring and related base packages..."
 
 for PKG1 in "${base[@]}"; do
-  echo "Installing $PKG1 with pacman..."
+  INFO "Installing $PKG1 with pacman..."
   install_package_pacman "$PKG1" "$LOG"
 done
 
