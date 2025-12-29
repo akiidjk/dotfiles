@@ -37,7 +37,7 @@ NOTE "Cloning GTK themes and Icons repository..."
 if git clone --depth=1 https://github.com/JaKooLit/GTK-themes-icons.git >>"$LOG_FILE" 2>&1; then
     cd GTK-themes-icons || { ERROR "Failed to enter GTK-themes-icons directory"; exit 1; }
     chmod +x auto-extract.sh
-    ./auto-extract.sh >>"$LOG_FILE" 2>&1
+    ./auto-extract.sh >> "$LOG_FILE" 2>&1
     cd ..
     OK "Extracted GTK Themes & Icons to ~/.icons & ~/.themes directories"
 else

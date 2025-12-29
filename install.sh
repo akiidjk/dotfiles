@@ -226,7 +226,7 @@ execute_script "apply-dotfiles.sh"
 printf "\n%.0s" {1..1}
 
 if pacman -Q hyprland &>/dev/null || pacman -Q hyprland-git &>/dev/null; then
-	printf "\n ${OK} 👌 Hyprland is installed. However, some essential packages may not be installed. Please see above!"
+	printf "\n ${OK} Hyprland is installed. However, some essential packages may not be installed. Please see above!"
 	printf "\n${CAT} Ignore this message if it states ${YELLOW}All essential packages${RESET} are installed as per above\n"
 	sleep 2
 
