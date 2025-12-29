@@ -38,7 +38,7 @@ fi
 if pacman -Q base-devel &>/dev/null; then
 	INFO "base-devel is already installed."
 else
-	NOTE "Install base-devel.........."
+	NOTE "Install base-devel..."
 
 	if sudo pacman -S --noconfirm base-devel; then
 		OK "👌 base-devel has been installed successfully."
@@ -68,7 +68,7 @@ printf "\e[35m
 printf "\n%.0s" {1..1}
 
 # Welcome message using whiptail (for displaying information)
-whiptail --title "Custom KooL Arch-Hyprland (2026) Install Script" \
+whiptail --title "Custom KooL Arch-Hyprland (2026) Install Script by @akiidjk" \
 	--msgbox "Welcome to KooL Arch-Hyprland (2026) Install Script!!!\n\n\
 ATTENTION: Run a full system update and Reboot first !!! (Highly Recommended)\n\n\
 NOTE: If you are installing on a VM, ensure to enable 3D acceleration else Hyprland may NOT start!" \

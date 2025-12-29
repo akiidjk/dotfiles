@@ -17,18 +17,28 @@ This repository contains my personal configuration files for Hyprland on Arch.
 > This setup assumes you have basic knowledge of Linux command line and package management.
 > Make sure to back up your existing configuration files before applying these dotfiles.
 
-### Hyprland Installation
-For a complete Hyprland setup, you can use JaKooLit's script (raccomanded for this dotfiles):
+<img width="1919" height="1080" alt="img2" src="https://github.com/user-attachments/assets/4202681a-0c3f-46de-9b15-c2c2554fbe16" />
+
+## Quick Install
+
+> [!Warning]
+> This script do a full installation of the dotfiles and required packages included Hyprland and SDDM.
+> It will overwrite existing configuration files in your home directory.
+> IF YOU HAVE PREINSTALLED HYPRLAND, PLEASE FOLLOW THE MANUAL INSTALLATION STEPS BELOW.
+
 ```bash
-git clone --depth=1 https://github.com/JaKooLit/Arch-Hyprland.git ~/Arch-Hyprland
-cd ~/Arch-Hyprland
+# Clone the repository
+git clone https://github.com/akiidjk/dotfiles.git
+
+# Copy dotfiles to home directory
+cd dotfiles
+
 chmod +x install.sh
 ./install.sh
 ```
+## Manual Installation Steps
 
-<img width="1919" height="1080" alt="img2" src="https://github.com/user-attachments/assets/4202681a-0c3f-46de-9b15-c2c2554fbe16" />
-
-### Core System
+### Core System dependencies
 ```bash
 # Update system first
 sudo pacman -Syu
@@ -77,14 +87,6 @@ yay -S zen-browser-bin
 yay -S hyprpicker vicinae-bin cava awww
 ```
 
-### Hyprplugin download
-```bash
-sudo pacman -S cmake # Required for hyprpm
-hyprpm update
-hyprpm add https://github.com/virtcode/hypr-dynamic-cursors
-hyprpm enable dynamic-cursors
-```
-
 ### Fonts Installation
 ```bash
 # Install font dependencies
@@ -95,36 +97,20 @@ sudo pacman -S ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols ttf-nerd-fonts-sym
 fc-cache -fv
 ```
 
-## Installation dotfiles
+## Post installation
 
-### Quick Install
+### Hyprplugin download
 ```bash
-# Clone the repository
-git clone https://github.com/akiidjk/dotfiles.git
-
-# Copy dotfiles to home directory
-cd dotfiles
-cp -r . ~/
-
-# Make scripts executable
-chmod +x ~/scripts/*.sh
-chmod +x ~/.config/hypr/scripts/*.sh
-chmod +x ~/.config/hypr/scripts/hyprpicker
-chmod +x ~/.config/hypr/scripts/wallpapers/*.sh
-
-# Install fonts
-mkdir -p ~/.local/share/fonts
-cp -r ~/.config/fonts/* ~/.local/share/fonts/
-fc-cache -fv
+sudo pacman -S cmake # Required for hyprpm
+hyprpm update
+hyprpm add https://github.com/virtcode/hypr-dynamic-cursors
+hyprpm enable dynamic-cursors
 ```
 
 ### Zen Browser setup
 
-Once installed via yay, you can set Zen Browser as your default browser:
+Once installed via yay, you can set Zen Browser as your default browser and import your previous settings.
 
-```bash
-xdg-settings set default-web-browser zen-browser.desktop
-```
 ### Setup: 
   - import your bookmarks and settings from your previous browser.
   - customize Zen Browser settings to your preference.
@@ -134,9 +120,6 @@ xdg-settings set default-web-browser zen-browser.desktop
 
 
 <img width="1918" height="1080" alt="image" src="https://github.com/user-attachments/assets/4063159a-4010-4fd1-b877-88e3917ef7af" />
-
-
-## Post install
 
 Change some paths (required for pywal):
 ```bash
