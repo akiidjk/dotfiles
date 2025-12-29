@@ -7,15 +7,7 @@ engine=(
     gtk-engine-murrine
 )
 
-## WARNING: DO NOT EDIT BEYOND THIS LINE IF YOU DON'T KNOW WHAT YOU ARE DOING! ##
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-# Change the working directory to the parent directory of the script
-PARENT_DIR="$SCRIPT_DIR/.."
-cd "$PARENT_DIR" || { echo "Failed to change directory to $PARENT_DIR"; exit 1; }
-
-# Source logger
-if ! source "$PARENT_DIR/logger.sh"; then
+if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
   echo "Failed to source logger.sh"
   exit 1
 fi

@@ -7,7 +7,7 @@ pkg="yay-bin"
 
 ## WARNING: DO NOT EDIT BEYOND THIS LINE IF YOU DON'T KNOW WHAT YOU ARE DOING! ##
 # Set the name of the log file to include the current date and time
-LOG="install-$(date +%d-%H%M%S)_yay.log"
+LOG_FILE="install-$(date +%d-%H%M%S)_yay.log"
 
 # Source the logger script
 if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
@@ -42,7 +42,7 @@ else
     exit 1
   fi
 
-  if ! makepkg -si --noconfirm 2>&1 | tee -a "$LOG"; then
+  if ! makepkg -si --noconfirm 2>&1 | tee -a "$LOG_FILE"; then
     ERROR "Failed to install $pkg from AUR"
     exit 1
   fi
@@ -56,7 +56,7 @@ fi
 NOTE "Performing a full system update to avoid issues...."
 ISAUR=$(command -v yay || command -v paru)
 
-if ! $ISAUR -Syu --noconfirm 2>&1 | tee -a "$LOG"; then
+if ! $ISAUR -Syu --noconfirm 2>&1 | tee -a "$LOG_FILE"; then
   ERROR "Failed to update system"
   exit 1
 fi

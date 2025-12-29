@@ -13,15 +13,10 @@ zsh_pkg2=(
   fzf
 )
 
-## WARNING: DO NOT EDIT BEYOND THIS LINE IF YOU DON'T KNOW WHAT YOU ARE DOING! ##
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-# shellcheck source=/dev/null
-. "$SCRIPT_DIR/logger.sh"
-
-# Change the working directory to the parent directory of the script
-PARENT_DIR="$SCRIPT_DIR/.."
-cd "$PARENT_DIR" || { ERROR "Failed to change directory to $PARENT_DIR"; exit 1; }
+if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
+  echo "Failed to source logger.sh"
+  exit 1
+fi
 
 # Source the global functions script
 if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then

@@ -25,16 +25,11 @@ local_pkgs_installed=(
 
 )
 
-## WARNING: DO NOT EDIT BEYOND THIS LINE IF YOU DON'T KNOW WHAT YOU ARE DOING! ##
-# Determine the directory where the script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
+  echo "Failed to source logger.sh"
+  exit 1
+fi
 
-# Change the working directory to the parent directory of the script
-PARENT_DIR="$SCRIPT_DIR/.."
-cd "$PARENT_DIR" || { echo "${ERROR} Failed to change directory to $PARENT_DIR"; exit 1; }
-
-# Source the logger and global functions scripts
-source "$PARENT_DIR/logger.sh"
 source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"
 
 # Set the name of the log file to include the current date and time
