@@ -27,6 +27,7 @@ Extra=(
   cava
   hyprpicker
   vicinae-bin
+  eza
 )
 
 hypr_package=(
@@ -54,7 +55,6 @@ hypr_package=(
   qt5ct
   qt6ct
   qt6-svg
-  rofi
   slurp
   swappy
   swaync

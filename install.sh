@@ -247,6 +247,9 @@ clear
 # final check essential packages if it is installed
 execute_script "02-Final-Check.sh"
 
+echo "${INFO} Applying ${SKY_BLUE}dotfiles...${RESET}" | tee -a "$LOG"
+execute_script "apply-dotfiles.sh"
+
 printf "\n%.0s" {1..1}
 
 # Check if hyprland or hyprland-git is installed
