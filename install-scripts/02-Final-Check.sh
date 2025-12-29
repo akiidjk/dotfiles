@@ -70,8 +70,7 @@ else
     if [ ${#missing[@]} -ne 0 ]; then
         WARN "The following packages are not installed and will be logged:"
         for pkg in "${missing[@]}"; do
-            WARNING "$pkg"
-            echo "$pkg" >> "$LOG_FILE"
+            WARNING "$pkg is not installed."
         done
     fi
 

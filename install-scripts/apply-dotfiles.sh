@@ -5,7 +5,7 @@
 # Determine the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cp -r . ~/
-rm -r ~/install-scripts ~/install.sh
+rm -r ~/install-scripts ~/install.sh *.log Install-Logs dotfiles
 
 # Set execute permissions for scripts
 chmod +x ~/scripts/*.sh

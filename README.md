@@ -150,11 +150,11 @@ done
 # PDF → Zen Browser
 xdg-mime default zen.desktop application/pdf
 
-# Images → qimgv
-xdg-mime default qimgv.desktop image/jpeg
-xdg-mime default qimgv.desktop image/png
-xdg-mime default qimgv.desktop image/webp
-xdg-mime default qimgv.desktop image/gif
+# Images → loupe
+xdg-mime default loupe.desktop image/jpeg
+xdg-mime default loupe.desktop image/png
+xdg-mime default loupe.desktop image/webp
+xdg-mime default loupe.desktop image/gif
 
 # SVG → Zen Browser
 xdg-mime default zen.desktop image/svg+xml

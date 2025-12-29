@@ -23,20 +23,19 @@ fi
 show_progress() {
     local pid=$1
     local package_name=$2
-    local spin_chars=("●○○○○○○○○○" "○●○○○○○○○○" "○○●○○○○○○○" "○○○●○○○○○○" "○○○○●○○○○" \
-                      "○○○○○●○○○○" "○○○○○○●○○○" "○○○○○○○●○○" "○○○○○○○○●○" "○○○○○○○○○●")
+    local spin_chars=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
     local i=0
 
     tput civis
     NOTE "Installing ${YELLOW}${package_name}${RESET} ..."
 
     while ps -p "$pid" &> /dev/null; do
-        printf "\r${NOTE} Installing ${YELLOW}%s${RESET} %s" "$package_name" "${spin_chars[i]}"
+        printf "\r$(date '+%Y-%m-%d %H:%M:%S') ${NOTE} Installing ${YELLOW}%s${RESET} %s" "$package_name" ${MAGENTA}"${spin_chars[i]}${RESET}"
         i=$(( (i + 1) % 10 ))
         sleep 0.3
     done
 
-    printf "\r${NOTE} Installing ${YELLOW}%s${RESET} ... Done!%-20s \n" "$package_name" ""
+    printf "\r$(date '+%Y-%m-%d %H:%M:%S') ${NOTE} Installing ${YELLOW}%s${RESET} ... Done!%-20s \n" "$package_name" ""
     tput cnorm
 }
 

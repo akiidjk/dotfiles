@@ -198,7 +198,7 @@ if [ "$nvidia_detected" == "true" ]; then
 fi
 
 INFO "Installing ${SKY_BLUE}GTK themes...${RESET}"
-execute_script "gtk_themes.sh "
+execute_script "gtk_themes.sh"
 
 INFO "Adding user into ${SKY_BLUE}input group...${RESET}"
 execute_script "InputGroup.sh"

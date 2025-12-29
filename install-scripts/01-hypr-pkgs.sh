@@ -78,10 +78,8 @@ hypr_package_2=(
   loupe
   fastfetch
   gnome-system-monitor
-  mousepad
   mpv
   mpv-mpris
-  nvtop
   nwg-look
   nwg-displays
   pacman-contrib
