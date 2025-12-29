@@ -4,7 +4,7 @@
 clear
 
 # Source the logger script
-if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
+if ! source "$(dirname "$(readlink -f "$0")")/install-scripts/logger.sh"; then
 	ERROR "Failed to source logger.sh"
 	exit 1
 fi
