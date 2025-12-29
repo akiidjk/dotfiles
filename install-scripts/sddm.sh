@@ -20,8 +20,12 @@ login=(
   lxdm-gtk3
 )
 
+# Set the name of the log file to include the current date and time
+LOG_FILE="Install-Logs/install-$(date +%d-%H%M%S)_sddm.log"
+SET_LOG_FILE "$LOG_FILE"
+
 if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
-  echo "Failed to source logger.sh"
+  ERROR "Failed to source logger.sh"
   exit 1
 fi
 
@@ -31,14 +35,10 @@ if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
   exit 1
 fi
 
-# Set the name of the log file to include the current date and time
-LOG_FILE="Install-Logs/install-$(date +%d-%H%M%S)_sddm.log"
-set_log_file "$LOG_FILE"
-
 # Install SDDM and SDDM theme
 NOTE "Installing sddm and dependencies........"
 for package in "${sddm[@]}"; do
-  install_package "$package" "$LOG_FILE"
+  install_package "$package"
 done
 
 printf "\n%.0s" {1..1}

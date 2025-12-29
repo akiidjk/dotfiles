@@ -2,8 +2,13 @@
 # 💫 https://github.com/JaKooLit 💫 #
 # pacman adding up extra-spices #
 
+
+# Set the name of the log file to include the current date and time
+LOG_FILE="Install-Logs/install-$(date +%d-%H%M%S)_pacman.log"
+SET_LOG_FILE "$LOG_FILE"
+
 if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
-  echo "Failed to source logger.sh"
+  ERROR "Failed to source logger.sh"
   exit 1
 fi
 
@@ -11,10 +16,6 @@ if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
   ERROR "Failed to source Global_functions.sh"
   exit 1
 fi
-
-# Set the name of the log file to include the current date and time
-LOG_FILE="Install-Logs/install-$(date +%d-%H%M%S)_pacman.log"
-set_log_file "$LOG_FILE"
 
 NOTE "Adding ${MAGENTA}Extra Spice${RESET} in pacman.conf ..."
 pacman_conf="/etc/pacman.conf"

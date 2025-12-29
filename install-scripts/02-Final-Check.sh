@@ -25,15 +25,16 @@ local_pkgs_installed=(
 
 )
 
+# Set the name of the log file to include the current date and time
+LOG_FILE="Install-Logs/00_CHECK-$(date +%d-%H%M%S)_installed.log"
+SET_LOG_FILE "$LOG_FILE"
+
 if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
-  echo "Failed to source logger.sh"
+  ERROR "Failed to source logger.sh"
   exit 1
 fi
 
 source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"
-
-# Set the name of the log file to include the current date and time
-LOG_FILE="Install-Logs/00_CHECK-$(date +%d-%H%M%S)_installed.log"
 
 NOTE "Final Check if all Essential packages were installed"
 # Initialize an empty array to hold missing packages
@@ -63,7 +64,6 @@ done
 # Log missing packages
 if [ ${#missing[@]} -eq 0 ] && [ ${#local_missing[@]} -eq 0 ]; then
     OK "GREAT! All essential packages have been successfully installed."
-    echo "GREAT! All essential packages have been successfully installed." >> "$LOG_FILE"
 else
     if [ ${#missing[@]} -ne 0 ]; then
         WARN "The following packages are not installed and will be logged:"
@@ -82,5 +82,4 @@ else
     fi
 
     NOTE "Missing packages logged at $(date)"
-    echo "Missing packages logged at $(date)" >> "$LOG_FILE"
 fi

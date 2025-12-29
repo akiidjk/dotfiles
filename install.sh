@@ -2,6 +2,9 @@
 # https://github.com/JaKooLit + a little bit of @akiidjk
 
 clear
+# Set the name of the log file to include the current date and time
+LOG_FILE="Install-Logs/01-Hyprland-Install-Scripts-$(date +%d-%H%M%S).log"
+SET_LOG_FILE "$LOG_FILE"
 
 # Source the logger script
 if ! source "$(dirname "$(readlink -f "$0")")/install-scripts/logger.sh"; then
@@ -14,19 +17,18 @@ if [ ! -d Install-Logs ]; then
 	mkdir -p Install-Logs
 fi
 
-# Set the name of the log file to include the current date and time
-LOG_FILE="Install-Logs/01-Hyprland-Install-Scripts-$(date +%d-%H%M%S).log"
+
 
 # Check if running as root. If root, script will exit
 if [[ $EUID -eq 0 ]]; then
-	ERROR "This script should ${WARNING}NOT${RESET} be executed as root!! Exiting......." | tee -a "$LOG_FILE"
+	ERROR "This script should ${WARNING}NOT${RESET} be executed as root!! Exiting......."
 	printf "\n%.0s" {1..2}
 	exit 1
 fi
 
 # Check if PulseAudio package is installed
 if pacman -Qq | grep -qw '^pulseaudio$'; then
-	ERROR "PulseAudio is detected as installed. Uninstall it first or edit install.sh on line 211 (execute_script 'pipewire.sh')." | tee -a "$LOG_FILE"
+	ERROR "PulseAudio is detected as installed. Uninstall it first or edit install.sh on line 211 (execute_script 'pipewire.sh')."
 	printf "\n%.0s" {1..2}
 	exit 1
 fi
@@ -38,17 +40,17 @@ else
 	NOTE "Install base-devel.........."
 
 	if sudo pacman -S --noconfirm base-devel; then
-		OK "👌 base-devel has been installed successfully." | tee -a "$LOG_FILE"
+		OK "👌 base-devel has been installed successfully."
 	else
-		ERROR "❌ base-devel not found nor cannot be installed." | tee -a "$LOG_FILE"
-		ACTION "Please install base-devel manually before running this script... Exiting" | tee -a "$LOG_FILE"
+		ERROR "❌ base-devel not found nor cannot be installed."
+		ACTION "Please install base-devel manually before running this script... Exiting"
 		exit 1
 	fi
 fi
 
 # install whiptails if detected not installed. Necessary for this version
 if ! command -v whiptail >/dev/null; then
-	NOTE "- whiptail is not installed. Installing..." | tee -a "$LOG_FILE"
+	NOTE "- whiptail is not installed. Installing..."
 	sudo pacman -S --noconfirm libnewt
 	printf "\n%.0s" {1..1}
 fi
@@ -75,19 +77,19 @@ NOTE: If you are installing on a VM, ensure to enable 3D acceleration else Hyprl
 if ! whiptail --title "Proceed with Installation?" \
 	--yesno "Would you like to proceed?" 7 50; then
 	printf "\n"
-	INFO "You chose ${YELLOW}NOT${RESET} to proceed. ${YELLOW}Exiting...${RESET}" | tee -a "$LOG_FILE"
+	INFO "You chose ${YELLOW}NOT${RESET} to proceed. ${YELLOW}Exiting...${RESET}"
 	printf "\n"
 	exit 1
 fi
 
-OK "${MAGENTA}KooL..${RESET} ${SKY_BLUE}lets continue with the installation...${RESET}" | tee -a "$LOG_FILE"
+OK "${MAGENTA}KooL..${RESET} ${SKY_BLUE}lets continue with the installation...${RESET}"
 
 sleep 1
 printf "\n%.0s" {1..1}
 
 # install pciutils if detected not installed. Necessary for detecting GPU
 if ! pacman -Q pciutils >/dev/null; then
-	NOTE "- pciutils is not installed. Installing..." | tee -a "$LOG_FILE"
+	NOTE "- pciutils is not installed. Installing..."
 	sudo pacman -S --noconfirm pciutils
 	printf "\n%.0s" {1..1}
 fi
@@ -158,15 +160,15 @@ execute_script "yay.sh"
 
 sleep 1
 
-INFO "Installing ${SKY_BLUE}KooL Hyprland additional packages...${RESET}" | tee -a "$LOG_FILE"
+INFO "Installing ${SKY_BLUE}KooL Hyprland additional packages...${RESET}"
 sleep 1
 execute_script "01-hypr-pkgs.sh"
 
-INFO "Installing ${SKY_BLUE}pipewire and pipewire-audio...${RESET}" | tee -a "$LOG_FILE"
+INFO "Installing ${SKY_BLUE}pipewire and pipewire-audio...${RESET}"
 sleep 1
 execute_script "pipewire.sh"
 
-INFO "Installing ${SKY_BLUE}necessary fonts...${RESET}" | tee -a "$LOG_FILE"
+INFO "Installing ${SKY_BLUE}necessary fonts...${RESET}"
 sleep 1
 execute_script "fonts.sh"
 
@@ -185,31 +187,31 @@ if check_services_running; then
 		12 60
 	exec "$0"
 else
-	INFO "Installing and configuring ${SKY_BLUE}SDDM...${RESET}" | tee -a "$LOG_FILE"
+	INFO "Installing and configuring ${SKY_BLUE}SDDM...${RESET}"
 	execute_script "sddm.sh"
 fi
 
 if [ "$nvidia_detected" == "true" ]; then
-	INFO "Configuring ${SKY_BLUE}nvidia stuff${RESET}" | tee -a "$LOG_FILE"
+	INFO "Configuring ${SKY_BLUE}nvidia stuff${RESET}"
 	execute_script "nvidia.sh"
 fi
 
-INFO "Installing ${SKY_BLUE}GTK themes...${RESET}" | tee -a "$LOG_FILE"
+INFO "Installing ${SKY_BLUE}GTK themes...${RESET}"
 execute_script "gtk_themes.sh "
 
-INFO "Adding user into ${SKY_BLUE}input group...${RESET}" | tee -a "$LOG_FILE"
+INFO "Adding user into ${SKY_BLUE}input group...${RESET}"
 execute_script "InputGroup.sh"
 
-INFO "Installing ${SKY_BLUE}xdg-desktop-portal-hyprland...${RESET}" | tee -a "$LOG_FILE"
+INFO "Installing ${SKY_BLUE}xdg-desktop-portal-hyprland...${RESET}"
 execute_script "xdph.sh"
 
-INFO "Configuring ${SKY_BLUE}Bluetooth...${RESET}" | tee -a "$LOG_FILE"
+INFO "Configuring ${SKY_BLUE}Bluetooth...${RESET}"
 execute_script "bluetooth.sh"
 
-INFO "Downloading & Installing ${SKY_BLUE}Additional SDDM theme...${RESET}" | tee -a "$LOG_FILE"
+INFO "Downloading & Installing ${SKY_BLUE}Additional SDDM theme...${RESET}"
 execute_script "sddm_theme.sh"
 
-INFO "Installing ${SKY_BLUE}zsh with Oh-My-Zsh...${RESET}" | tee -a "$LOG_FILE"
+INFO "Installing ${SKY_BLUE}zsh with Oh-My-Zsh...${RESET}"
 execute_script "zsh.sh"
 
 sleep 1
@@ -217,7 +219,7 @@ clear
 
 execute_script "02-Final-Check.sh"
 
-INFO "Applying ${SKY_BLUE}dotfiles...${RESET}" | tee -a "$LOG_FILE"
+INFO "Applying ${SKY_BLUE}dotfiles...${RESET}"
 execute_script "apply-dotfiles.sh"
 
 printf "\n%.0s" {1..1}

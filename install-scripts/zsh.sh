@@ -13,8 +13,12 @@ zsh_pkg2=(
   fzf
 )
 
+# Set the name of the log file to include the current date and time
+LOG_FILE="Install-Logs/install-$(date +%d-%H%M%S)_zsh.log"
+SET_LOG_FILE "$LOG_FILE"
+
 if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
-  echo "Failed to source logger.sh"
+  ERROR "Failed to source logger.sh"
   exit 1
 fi
 
@@ -24,8 +28,7 @@ if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
   exit 1
 fi
 
-# Set the name of the log file to include the current date and time
-LOG_FILE="Install-Logs/install-$(date +%d-%H%M%S)_zsh.log"
+
 
 # Installing core zsh packages
 NOTE "Installing ${SKY_BLUE}zsh packages${RESET} ...."
@@ -95,12 +98,12 @@ fi
 # Installing core zsh packages
 NOTE "Installing ${SKY_BLUE}fzf${RESET} ...."
 for ZSH2 in "${zsh_pkg2[@]}"; do
-  install_package "$ZSH2" "$LOG_FILE"
+  install_package "$ZSH2"
 done
 
 # copy additional oh-my-zsh themes from assets
 if [ -d "$HOME/.oh-my-zsh/themes" ]; then
-    cp -r assets/add_zsh_theme/* ~/.oh-my-zsh/themes >> "$LOG_FILE" 2>&1
+    cp -r assets/add_zsh_theme/* ~/.oh-my-zsh/themes >> 2>&1
 fi
 
 printf "\n%.0s" {1..2}

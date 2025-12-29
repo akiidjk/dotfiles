@@ -8,8 +8,12 @@ blue=(
   blueman
 )
 
+# Set the name of the log file to include the current date and time
+LOGFILE="Install-Logs/install-$(date +%d-%H%M%S)_bluetooth.log"
+SET_LOG_FILE "$LOG_FILE"
+
 if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
-  echo "Failed to source logger.sh"
+  ERROR "Failed to source logger.sh"
   exit 1
 fi
 
@@ -18,8 +22,6 @@ if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
   exit 1
 fi
 
-# Set the name of the log file to include the current date and time
-LOGFILE="Install-Logs/install-$(date +%d-%H%M%S)_bluetooth.log"
 
 # Bluetooth
 NOTE "Installing Bluetooth Packages..."

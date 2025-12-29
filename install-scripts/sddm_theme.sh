@@ -5,8 +5,12 @@
 source_theme="https://github.com/JaKooLit/simple-sddm-2.git"
 theme_name="simple_sddm_2"
 
+# Set the name of the log file to include the current date and time
+LOG_FILE="Install-Logs/install-$(date +%d-%H%M%S)_sddm_theme.log"
+SET_LOG_FILE "$LOG_FILE"
+
 if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
-  echo "Failed to source logger.sh"
+  ERROR "Failed to source logger.sh"
   exit 1
 fi
 
@@ -16,9 +20,6 @@ if ! source "$(dirname "$(readlink -f "$0")")/Global_functions.sh"; then
   exit 1
 fi
 
-# Set the name of the log file to include the current date and time
-LOG_FILE="Install-Logs/install-$(date +%d-%H%M%S)_sddm_theme.log"
-set_log_file "$LOG_FILE"
 
 # SDDM-themes
 INFO "Installing Additional SDDM Theme"

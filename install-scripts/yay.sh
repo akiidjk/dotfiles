@@ -8,10 +8,11 @@ pkg="yay-bin"
 ## WARNING: DO NOT EDIT BEYOND THIS LINE IF YOU DON'T KNOW WHAT YOU ARE DOING! ##
 # Set the name of the log file to include the current date and time
 LOG_FILE="install-$(date +%d-%H%M%S)_yay.log"
+SET_LOG_FILE "$LOG_FILE"
 
 # Source the logger script
 if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then
-  echo "Failed to source logger.sh"
+  ERROR "Failed to source logger.sh"
   exit 1
 fi
 
