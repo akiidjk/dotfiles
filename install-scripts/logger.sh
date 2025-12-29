@@ -19,25 +19,25 @@ LOG(){
 }
 
 OK(){
-    LOG("${OK}" "$1")
+    LOG "$OK" "$1"
 }
 
 INFO(){
-    LOG("${INFO}" "$1")
+    LOG "${INFO}" "$1"
 }
 
 WARN(){
-    LOG("${WARN}" "$1")
+    LOG "${WARN}" "$1"
 }
 
 ACTION(){
-    LOG("${CAT}" "$1")
+    LOG "${CAT}" "$1"
 }
 
 NOTE(){
-    LOG("${NOTE}" "$1")
+    LOG "${NOTE}" "$1"
 }
 
 ERROR(){
-    LOG("${ERROR}" "$1")
+    LOG "${ERROR}" "$1"
 }
