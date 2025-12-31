@@ -194,27 +194,122 @@ xdg-mime default zed.desktop text/css
 xdg-mime default zed.desktop text/html
 ```
 
-## Alias Reference (`.zshrc`)
+## Shell Configuration (`.zshrc`)
 
-This section explains the custom shell aliases defined in [`.zshrc`](./dotfiles/.zshrc). These aliases are designed to speed up common tasks and improve your terminal workflow.
+This section documents the complete Zsh configuration including Oh-My-Zsh plugins, custom aliases, and productivity enhancements defined in [`.zshrc`](./dotfiles/.zshrc).
+
+### Oh-My-Zsh Plugins
+
+The configuration uses Oh-My-Zsh with the following plugins enabled:
+
+- **aliases** - Manage and list aliases
+- **cp** - Safe copy with progress bar
+- **zsh-autosuggestions** - Fish-like autosuggestions
+- **zsh-syntax-highlighting** - Syntax highlighting for commands
+- **git** - Git aliases and functions
+- **docker** - Docker command completion
+- **last-working-dir** - Remember last working directory
+- **history-substring-search** - Search history with substrings
+- **history** - Enhanced history management
+- **pylint** - Python linting support
+- **pip** - Python package manager completion
+- **golang** - Go language support
+- **ssh** - SSH completion and helpers
+- **encode64** - Base64 encoding/decoding
+- **extract** - Universal archive extractor
+
+### Enhanced Shell Tools
+
+- **Starship** - Modern, fast, and customizable prompt
+- **Zoxide** - Smarter `cd` command that learns your habits
+- **FZF** - Fuzzy finder for history and file search (CTRL+R for history)
+  - Configured with `bat` preview in a 60% right split
+  - Shows syntax-highlighted previews of files
+
+### Standard Aliases
 
 | Alias           | Command / Description                                                                                   |
 |-----------------|-------------------------------------------------------------------------------------------------------|
-| `ls`            | `eza --icons` — List files with icons (replacement for `ls`)                                          |
+| `cd`            | `z` - Zoxide replacement for cd (learns frequently used directories)                                   |
+| `ls`            | `eza --icons` — List files with icons (modern `ls` replacement)                                        |
 | `ll`            | `eza -al --icons` — List all files (including hidden) in long format with icons                       |
 | `ltr`           | `eza -a --tree --level=1 --icons` — Tree view of files/folders, one level deep, with icons            |
 | `c`             | `clear` — Clear the terminal                                                                          |
-| `cat`           | `bat` — Show file contents with syntax highlighting and paging (replacement for `cat`)                |
+| `cat`           | `bat` — Show file contents with syntax highlighting and paging                                         |
 | `activate`      | `source ~/.venv/bin/activate` — Activate Python virtual environment                                   |
 | `vimage`        | `kitty +kitten icat` — Display images directly in Kitty terminal                                      |
 | `cpu`           | `auto-cpufreq --stats` — Show CPU frequency and stats                                                 |
-| `docker-start`  | `sudo systemctl start docker.service` — Start Docker daemon                                           |
-| `docker-stop`   | `sudo systemctl stop docker.service` — Stop Docker daemon                                             |
-| `docker-status` | `sudo systemctl status docker.service` — Show Docker service status                                   |
-| `start-vpn`     | `sudo openvpn --config <path_to_config> --auth-user-pass <path_to_creds>` — Start VPN connection      |
-| `stop-vpn`      | `sudo killall openvpn` — Stop all OpenVPN processes                                                   |
+| `zed`           | `zeditor` — Launch Zed editor                                                                         |
 
-See [`.zshrc`](./dotfiles/.zshrc) for the full list and details.
+### Docker Aliases
+
+| Alias           | Command                                  | Description                    |
+|-----------------|------------------------------------------|--------------------------------|
+| `docker-start`  | `sudo systemctl start docker.service`    | Start Docker daemon            |
+| `docker-stop`   | `sudo systemctl stop docker.service`     | Stop Docker daemon             |
+| `docker-status` | `sudo systemctl status docker.service`   | Show Docker service status     |
+
+### VPN Aliases
+
+| Alias           | Command                                                                         | Description                |
+|-----------------|---------------------------------------------------------------------------------|----------------------------|
+| `start-vpn`     | `sudo openvpn --config <path_to_config> --auth-user-pass <path_to_creds>`      | Start VPN connection       |
+| `stop-vpn`      | `sudo killall openvpn`                                                          | Stop all OpenVPN processes |
+
+### Network Forwarding Aliases
+
+| Alias          | Command                              | Description                              |
+|----------------|--------------------------------------|------------------------------------------|
+| `up_forward`   | `nmcli connection up eth-shared`     | Enable WiFi to Ethernet forwarding       |
+| `down_forward` | `nmcli connection down eth-shared`   | Disable WiFi to Ethernet forwarding      |
+
+### Suffix Aliases
+
+Suffix aliases automatically open files with specific extensions using designated programs:
+
+| Extension | Opens With | Description                              |
+|-----------|------------|------------------------------------------|
+| `.json`   | `jless`    | Interactive JSON viewer                  |
+| `.md`     | `mdcat`    | Markdown renderer for terminal           |
+| `.go`     | `$EDITOR`  | Go source files in default editor        |
+| `.zig`    | `$EDITOR`  | Zig source files in default editor       |
+| `.txt`    | `bat`      | Text files with syntax highlighting      |
+| `.log`    | `bat`      | Log files with syntax highlighting       |
+| `.py`     | `$EDITOR`  | Python files in default editor           |
+| `.js`     | `$EDITOR`  | JavaScript files in default editor       |
+| `.ts`     | `$EDITOR`  | TypeScript files in default editor       |
+
+**Usage**: Simply type the filename: `example.json` instead of `jless example.json`
+
+### Global Aliases
+
+Global aliases can be used anywhere in a command, not just at the beginning:
+
+| Alias | Expansion                  | Description                                   | Example                          |
+|-------|----------------------------|-----------------------------------------------|----------------------------------|
+| `NE`  | `2>/dev/null`              | Redirect stderr to /dev/null                  | `command NE`                     |
+| `NO`  | `>/dev/null`               | Redirect stdout to /dev/null                  | `command NO`                     |
+| `NUL` | `>/dev/null 2>&1`          | Redirect both stdout and stderr to /dev/null  | `command NUL`                    |
+| `J`   | `\| jq`                    | Pipe output to jq for JSON formatting         | `curl api.example.com J`         |
+| `C`   | `\| wl-copy`               | Copy command output to clipboard              | `cat file.txt C`                 |
+
+### Shell Behavior Enhancements
+
+- **Magic Space**: Press `Space` to expand history expressions (`!!`, `!$`, etc.)
+- **Auto-ls**: Automatically runs `ls` when changing directories (via `chpwd` hook)
+- **History**: 10,000 commands saved in `~/.zsh_history` with append mode
+
+### Environment Variables
+
+- `EDITOR`: Set to `nvim` locally, `vim` over SSH
+- `LANG`: `en_US.UTF-8`
+- `XDG_CONFIG_HOME`: `$HOME/.config`
+
+### Startup
+
+- **fastfetch** runs automatically on new shell sessions to display system information
+
+See [`.zshrc`](./dotfiles/.zshrc) for the complete configuration.
 
 ## Some utility scripts I use in my configuration
 
