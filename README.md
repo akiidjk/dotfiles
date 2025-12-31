@@ -73,7 +73,7 @@ sudo pacman -S vim neovim zed
 yay -S python-pywal16
 
 # Other utilities
-sudo pacman -S fastfetch brightnessctl playerctl pamixer wofi fzf ripgrep bat eza
+sudo pacman -S fastfetch brightnessctl playerctl pamixer wofi fzf ripgrep bat eza jless
 ```
 
 ### AUR Packages

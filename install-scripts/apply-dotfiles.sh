@@ -22,3 +22,6 @@ fc-cache -fv
 grep -rl '/home/user' ~/.config | while read file; do
     awk '{gsub("/home/user","'"$HOME"'"); print}' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
 done
+
+# Installing zoxide
+curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh

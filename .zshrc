@@ -35,11 +35,13 @@ fi
 
 # Starship
 eval "$(starship init zsh)"
-
+# Zoxide
+eval "$(zoxide init zsh)"
 # Startup
 fastfetch
 
 # Aliases
+alias cd='z'
 alias ls='eza --icons'
 alias ll='eza -al --icons'
 alias ltr='eza -a --tree --level=1 --icons'
@@ -68,9 +70,35 @@ alias togglemirror='~/scripts/toggle_mirror.sh'
 # nmcli connection add type ethernet ifname enp3s0 con-name eth-shared ipv4.method shared ipv6.method ignore
 # nmcli connection up eth-shared
 # sudo sysctl -w net.ipv4.ip_forward=1
-
 alias up_forward='nmcli connection up eth-shared'
 alias down_forward='nmcli connection down eth-shared'
+
+# Suffix alias
+alias -s json=jless
+alias -s md=mdcat
+alias -s go='$EDITOR'
+alias -s zig='$EDITOR'
+alias -s txt=bat
+alias -s log=bat
+alias -s py='$EDITOR'
+alias -s js='$EDITOR'
+alias -s ts='$EDITOR'
+
+# Global alias
+alias -g NE='2>/dev/null' # Redirect stderr to /dev/null
+alias -g NO='>/dev/null' # Redirect stdout to /dev/null
+alias -g NUL='>/dev/null 2>&1' # Redirect both stdout and stderr to /dev/null
+alias -g J='| jq' # Pipe to jq
+alias -g C='| wl-copy' # Copy output to clipboard
+
+# Expands history expressions like !! or !$ when you press space/tab
+bindkey ' ' magic-space
+
+# chpwd Hook - Run Commands on Directory Change
+chpwd() {
+  ls
+}
+
 
 # Set-up FZF key bindings (CTRL R for fuzzy history finder)
 source <(fzf --zsh)

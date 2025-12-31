@@ -28,6 +28,7 @@ Extra=(
   hyprpicker
   vicinae-bin
   eza
+  jless
 )
 
 hypr_package=(
