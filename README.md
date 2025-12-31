@@ -269,7 +269,7 @@ Here are some useful aliases defined in my shell configuration:
 ### Start Hyprland
 ```bash
 # From TTY
-Hyprland
+start-hyprland
 
 # Or enable display manager
 sudo systemctl enable sddm
