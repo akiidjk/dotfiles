@@ -43,8 +43,7 @@ chmod +x install.sh
 sudo pacman -Syu
 
 # Install Hyprland and core dependencies
-sudo pacman -S hyprland hypridle hyprlock xdg-desktop-portal-hyprland
-
+sudo pacman -S hyprland hypridle hyprlock xdg-desktop-portal-hyprland hyprpolkitagent
 # Display and graphics
 sudo pacman -S wl-clipboard wl-clip-persist cliphist grim slurp swappy
 
