@@ -29,6 +29,8 @@ Extra=(
   vicinae-bin
   eza
   jless
+  spotify-launcher
+  spicetify-cli
 )
 
 hypr_package=(

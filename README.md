@@ -110,6 +110,19 @@ cp -r ~/.config/fonts/* ~/.local/share/fonts/
 fc-cache -fv
 ```
 
+### Spicitify setup
+```bash
+# Install
+sudo pacman -S spotify-launcher spicetify-cli
+
+# Installing marketplace
+curl -fsSL https://raw.githubusercontent.com/khanhas/spicetify-cli/main/install.sh | bash
+
+# Permission fixes (I am not sure is this required)
+sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/
+sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/ -R
+```
+
 ## Post installation
 
 ### Hyprplugin download
@@ -444,6 +457,12 @@ For the complete keybinding configuration, see `~/.config/hypr/keybinds.conf`
 - **Nerd Fonts**: https://www.nerdfonts.com/
 - **Hyprland Wiki**: https://wiki.hyprland.org/
 - **Arch Wiki**: https://wiki.archlinux.org/
+
+## Todo
+
+- [ ] Better Wallpaper selector
+- [ ] Keybinds Help menu
+- [ ] Check swaync animation
 
 ## Credits
 

@@ -25,3 +25,8 @@ done
 
 # Installing zoxide
 curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+
+# Installing Spicetify
+curl -fsSL https://raw.githubusercontent.com/khanhas/spicetify-cli/main/install.sh | bash
+sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/
+sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/ -R
