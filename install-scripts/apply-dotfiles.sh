@@ -18,11 +18,6 @@ mkdir -p ~/.local/share/fonts
 cp -r ~/.config/fonts/* ~/.local/share/fonts/
 fc-cache -fv
 
-# Post install path fix
-grep -rl '/home/user' ~/.config | while read file; do
-    awk '{gsub("/home/user","'"$HOME"'"); print}' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
-done
-
 # Installing zoxide
 curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
 

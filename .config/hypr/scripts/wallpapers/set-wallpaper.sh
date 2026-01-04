@@ -20,15 +20,7 @@ cp "$WALL" "$HOME/.current_wallpaper"
 
 echo "Setting wallpaper: $SELECTED_FILE"
 
-echo "setting $WALL as wallpaper"
-awww img $WALL --transition-type wipe
+# Set wallpaper via hyprpaper
+echo "Setting $WALL as wallpaper"
+matugen image -t scheme-fidelity -m dark $WALL  --show-colors --verbose --fallback-color "#000000"
 echo "Wallpaper set successfully"
-
-if command -v wal >/dev/null 2>&1; then
-    echo "Applying pywal colors..."
-    wal -i "$WALL"
-    echo "Pywal applied successfully"
-    swaync-client -rs
-else
-    echo "Pywal not installed, skipping"
-fi

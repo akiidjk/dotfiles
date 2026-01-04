@@ -147,13 +147,6 @@ Once installed via yay, you can set Zen Browser as your default browser and impo
 
 <img width="1918" height="1080" alt="image" src="https://github.com/user-attachments/assets/4063159a-4010-4fd1-b877-88e3917ef7af" />
 
-Change some paths (required for pywal):
-```bash
-grep -rl '/home/user' ~/.config | while read file; do
-    awk '{gsub("/home/user","'"$HOME"'"); print}' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
-done
-```
-
 ### Setup default mime apps
 ```bash
 # PDF → Zen Browser

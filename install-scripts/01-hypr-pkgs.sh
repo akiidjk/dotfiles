@@ -17,7 +17,7 @@ Extra=(
   vim
   neovim
   zed
-  python-pywal16
+  matugen-bin
   wofi
   fzf
   ripgrep
