@@ -1,0 +1,57 @@
+# Global Config
+font=JetBrains Mono Nerd Font Propo 14
+width=350
+height=150
+margin=16
+padding=20
+border-size=1
+border-radius=12
+icons=1
+max-icon-size=48
+default-timeout=5000
+ignore-timeout=0
+
+# Layout & Format
+# Mimics CSS: Bold summary, smaller body text
+format=<b>%s</b>\n<span size="90%">%b</span>
+
+# ----------------------------------------------------------------
+# COLORS
+# Replace the variables below with your actual Hex codes.
+# ----------------------------------------------------------------
+
+# Background: @background with 85% opacity (D9 is 85% in Hex)
+background-color=#282828D9
+text-color=#ffffff
+
+# Border: Mapped to "@selected" (@color2 from your CSS)
+border-color=#89b4fa
+
+# Progress Bar: Mapped to "@selected"
+progress-color=source #89b4fa
+
+# ----------------------------------------------------------------
+# URGENCY OVERRIDES
+# ----------------------------------------------------------------
+
+[urgency=low]
+# Optional: Dimmer border for low priority
+border-color=#45475a
+
+[urgency=normal]
+border-color=#89b4fa
+
+[urgency=critical]
+# Mapped to "@urgent" (@color6 from your CSS)
+border-color=#f38ba8
+# Critical notifications usually stick around until dismissed
+default-timeout=0
+# CSS specified a thicker border for critical
+border-size=2
+
+# ----------------------------------------------------------------
+# MODE OVERRIDES
+# ----------------------------------------------------------------
+
+[mode=dnd]
+invisible=1
