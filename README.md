@@ -54,7 +54,7 @@ sudo pacman -S pipewire pipewire-pulse pipewire-alsa wireplumber pavucontrol
 sudo pacman -S hyprsunset
 
 # Notifications
-sudo pacman -S swaync libnotify
+sudo pacman -S mako libnotify
 
 # Terminal and shell
 sudo pacman -S kitty starship tmux
@@ -62,14 +62,14 @@ sudo pacman -S kitty starship tmux
 # File managers and utilities
 sudo pacman -S nautilus yazi
 
-# Status bar
-sudo pacman -S waybar
+# Shell
+sudo pacman -S quickshell
 
 # Text editor
 sudo pacman -S vim neovim zed
 
 # Color management
-yay -S python-pywal16
+yay -S matugen
 
 # Other utilities
 sudo pacman -S fastfetch brightnessctl playerctl pamixer wofi fzf ripgrep bat eza jless
@@ -121,6 +121,19 @@ curl -fsSL https://raw.githubusercontent.com/khanhas/spicetify-cli/main/install.
 # Permission fixes (I am not sure is this required)
 sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/
 sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/ -R
+```
+### SDDM setup
+```bash
+# Install SDDM
+sudo pacman -S sddm qt6-5compat qt6-svg qqc2-desktop-style inter-font ttf-nerd-fonts-symbols
+
+# Enable SDDM service
+sudo systemctl enable sddm.service
+
+# Set SDDM theme
+sudo cp -r sddm /usr/share/sddm/themes
+sudo mkdir -p /etc/sddm.conf.d
+echo -e "[Theme]\nCurrent=pixel" | sudo tee /etc/sddm.conf.d/theme.conf
 ```
 
 ## Post installation
@@ -339,7 +352,8 @@ Here are some useful aliases defined in my shell configuration:
 
 ## Configuration Structure
 
-- **swaync/** - Notification daemon and notification center configuration
+- **mako/** - Notification daemon
+- **matugent/** - Color scheme generator config
 - **fastfetch/** - System information tool config
 - **fonts/** - Custom Nerd Fonts (JetBrains Mono, Iosevka, etc.)
 - **hypr/** - Hyprland window manager configuration
@@ -360,8 +374,7 @@ Here are some useful aliases defined in my shell configuration:
 - **starship.toml** - Shell prompt configuration
 - **tmux/** - Terminal multiplexer config
 - **vicinae/** - Window management tool config
-- **wal/** - Pywal color scheme templates
-- **waybar/** - Status bar configuration
+- **quickshell/** - Status bar configuration + hub
 - **yazi/** - Terminal file manager config
 - **zed/** - Zed editor configuration
 - **wallpaper/** - Collection of wallpaper and images used in the configuration
@@ -391,8 +404,8 @@ sudo systemctl start sddm
 | `SUPER + W` | Set wallpaper + color schema |
 | `SUPER + SHIFT + C` | Open color picker (hyprpicker) |
 | `SUPER + SHIFT + S` | Screenshot area (grim + slurp + swappy) |
-| `SUPER + K` | Hide waybar |
-| `SUPER + N` | Show notification center |
+| `SUPER + K` | Hide status bar |
+| `SUPER + N` | Show shell hub |
 
 ### Media Controls
 | Keybind | Action |
@@ -450,6 +463,9 @@ For the complete keybinding configuration, see `~/.config/hypr/keybinds.conf`
 - **Nerd Fonts**: https://www.nerdfonts.com/
 - **Hyprland Wiki**: https://wiki.hyprland.org/
 - **Arch Wiki**: https://wiki.archlinux.org/
+- **Oh My Zsh**: https://ohmyz.sh/
+- **Starship Prompt**: https://starship.rs/
+- **Quickshell**: https://quickshell.org/
 
 ## Todo
 
@@ -461,10 +477,10 @@ For the complete keybinding configuration, see `~/.config/hypr/keybinds.conf`
 
 Based on various dotfile configurations and customized for personal use.
 
-- [JaKooLit - Arch Hyprland Installer](https://github.com/JaKooLit/Arch-Hyprland)
+- [JaKooLit - Arch Hyprland Installer (Base of installer)](https://github.com/JaKooLit/Arch-Hyprland)
 - [Invincible-Dots by mkhmtolzhas](https://github.com/mkhmtolzhas/Invincible-Dots)
 - [dots by 1amSimp1e (Hyprland section)](https://github.com/1amSimp1e/dots?tab=readme-ov-file#hypr)
-- [SDDM theme](https://github.com/Keyitdev/sddm-astronaut-theme)
+- [Surface-dots by snes19xx](https://github.com/snes19xx/surface-dots)
 
 ## License
 

@@ -25,3 +25,10 @@ curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh 
 curl -fsSL https://raw.githubusercontent.com/khanhas/spicetify-cli/main/install.sh | bash
 sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/
 sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/ -R
+
+# Install SDDM and dependencies for SDDM themes
+sudo pacman -S sddm qt6-5compat qt6-svg qqc2-desktop-style inter-font ttf-nerd-fonts-symbols
+sudo systemctl enable sddm.service
+sudo cp -r ~/sddm /usr/share/sddm/themes
+sudo mkdir -p /etc/sddm.conf.d
+echo -e "[Theme]\nCurrent=pixel" | sudo tee /etc/sddm.conf.d/theme.conf

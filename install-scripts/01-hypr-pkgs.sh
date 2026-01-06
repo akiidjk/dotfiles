@@ -60,10 +60,9 @@ hypr_package=(
   qt6-svg
   slurp
   swappy
-  swaync
+  quickshell
   unzip # needed later
   wallust
-  waybar
   wget
   wl-clipboard
   wlogout

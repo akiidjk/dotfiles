@@ -21,11 +21,15 @@ input_path = './templates/hyprland-colors.conf'
 output_path = '~/.config/hypr/colors.conf'
 post_hook = 'hyprctl reload'
 
-[templates.swaync]
-input_path = './templates/colors.css'
-output_path = '~/.config/waybar/colors.css'
-post_hook = 'swaync-client -rs'
+[templates.mako]
+input_path = './templates/mako-colors.conf'
+output_path = '~/.config/mako/config'
+post_hook = 'pkill -SIGUSR1 mako'
 
 [templates.btop]
 input_path = './templates/btop-colors.conf'
 output_path = '~/.config/btop/themes/matugen.conf'
+
+[templates.quickshell]
+input_path = './templates/quickshell-colors'
+output_path = '~/.config/quickshell/colors.js'
