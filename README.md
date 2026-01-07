@@ -134,7 +134,7 @@ sudo systemctl enable sddm.service
 sudo cp -r ~/.config/sddm/faces /usr/share/sddm/
 sudo cp -r ~/.config/sddm/themes/pixel /usr/share/sddm/themes/
 sudo mkdir -p /etc/sddm.conf.d
-echo -e "[Theme]\nCurrent=pixel" | sudo tee /etc/sddm.conf.d/theme.conf
+echo -e "[Theme]\nCurrent=pixel" | sudo tee /etc/sddm.conf
 ```
 
 ## Post installation

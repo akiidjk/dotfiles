@@ -3,15 +3,5 @@ set -eu
 
 WALL=$1
 echo "setting $WALL as wallpaper"
-awww img $WALL --transition-type wipe
+matugen image -t scheme-fidelity -m dark $WALL  --show-colors --verbose --fallback-color "#000000"
 echo "set $WALL as wallpaper sucessfuly"
-
-
-
-if command -v wal >/dev/null 2>&1; then
-    echo "applying pywal colors..."
-    wal -i "$WALL"
-    echo "pywal applied successfully"
-else
-    echo "pywal not installed, skipping"
-fi

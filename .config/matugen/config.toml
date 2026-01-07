@@ -11,11 +11,6 @@ input_path = './templates/kitty-colors.conf'
 output_path = '~/.config/kitty/colors.conf'
 post_hook = "kill -SIGUSR1 $(pidof kitty)"
 
-[templates.waybar]
-input_path = './templates/colors.css'
-output_path = '~/.config/waybar/colors.css'
-post_hook = 'pkill -SIGUSR2 waybar'
-
 [templates.hyprland]
 input_path = './templates/hyprland-colors.conf'
 output_path = '~/.config/hypr/colors.conf'
@@ -33,3 +28,4 @@ output_path = '~/.config/btop/themes/matugen.conf'
 [templates.quickshell]
 input_path = './templates/quickshell-colors'
 output_path = '~/.config/quickshell/colors.js'
+post_hook = 'pkill quickshell && quickshell &'

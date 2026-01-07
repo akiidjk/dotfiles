@@ -32,3 +32,8 @@ sudo systemctl enable sddm.service
 sudo cp -r ~/.config/sddm/faces /usr/share/sddm/
 sudo cp -r ~/.config/sddm/themes/pixel /usr/share/sddm/themes/
 echo -e "[Theme]\nCurrent=pixel" | sudo tee /etc/sddm.conf
+
+# Create Spotify icon symlink
+mkdir -p ~/.icons/hicolor/32x32/apps
+ln -s ~/.local/share/spotify-launcher/install/usr/share/spotify/icons/spotify-linux-32.png \
+      ~/.icons/hicolor/32x32/apps/spotify-linux-32.png

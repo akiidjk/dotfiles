@@ -17,13 +17,9 @@ Item {
     readonly property color _fgOnAccent: Colors.on_primary
     readonly property color _accent: Colors.primary
 
-    readonly property color _headColor: isDark
-        ? Qt.rgba(Colors.on_surface_variant.r, Colors.on_surface_variant.g, Colors.on_surface_variant.b, 0.80)
-        : Qt.rgba(Colors.on_surface_variant.r, Colors.on_surface_variant.g, Colors.on_surface_variant.b, 0.85)
+    readonly property color _headColor: Colors.on_surface_variant
 
-    readonly property color _dayColor: isDark
-        ? Qt.rgba(Colors.on_surface.r, Colors.on_surface.g, Colors.on_surface.b, 0.90)
-        : Qt.rgba(Colors.on_surface.r, Colors.on_surface.g, Colors.on_surface.b, 0.95)
+    readonly property color _dayColor: Colors.on_surface
 
     function rebuild() {
         var d = root.when
