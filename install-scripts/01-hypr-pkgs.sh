@@ -50,6 +50,8 @@ hypr_package=(
   kvantum
   libspng
   network-manager-applet
+  qadwaitadecorations-qt5
+  qadwaitadecorations-qt6
   pamixer
   pavucontrol
   playerctl
