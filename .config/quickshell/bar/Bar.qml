@@ -619,6 +619,7 @@ PanelWindow {
                 id: mediaItem
                 Layout.fillWidth: true
                 Layout.preferredHeight: 36
+                Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 property var player: Mpris.players.values[0] ?? null
                 property bool isPlaying: mediaItem.player && mediaItem.player.playbackState === MprisPlaybackState.Playing
                 property string trackTitle: mediaItem.player ? mediaItem.player.trackTitle : ""
