@@ -7,6 +7,8 @@ import Quickshell.Io
 import Quickshell.Hyprland
 import "bar" as Bar
 import "hub" as Hub
+import "wallselector" as WallSelector
+import "keybindings" as Keybindings
 
 ShellRoot {
     Variants {
@@ -21,9 +23,19 @@ ShellRoot {
                 visible: false
             }
 
+            WallSelector.WallSelector {
+                id: wallSelector
+                visible: false
+            }
+
             Bar.Bar {
                 id: bar
                 screen: v.modelData
+            }
+
+            Keybindings.Keybindings {
+                id: keybindings
+                visible: false
             }
 
             function toggleHub() {
@@ -34,6 +46,18 @@ ShellRoot {
 
             function toggleBar() {
                 bar.visible = !bar.visible;
+            }
+
+            function toggleWallSelector() {
+                wallSelector.visible = !wallSelector.visible;
+                if (wallSelector.visible)
+                    wallSelector.forceActiveFocus();
+            }
+
+            function toggleKeybindings() {
+                keybindings.visible = !keybindings.visible;
+                // if (keybindings.visible)
+                    // keybindings.forceActiveFocus();
             }
 
             Connections {
@@ -53,6 +77,18 @@ ShellRoot {
                 name: "barToggle"
                 description: "Toggle bar"
                 onPressed: toggleBar()
+            }
+
+            GlobalShortcut {
+                name: "wallSelectorToggle"
+                description: "Toggle wallpaper selector"
+                onPressed: toggleWallSelector()
+            }
+
+            GlobalShortcut {
+                name: "keybindingsToggle"
+                description: "Toggle keybindings overlay"
+                onPressed: toggleKeybindings()
             }
         }
     }

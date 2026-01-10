@@ -8,6 +8,7 @@ import Quickshell.Wayland
 import Quickshell.Services.SystemTray
 import Quickshell.Services.Mpris
 import Quickshell.Hyprland
+import Quickshell.Services.Pipewire
 import "../theme.js" as Theme
 import "../lib" as Lib
 import "../colors.js" as Colors
@@ -319,9 +320,27 @@ PanelWindow {
             return "";
         if (c.includes("swappy"))
             return "󰫕";
-
+        if (c.includes("zed"))
+            return "";
         return "";
     }
+
+    // --- PIPEWIRE AUDIO TRACKER ---
+   	PwObjectTracker {
+		objects: [ Pipewire.defaultAudioSink ]
+	}
+
+	function getDefaultAudioIcon(volume: double): string {
+	    if (volume == 0.0) {
+            return ""; // Muted
+        } else if (volume < 0.33) {
+            return ""; // Low volume
+        } else if (volume < 0.66) {
+            return ""; // Medium volume
+        } else {
+            return ""; // High volume
+        }
+	}
 
     Rectangle {
         anchors.fill: parent
@@ -614,12 +633,47 @@ PanelWindow {
                 }
             }
 
+            // 4. UPDATES
+            BarItem {
+                id: updatesBar
+                property color updatesBg: Qt.rgba(Colors.secondary_container.r, Colors.secondary_container.g, Colors.secondary_container.b, 0.65)
+                property color updatesFg: Colors.on_secondary_container
+
+                // Keep visible while update process is running
+                visible: updateProc.running || (updates.value !== "0" && updates.value !== "")
+                icon: "󰚰"
+                text: updateProc.running ? "…" : updates.value
+                bgColor: updatesBar.updatesBg
+                textColor: updatesBar.updatesFg
+                iconColor: updatesBar.updatesFg
+                borderWidth: 0
+                borderColor: "transparent"
+                hoverColor: palette.hoverSpotlight
+
+                Process {
+                    id: updateProc
+                    // The process stays 'running' as long as the window is open.
+                    command: ["kitty", "-e", "bash", "-lc", "sudo pacman -Syu"]
+
+                    // When running changes to false (window closed),
+                    onRunningChanged: {
+                        if (!running) {
+                            updates.update();
+                        }
+                    }
+                }
+
+                onClicked: {
+                    updateProc.running = true;
+                }
+            }
+
             // 3. MEDIA & TITLE
             Item {
                 id: mediaItem
                 Layout.fillWidth: true
                 Layout.preferredHeight: 36
-                Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                Layout.alignment: Qt.AlignHCenter
                 property var player: Mpris.players.values[0] ?? null
                 property bool isPlaying: mediaItem.player && mediaItem.player.playbackState === MprisPlaybackState.Playing
                 property string trackTitle: mediaItem.player ? mediaItem.player.trackTitle : ""
@@ -663,40 +717,6 @@ PanelWindow {
                 }
             }
 
-            // 4. UPDATES
-            BarItem {
-                id: updatesBar
-                property color updatesBg: Qt.rgba(Colors.secondary_container.r, Colors.secondary_container.g, Colors.secondary_container.b, 0.65)
-                property color updatesFg: Colors.on_secondary_container
-
-                // Keep visible while update process is running
-                visible: updateProc.running || (updates.value !== "0" && updates.value !== "")
-                icon: "󰚰"
-                text: updateProc.running ? "…" : updates.value
-                bgColor: updatesBar.updatesBg
-                textColor: updatesBar.updatesFg
-                iconColor: updatesBar.updatesFg
-                borderWidth: 0
-                borderColor: "transparent"
-                hoverColor: palette.hoverSpotlight
-
-                Process {
-                    id: updateProc
-                    // The process stays 'running' as long as the window is open.
-                    command: ["kitty", "-e", "bash", "-lc", "sudo pacman -Syu"]
-
-                    // When running changes to false (window closed),
-                    onRunningChanged: {
-                        if (!running) {
-                            updates.update();
-                        }
-                    }
-                }
-
-                onClicked: {
-                    updateProc.running = true;
-                }
-            }
 
             // 5. TRAY
             Rectangle {
@@ -755,6 +775,38 @@ PanelWindow {
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+            }
+
+            BarItem {
+                id: volumeItem
+                property var audioNode: Pipewire.defaultAudioSink
+                property real vol: audioNode.audio.volume
+
+                Layout.preferredWidth: 72
+                visible: SystemTray.items.values.length > 0
+                icon: win.getDefaultAudioIcon(vol)
+                text: Math.round(vol * 100) + "%"
+                bgColor: palette.bg
+                iconColor: batteryItem.battColor
+                textColor: batteryItem.battColor
+                borderWidth: 0
+                borderColor: "transparent"
+                hoverColor: palette.hoverSpotlight
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: {
+                        win.det("pactl set-sink-mute @DEFAULT_SINK@ toggle");
+                    }
+                    onWheel: {
+                        if (wheel.angleDelta.y > 0) {
+                            win.det("pactl set-sink-volume @DEFAULT_SINK@ +5%");
+                        } else if (wheel.angleDelta.y < 0) {
+                            win.det("pactl set-sink-volume @DEFAULT_SINK@ -5%");
                         }
                     }
                 }
