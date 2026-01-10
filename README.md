@@ -402,7 +402,8 @@ sudo systemctl start sddm
 | `SUPER + Z` | Open text editor (zed) |
 | `ALT + L` | Lock screen (hyprlock) |
 | `SUPER + R` | Reload Waybar |
-| `SUPER + W` | Set wallpaper + color schema |
+| `SUPER + W` | Wallapaper Picker |
+| `SUPER + S` | Keybinding cheasheets |
 | `SUPER + SHIFT + C` | Open color picker (hyprpicker) |
 | `SUPER + SHIFT + S` | Screenshot area (grim + slurp + swappy) |
 | `SUPER + K` | Hide status bar |
