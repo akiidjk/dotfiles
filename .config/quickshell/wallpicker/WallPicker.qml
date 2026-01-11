@@ -13,7 +13,7 @@ PanelWindow {
 
     property int cellWidth: 224
     property int cellHeight: 152
-    property string wallpaperDir: "/home/akiidjk/.config/wallpapers"
+    property string wallpaperDir: `${Quickshell.env("HOME")}/.config/wallpapers`
     property string currentWallpaperPath: ""
 
     implicitHeight: cellHeight * 3 + 85
@@ -22,7 +22,7 @@ PanelWindow {
 
     focusable: true
 
-    Column{
+    Column {
         anchors.fill: parent
         anchors.margins: 0
         spacing: 0
@@ -99,20 +99,17 @@ PanelWindow {
                         // Show loading/error state
                         onStatusChanged: {
                             if (status === Image.Error) {
-                                console.error("Failed to load image:", model.path)
+                                console.error("Failed to load image:", model.path);
                             }
                         }
                     }
 
                     Keys.onPressed: event => {
                         if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                            grid.currentIndex = index
-                            root.currentWallpaperPath = filePath
-                            console.log("Setting wallpaper to:", root.currentWallpaperPath)
-                            Quickshell.execDetached([
-                                "/bin/sh", "-c",
-                                `matugen image -t scheme-fidelity -m dark "${root.currentWallpaperPath}" --show-colors --verbose --fallback-color "#000000"`
-                            ])
+                            grid.currentIndex = index;
+                            root.currentWallpaperPath = filePath;
+                            console.log("Setting wallpaper to:", root.currentWallpaperPath);
+                            Quickshell.execDetached(["/bin/sh", "-c", `matugen image -t scheme-fidelity -m dark "${filePath}" --show-colors --verbose --fallback-color "#000000" && cp "${filePath}" "${Quickshell.env("HOME")}/.current_wallpaper"`]);
                             event.accepted = true;
                         }
                     }
@@ -180,37 +177,33 @@ PanelWindow {
                         hoverEnabled: true
 
                         onClicked: {
-                            grid.currentIndex = index
-                            root.currentWallpaperPath = filePath
-                            console.log("Selected:", filePath)
+                            grid.currentIndex = index;
+                            root.currentWallpaperPath = filePath;
+                            console.log("Selected:", filePath);
                         }
 
                         onDoubleClicked: {
-                            grid.currentIndex = index
-                            root.currentWallpaperPath = filePath
-                            console.log("Setting wallpaper to:", root.currentWallpaperPath)
-                            Quickshell.execDetached([
-                                "/bin/sh", "-c",
-                                `matugen image -t scheme-fidelity -m dark "${root.currentWallpaperPath}" --show-colors --verbose --fallback-color "#000000"`
-                            ])
+                            grid.currentIndex = index;
+                            root.currentWallpaperPath = filePath;
+                            console.log("Setting wallpaper to:", root.currentWallpaperPath);
+                            Quickshell.execDetached(["/bin/sh", "-c", `matugen image -t scheme-fidelity -m dark "${filePath}" --show-colors --verbose --fallback-color "#000000" && cp "${filePath}" "${Quickshell.env("HOME")}/.current_wallpaper"`]);
                         }
                     }
-
                 }
             }
         }
     }
 
     Process {
-            id: awwwCheck
-            running: false
-            command: ["pgrep", "-x", "awww-daemon"]
+        id: awwwCheck
+        running: false
+        command: ["pgrep", "-x", "awww-daemon"]
 
-            onExited: (code, status) => {
-                if (code !== 0) {
-                    // Start swww-daemon if not running
-                    Quickshell.execDetached(["awww-daemon"])
-                }
+        onExited: (code, status) => {
+            if (code !== 0) {
+                // Start swww-daemon if not running
+                Quickshell.execDetached(["awww-daemon"]);
             }
         }
+    }
 }

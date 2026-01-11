@@ -7,7 +7,7 @@ import Quickshell.Io
 import Quickshell.Hyprland
 import "bar" as Bar
 import "hub" as Hub
-import "wallselector" as WallSelector
+import "wallpicker" as WallPicker
 import "keybindings" as Keybindings
 
 ShellRoot {
@@ -23,8 +23,8 @@ ShellRoot {
                 visible: false
             }
 
-            WallSelector.WallSelector {
-                id: wallSelector
+            WallPicker.WallPicker {
+                id: wallpicker
                 visible: false
             }
 
@@ -48,16 +48,16 @@ ShellRoot {
                 bar.visible = !bar.visible;
             }
 
-            function toggleWallSelector() {
-                wallSelector.visible = !wallSelector.visible;
-                if (wallSelector.visible)
-                    wallSelector.forceActiveFocus();
+            function toggleWallPicker() {
+                wallpicker.visible = !wallpicker.visible;
+                if (wallpicker.visible)
+                    wallpicker.forceActiveFocus();
             }
 
             function toggleKeybindings() {
                 keybindings.visible = !keybindings.visible;
-                // if (keybindings.visible)
-                    // keybindings.forceActiveFocus();
+            // if (keybindings.visible)
+            // keybindings.forceActiveFocus();
             }
 
             Connections {
@@ -80,9 +80,9 @@ ShellRoot {
             }
 
             GlobalShortcut {
-                name: "wallSelectorToggle"
-                description: "Toggle wallpaper selector"
-                onPressed: toggleWallSelector()
+                name: "wallPickerToggle"
+                description: "Toggle wallpaper picker"
+                onPressed: toggleWallPicker()
             }
 
             GlobalShortcut {
