@@ -1858,11 +1858,12 @@ PanelWindow {
                 id: volumeItem
                 property var audioNode: Pipewire.defaultAudioSink
                 property real vol: audioNode.audio.volume
+                property bool isMuted: audioNode.audio.muted
 
                 Layout.preferredWidth: 72
                 visible: SystemTray.items.values.length > 0
-                icon: win.getDefaultAudioIcon(vol)
-                text: Math.round(vol * 100) + "%"
+                icon: isMuted ? "" : win.getDefaultAudioIcon(vol)
+                text: isMuted ? "Mute" : Math.round(vol * 100) + "%"
                 bgColor: palette.bg
                 iconColor: batteryItem.battColor
                 textColor: batteryItem.battColor
