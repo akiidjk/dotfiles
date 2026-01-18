@@ -1,9 +1,10 @@
-https://github.com/user-attachments/assets/62f05d78-2d2d-497f-88f0-93c0326aff3a
+https://github.com/user-attachments/assets/1c366cda-d49c-423c-8ceb-72bc1a85965b
+
 
 # Hyprland Dotfiles for Arch based distro
 This repository contains my personal configuration files for Hyprland on Arch.
 
-<img width="1920" height="1080" alt="img1" src="https://github.com/user-attachments/assets/5dc2aa3e-436f-4930-ad90-bf7a8b87f3b6" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/aaca4cb3-7cd8-4982-a329-39af880cf38b" />
 
 ## Quick Install
 
@@ -35,7 +36,7 @@ chmod +x install.sh
 > This setup assumes you have basic knowledge of Linux command line and package management.
 > Make sure to back up your existing configuration files before applying these dotfiles.
 
-<img width="1919" height="1080" alt="img2" src="https://github.com/user-attachments/assets/4202681a-0c3f-46de-9b15-c2c2554fbe16" />
+<img width="1918" height="1080" alt="image" src="https://github.com/user-attachments/assets/df796177-c0b7-4aeb-816e-261157ad3108" />
 
 ### Core System dependencies
 ```bash
@@ -156,10 +157,10 @@ Once installed via yay, you can set Zen Browser as your default browser and impo
   - customize Zen Browser settings to your preference.
   - import zen mods from .config/.zen/zen-mods-export.json
 
-<img width="1919" height="1078" alt="image" src="https://github.com/user-attachments/assets/88f133a2-45ae-4d2a-95f5-6a4537753ef9" />
+<img width="1916" height="1080" alt="image" src="https://github.com/user-attachments/assets/37c1d284-3d8a-4a21-8696-5a0f2e13c250" />
 
+<img width="1920" height="1079" alt="image" src="https://github.com/user-attachments/assets/f12403de-0efe-459c-afa3-5c4523ab82bf" />
 
-<img width="1918" height="1080" alt="image" src="https://github.com/user-attachments/assets/4063159a-4010-4fd1-b877-88e3917ef7af" />
 
 ### Setup default mime apps
 ```bash
@@ -456,8 +457,7 @@ sudo systemctl start sddm
 
 For the complete keybinding configuration, see `~/.config/hypr/keybinds.conf`
 
-<img width="1919" height="1080" alt="image" src="https://github.com/user-attachments/assets/b1737917-ce02-4572-8761-3bb25ea17904" />
-
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/21e1bc19-bf5b-4508-8ab7-3c5e93467573" />
 
 ## Resources
 
