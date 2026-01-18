@@ -471,9 +471,8 @@ For the complete keybinding configuration, see `~/.config/hypr/keybinds.conf`
 
 ## Todo
 
-- [ ] Better Wallpaper selector
-- [ ] Keybinds Help menu
-- [ ] Check swaync animation
+- [x] Better Wallpaper selector
+- [x] Keybinds Help menu
 
 ## Credits
 
