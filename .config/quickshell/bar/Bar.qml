@@ -791,10 +791,11 @@ PanelWindow {
                 id: volumeItem
                 property var audioNode: Pipewire.defaultAudioSink
                 property real vol: audioNode.audio.volume
+                property bool isMuted: audioNode.audio.muted
 
-                Layout.preferredWidth: 72
+                Layout.preferredWidth: 42
                 visible: SystemTray.items.values.length > 0
-                icon: win.getDefaultAudioIcon(vol)
+                icon: isMuted ? "" : win.getDefaultAudioIcon(vol)
                 // text: Math.round(vol * 100) + "%"
                 bgColor: palette.bg
                 iconColor: batteryItem.battColor
@@ -815,113 +816,6 @@ PanelWindow {
                         } else if (wheel.angleDelta.y < 0) {
                             win.det("pactl set-sink-volume @DEFAULT_SINK@ -5%");
                         }
-                    }
-                }
-            }
-
-            // 6. BATTERY
-            BarItem {
-                id: batteryItem
-                Layout.preferredWidth: 74
-                visible: batStatus.value !== ""
-                property string status: String(batStatus.value).trim()
-                property int rawCap: Number(batCap.value) || 0
-                property int cap: (batteryItem.rawCap === 0 && batteryItem.status !== "Discharging") ? 50 : batteryItem.rawCap
-                property bool plugged: (String(acOnline.value).trim() === "1")
-                property bool isCharging: batteryItem.plugged || batteryItem.status === "Charging" || batteryItem.status === "Full"
-
-                property color battColor: {
-                    if (batteryItem.isCharging)
-                        return palette.accent;
-                    if (batteryItem.cap <= 10)
-                        return Colors.error;
-                    if (batteryItem.cap <= 20)
-                        return Colors.tertiary;
-                    if (batteryItem.cap <= 30)
-                        return Colors.secondary;
-                    return palette.textPrimary;
-                }
-                property string dynamicIcon: {
-                    if (batteryItem.isCharging)
-                        return "󰂄";
-                    if (batteryItem.cap >= 98)
-                        return "󰁹";
-                    if (batteryItem.cap >= 90)
-                        return "󰂂";
-                    if (batteryItem.cap >= 80)
-                        return "󰂁";
-                    if (batteryItem.cap >= 70)
-                        return "󰂀";
-                    if (batteryItem.cap >= 60)
-                        return "󰁿";
-                    if (batteryItem.cap >= 50)
-                        return "󰁾";
-                    if (batteryItem.cap >= 40)
-                        return "󰁽";
-                    if (batteryItem.cap >= 30)
-                        return "󰁼";
-                    if (batteryItem.cap >= 20)
-                        return "󰁻";
-                    return "󰁺";
-                }
-
-                icon: batteryItem.dynamicIcon
-                text: batteryItem.cap + "%"
-                bgColor: palette.bg
-                iconColor: batteryItem.battColor
-                textColor: batteryItem.battColor
-                borderWidth: 0
-                borderColor: "transparent"
-                hoverColor: palette.hoverSpotlight
-
-                SequentialAnimation {
-                    running: batteryItem.cap <= 10 && !batteryItem.isCharging
-                    loops: Animation.Infinite
-                    NumberAnimation {
-                        target: batteryItem
-                        property: "opacity"
-                        to: 0.3
-                        duration: 500
-                    }
-                    NumberAnimation {
-                        target: batteryItem
-                        property: "opacity"
-                        to: 1.0
-                        duration: 500
-                    }
-                }
-
-                Rectangle {
-                    id: powerSurge
-                    anchors.centerIn: parent
-                    width: parent.width
-                    height: parent.height
-                    radius: parent.height / 2
-                    color: "transparent"
-                    border.width: 0
-                    border.color: "transparent"
-                    opacity: 0
-                    scale: 1.0
-                }
-                onPluggedChanged: if (batteryItem.plugged)
-                    surgeAnim.restart()
-                ParallelAnimation {
-                    id: surgeAnim
-                    NumberAnimation {
-                        target: powerSurge
-                        property: "scale"
-                        from: 1.0
-                        to: 1.45
-                        duration: 520
-                        easing.type: Easing.OutCubic
-                    }
-                    NumberAnimation {
-                        target: powerSurge
-                        property: "opacity"
-                        from: 1.0
-                        to: 0.0
-                        duration: 520
-                        easing.type: Easing.OutCubic
                     }
                 }
             }
@@ -1737,6 +1631,113 @@ PanelWindow {
 
                 onClicked: {
                     updateProc.running = true;
+                }
+            }
+
+            // 6. BATTERY
+            BarItem {
+                id: batteryItem
+                Layout.preferredWidth: 74
+                visible: batStatus.value !== ""
+                property string status: String(batStatus.value).trim()
+                property int rawCap: Number(batCap.value) || 0
+                property int cap: (batteryItem.rawCap === 0 && batteryItem.status !== "Discharging") ? 50 : batteryItem.rawCap
+                property bool plugged: (String(acOnline.value).trim() === "1")
+                property bool isCharging: batteryItem.plugged || batteryItem.status === "Charging" || batteryItem.status === "Full"
+
+                property color battColor: {
+                    if (batteryItem.isCharging)
+                        return palette.accent;
+                    if (batteryItem.cap <= 10)
+                        return Colors.error;
+                    if (batteryItem.cap <= 20)
+                        return Colors.tertiary;
+                    if (batteryItem.cap <= 30)
+                        return Colors.secondary;
+                    return palette.textPrimary;
+                }
+                property string dynamicIcon: {
+                    if (batteryItem.isCharging)
+                        return "󰂄";
+                    if (batteryItem.cap >= 98)
+                        return "󰁹";
+                    if (batteryItem.cap >= 90)
+                        return "󰂂";
+                    if (batteryItem.cap >= 80)
+                        return "󰂁";
+                    if (batteryItem.cap >= 70)
+                        return "󰂀";
+                    if (batteryItem.cap >= 60)
+                        return "󰁿";
+                    if (batteryItem.cap >= 50)
+                        return "󰁾";
+                    if (batteryItem.cap >= 40)
+                        return "󰁽";
+                    if (batteryItem.cap >= 30)
+                        return "󰁼";
+                    if (batteryItem.cap >= 20)
+                        return "󰁻";
+                    return "󰁺";
+                }
+
+                icon: batteryItem.dynamicIcon
+                text: batteryItem.cap + "%"
+                bgColor: palette.bg
+                iconColor: batteryItem.battColor
+                textColor: batteryItem.battColor
+                borderWidth: 0
+                borderColor: "transparent"
+                hoverColor: palette.hoverSpotlight
+
+                SequentialAnimation {
+                    running: batteryItem.cap <= 10 && !batteryItem.isCharging
+                    loops: Animation.Infinite
+                    NumberAnimation {
+                        target: batteryItem
+                        property: "opacity"
+                        to: 0.3
+                        duration: 500
+                    }
+                    NumberAnimation {
+                        target: batteryItem
+                        property: "opacity"
+                        to: 1.0
+                        duration: 500
+                    }
+                }
+
+                Rectangle {
+                    id: powerSurge
+                    anchors.centerIn: parent
+                    width: parent.width
+                    height: parent.height
+                    radius: parent.height / 2
+                    color: "transparent"
+                    border.width: 0
+                    border.color: "transparent"
+                    opacity: 0
+                    scale: 1.0
+                }
+                onPluggedChanged: if (batteryItem.plugged)
+                    surgeAnim.restart()
+                ParallelAnimation {
+                    id: surgeAnim
+                    NumberAnimation {
+                        target: powerSurge
+                        property: "scale"
+                        from: 1.0
+                        to: 1.45
+                        duration: 520
+                        easing.type: Easing.OutCubic
+                    }
+                    NumberAnimation {
+                        target: powerSurge
+                        property: "opacity"
+                        from: 1.0
+                        to: 0.0
+                        duration: 520
+                        easing.type: Easing.OutCubic
+                    }
                 }
             }
 
