@@ -8,7 +8,6 @@
 
 # add packages wanted here
 Extra=(
-  wl-clip-persist
   hyprsunset
   starship
   tmux
