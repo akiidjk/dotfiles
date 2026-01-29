@@ -24,6 +24,7 @@ Extra=(
   bat
   zen-browser-bin
   awww
+  wl-clip-persist
   cava
   hyprpicker
   vicinae-bin
