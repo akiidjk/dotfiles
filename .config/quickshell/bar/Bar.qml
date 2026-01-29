@@ -795,7 +795,7 @@ PanelWindow {
                 Layout.preferredWidth: 72
                 visible: SystemTray.items.values.length > 0
                 icon: win.getDefaultAudioIcon(vol)
-                text: Math.round(vol * 100) + "%"
+                // text: Math.round(vol * 100) + "%"
                 bgColor: palette.bg
                 iconColor: batteryItem.battColor
                 textColor: batteryItem.battColor
