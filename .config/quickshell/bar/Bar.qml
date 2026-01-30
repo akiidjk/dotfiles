@@ -684,40 +684,59 @@ PanelWindow {
                 property string trackTitle: mediaItem.player ? mediaItem.player.trackTitle : ""
                 property string trackArtist: mediaItem.player ? mediaItem.player.trackArtist : ""
 
-                Text {
-                    id: activeTitle
-                    anchors.centerIn: parent
+                Rectangle {
                     visible: !mediaItem.isPlaying
-                    text: Hyprland.activeToplevel?.title ?? "Desktop"
-                    font.family: Theme.iconFont
-                    font.weight: 700
-                    font.pixelSize: 13
-                    color: palette.textPrimary
-                    width: Math.min(activeTitle.implicitWidth, 500)
-                    elide: Text.ElideRight
-                }
-
-                RowLayout {
-                    id: mediaRow
                     anchors.centerIn: parent
-                    visible: mediaItem.isPlaying
-                    spacing: 10
+                    radius: 17
+                    color: palette.bg
+                    implicitWidth: activeTitle.implicitWidth + 32
+                    implicitHeight: activeTitle.implicitHeight + 16
+
                     Text {
-                        text: ""
-                        font.family: Theme.iconFont
-                        font.pixelSize: 14
-                        color: palette.accent
-                    }
-                    Text {
-                        id: mediaText
-                        text: mediaItem.trackTitle + " <font color='" + palette.textSecondary + "'>- " + mediaItem.trackArtist + "</font>"
-                        textFormat: Text.StyledText
+                        id: activeTitle
+                        anchors.centerIn: parent
+                        text: Hyprland.activeToplevel?.title ?? "Desktop"
                         font.family: Theme.iconFont
                         font.weight: 700
                         font.pixelSize: 13
                         color: palette.textPrimary
-                        Layout.maximumWidth: 350
+                        width: Math.min(implicitWidth, 300)
                         elide: Text.ElideRight
+                    }
+                }
+
+
+                Rectangle {
+                    visible: mediaItem.isPlaying
+                    anchors.centerIn: parent
+                    radius: 17
+                    color: palette.bg
+                    implicitHeight: mediaRow.implicitHeight + 16
+                    implicitWidth: mediaRow.implicitWidth + 32
+
+                    RowLayout {
+                        id: mediaRow
+                        anchors.centerIn: parent
+                        spacing: 10
+
+                        Text {
+                            text: ""
+                            font.family: Theme.iconFont
+                            font.pixelSize: 14
+                            color: palette.accent
+                        }
+
+                        Text {
+                            text: mediaItem.trackTitle +
+                                  " <font color='" + palette.textSecondary + "'>- " + mediaItem.trackArtist + "</font>"
+                            textFormat: Text.StyledText
+                            font.family: Theme.iconFont
+                            font.weight: 700
+                            font.pixelSize: 13
+                            color: palette.textPrimary
+                            Layout.maximumWidth: 300
+                            elide: Text.ElideRight
+                        }
                     }
                 }
             }
@@ -800,7 +819,6 @@ PanelWindow {
                 bgColor: palette.bg
                 iconColor: batteryItem.battColor
                 textColor: batteryItem.battColor
-                borderWidth: 0
                 borderColor: "transparent"
                 hoverColor: palette.hoverSpotlight
 
@@ -1578,7 +1596,7 @@ PanelWindow {
                                                     easing.overshoot: 1.5
                                                 }
                                             }
-                                            color: wsDelegate.isActive ? Colors.background : (wsWinItem.modelData.urgent ? flashColor.val : (wsHover.hovered ? Colors.secondary : Colors.on_secondary))
+                                            color: wsDelegate.isActive ? Colors.background : (wsWinItem.modelData.urgent ? flashColor.val : (wsHover.hovered ? Colors.secondary : Colors.on_surface_variant))
                                         }
                                     }
                                 }
@@ -1596,41 +1614,6 @@ PanelWindow {
                             }
                         }
                     }
-                }
-            }
-
-            // 4. UPDATES
-            BarItem {
-                id: updatesBar
-                property color updatesBg: Qt.rgba(Colors.secondary_container.r, Colors.secondary_container.g, Colors.secondary_container.b, 0.65)
-                property color updatesFg: Colors.on_secondary_container
-
-                // Keep visible while update process is running
-                visible: updateProc.running || (updates.value !== "0" && updates.value !== "")
-                icon: "󰚰"
-                text: updateProc.running ? "…" : updates.value
-                bgColor: updatesBar.updatesBg
-                textColor: updatesBar.updatesFg
-                iconColor: updatesBar.updatesFg
-                borderWidth: 0
-                borderColor: "transparent"
-                hoverColor: palette.hoverSpotlight
-
-                Process {
-                    id: updateProc
-                    // The process stays 'running' as long as the window is open.
-                    command: ["kitty", "-e", "bash", "-lc", "sudo pacman -Syu"]
-
-                    // When running changes to false (window closed),
-                    onRunningChanged: {
-                        if (!running) {
-                            updates.update();
-                        }
-                    }
-                }
-
-                onClicked: {
-                    updateProc.running = true;
                 }
             }
 
