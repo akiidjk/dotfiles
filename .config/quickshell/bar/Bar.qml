@@ -886,7 +886,7 @@ PanelWindow {
                     anchors.centerIn: parent
                     radius: win.itemHeight / 2
                     color: palette.bg
-                    implicitWidth: activeTitle.implicitWidth + 24
+                    implicitWidth: win.dynamic_island ? Math.min(activeTitle.implicitWidth + 24, 400) : activeTitle.implicitWidth + 24
                     implicitHeight: win.itemHeight
 
                     Text {
@@ -897,7 +897,7 @@ PanelWindow {
                         font.weight: 700
                         font.pixelSize: 13
                         color: palette.textPrimary
-                        width: Math.min(activeTitle.implicitWidth, win.width / 3.5)
+                        width: Math.min(activeTitle.implicitWidth, parent.width - 48)
                         elide: Text.ElideRight
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -1039,12 +1039,13 @@ PanelWindow {
 
                 property var audioNode: Pipewire.defaultAudioSink
                 property real vol: audioNode.audio.volume
+                property bool isMuted: audioNode.audio.muted
 
                 Layout.preferredWidth: win.dynamic_island ? 10 : 42
                 Layout.preferredHeight: win.itemHeight
                 anchors.verticalCenter: parent.verticalCenter
                 visible: SystemTray.items.values.length > 0
-                icon: win.getDefaultAudioIcon(vol) // text: Math.round(vol * 100) + "%"
+                icon: isMuted ? "󰖁" : win.getDefaultAudioIcon(vol)
                 bgColor: palette.bg
                 iconColor: batteryItem.battColor
                 textColor: batteryItem.battColor
