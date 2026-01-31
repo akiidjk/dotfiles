@@ -1,10 +1,9 @@
-https://github.com/user-attachments/assets/1c366cda-d49c-423c-8ceb-72bc1a85965b
-
+https://github.com/user-attachments/assets/745f42ad-1740-44a6-94be-d1e21377d450
 
 # Hyprland Dotfiles for Arch based distro
 This repository contains my personal configuration files for Hyprland on Arch.
 
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/aaca4cb3-7cd8-4982-a329-39af880cf38b" />
+<img width="1919" height="1078" alt="swappy-20260131_210028" src="https://github.com/user-attachments/assets/ebf26662-e2a4-46a1-825f-24339372a2ef" />
 
 ## Quick Install
 
@@ -36,7 +35,8 @@ chmod +x install.sh
 > This setup assumes you have basic knowledge of Linux command line and package management.
 > Make sure to back up your existing configuration files before applying these dotfiles.
 
-<img width="1918" height="1080" alt="image" src="https://github.com/user-attachments/assets/df796177-c0b7-4aeb-816e-261157ad3108" />
+<img width="1920" height="1080" alt="swappy-20260131_210215" src="https://github.com/user-attachments/assets/9369d737-a257-4eee-aa5c-42f3217edd7f" />
+
 
 ### Core System dependencies
 ```bash
@@ -157,9 +157,9 @@ Once installed via yay, you can set Zen Browser as your default browser and impo
   - customize Zen Browser settings to your preference.
   - import zen mods from .config/.zen/zen-mods-export.json
 
-<img width="1916" height="1080" alt="image" src="https://github.com/user-attachments/assets/37c1d284-3d8a-4a21-8696-5a0f2e13c250" />
+<img width="1920" height="1080" alt="swappy-20260131_210816" src="https://github.com/user-attachments/assets/237024ff-1a2c-4748-8aba-311c78df7535" />
+<img width="1920" height="1080" alt="swappy-20260131_210741" src="https://github.com/user-attachments/assets/4592087d-affb-4c5f-a5c7-dadac69d6a08" />
 
-<img width="1920" height="1079" alt="image" src="https://github.com/user-attachments/assets/f12403de-0efe-459c-afa3-5c4523ab82bf" />
 
 
 ### Setup default mime apps
@@ -457,7 +457,7 @@ sudo systemctl start sddm
 
 For the complete keybinding configuration, see `~/.config/hypr/keybinds.conf`
 
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/21e1bc19-bf5b-4508-8ab7-3c5e93467573" />
+<img width="1920" height="1080" alt="swappy-20260131_211348" src="https://github.com/user-attachments/assets/923d35f9-449d-4233-be3e-fe784bb4fd58" />
 
 ## Resources
 
