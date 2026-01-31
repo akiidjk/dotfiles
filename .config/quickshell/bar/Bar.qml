@@ -785,7 +785,7 @@ PanelWindow {
                     return "󰁺";
                 }
 
-                Layout.preferredWidth: 74
+                Layout.preferredWidth: win.dynamic_island ? 0 : 74
                 Layout.preferredHeight: win.itemHeight
                 visible: batStatus.value !== ""
                 icon: batteryItem.dynamicIcon
@@ -800,6 +800,14 @@ PanelWindow {
                     if (batteryItem.plugged)
                         surgeAnim.restart();
 
+                }
+
+                Behavior on Layout.preferredWidth {
+                    NumberAnimation {
+                        duration: 400
+                        easing.type: Easing.InOutQuart
+                        easing.overshoot: 0.8
+                    }
                 }
 
                 SequentialAnimation {
