@@ -886,7 +886,7 @@ PanelWindow {
                     anchors.centerIn: parent
                     radius: win.itemHeight / 2
                     color: palette.bg
-                    implicitWidth: win.dynamic_island ? Math.min(activeTitle.implicitWidth + 24, 400) : activeTitle.implicitWidth + 24
+                    implicitWidth: win.dynamic_island ? Math.min(activeTitle.implicitWidth + 24, win.width / 7) : activeTitle.implicitWidth + 48
                     implicitHeight: win.itemHeight
 
                     Text {
@@ -897,7 +897,7 @@ PanelWindow {
                         font.weight: 700
                         font.pixelSize: 13
                         color: palette.textPrimary
-                        width: Math.min(activeTitle.implicitWidth, parent.width - 48)
+                        width: Math.min(activeTitle.implicitWidth, parent.width - 24)
                         elide: Text.ElideRight
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
