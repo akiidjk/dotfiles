@@ -2,29 +2,63 @@
 
 import QtQuick
 import Quickshell
-import Quickshell.Wayland
-import Quickshell.Io
 import Quickshell.Hyprland
+import Quickshell.Io
+import Quickshell.Wayland
 import "bar" as Bar
 import "hub" as Hub
-import "wallpicker" as WallPicker
 import "keybindings" as Keybindings
+import "wallpicker" as WallPicker
 
 ShellRoot {
     Variants {
         model: Quickshell.screens
 
         Scope {
+            // if (keybindings.visible)
+            // keybindings.forceActiveFocus();
+
             id: v
+
             property var modelData
+
+            function toggleHub() {
+                hub.visible = !hub.visible;
+                if (hub.visible)
+                    hub.forceActiveFocus();
+
+            }
+
+            function toggleBar() {
+                bar.visible = !bar.visible;
+            }
+
+            function changeLayout() {
+                bar.dynamic_island = !bar.dynamic_island;
+                // bar.visible = !bar.visible;
+                // bar.visible = !bar.visible;
+            }
+
+            function toggleWallPicker() {
+                wallpicker.visible = !wallpicker.visible;
+                if (wallpicker.visible)
+                    wallpicker.forceActiveFocus();
+
+            }
+
+            function toggleKeybindings() {
+                keybindings.visible = !keybindings.visible;
+            }
 
             Hub.HubWindow {
                 id: hub
+
                 visible: false
             }
 
             WallPicker.WallPicker {
                 id: wallpicker
+
                 visible: false
             }
 
@@ -35,36 +69,16 @@ ShellRoot {
 
             Keybindings.Keybindings {
                 id: keybindings
+
                 visible: false
             }
 
-            function toggleHub() {
-                hub.visible = !hub.visible;
-                if (hub.visible)
-                    hub.forceActiveFocus();
-            }
-
-            function toggleBar() {
-                bar.visible = !bar.visible;
-            }
-
-            function toggleWallPicker() {
-                wallpicker.visible = !wallpicker.visible;
-                if (wallpicker.visible)
-                    wallpicker.forceActiveFocus();
-            }
-
-            function toggleKeybindings() {
-                keybindings.visible = !keybindings.visible;
-            // if (keybindings.visible)
-            // keybindings.forceActiveFocus();
-            }
-
             Connections {
-                target: bar
                 function onRequestHubToggle() {
                     toggleHub();
                 }
+
+                target: bar
             }
 
             GlobalShortcut {
@@ -80,6 +94,12 @@ ShellRoot {
             }
 
             GlobalShortcut {
+                name: "changeBarLayout"
+                description: "Change bar layout"
+                onPressed: changeLayout()
+            }
+
+            GlobalShortcut {
                 name: "wallPickerToggle"
                 description: "Toggle wallpaper picker"
                 onPressed: toggleWallPicker()
@@ -90,6 +110,9 @@ ShellRoot {
                 description: "Toggle keybindings overlay"
                 onPressed: toggleKeybindings()
             }
+
         }
+
     }
+
 }
