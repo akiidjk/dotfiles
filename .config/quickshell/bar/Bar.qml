@@ -785,7 +785,7 @@ PanelWindow {
                     return "󰁺";
                 }
 
-                Layout.preferredWidth: win.dynamic_island ? 0 : 74
+                Layout.preferredWidth: win.dynamic_island ? 10 : 74
                 Layout.preferredHeight: win.itemHeight
                 visible: batStatus.value !== ""
                 icon: batteryItem.dynamicIcon
