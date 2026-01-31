@@ -1,21 +1,23 @@
-import "../colors.js" as Colors
-import "../lib" as Lib
-import "../theme.js" as Theme
-import Qt5Compat.GraphicalEffects
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Controls
+import Qt5Compat.GraphicalEffects
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
-import Quickshell.Services.Mpris
-import Quickshell.Services.Pipewire
-import Quickshell.Services.SystemTray
 import Quickshell.Wayland
+import Quickshell.Services.SystemTray
+import Quickshell.Services.Mpris
+import Quickshell.Hyprland
+import Quickshell.Services.Pipewire
+
+import "../theme.js" as Theme
+import "../lib" as Lib
+import "../colors.js" as Colors
 
 PanelWindow {
     id: win
 
+    property bool dynamic_island: false
     property bool isDarkMode: true // --- SHARED HEIGHT PARAM ---
     property int itemHeight: win.implicitHeight - 6
     property int activeWsId: Hyprland.focusedMonitor.activeWorkspace.id ?? 1 // -- Volume Widgets Things
@@ -174,10 +176,12 @@ PanelWindow {
     }
 
     implicitHeight: 32
-    margins.top: 2
+    // implicitWidth: win.dynamic_island ? 850 : undefined
     color: "transparent" // --- GLOBAL STATE --- // Theme mode: default is always dark, false will activate light mode
+
+    margins.top: 10
     WlrLayershell.layer: WlrLayer.Top
-    WlrLayershell.exclusiveZone: win.implicitHeight - 15
+    WlrLayershell.exclusiveZone: win.implicitHeight - 7
     WlrLayershell.namespace: "shell-bar"
 
     anchors {
@@ -217,7 +221,7 @@ PanelWindow {
             };
             const list = Hyprland.toplevels.values ?? [];
             for (const tl of list) {
-                const id = tl.workspace.id;
+                const id = tl?.workspace?.id;
                 if (!id)
                     continue;
 
@@ -328,11 +332,34 @@ PanelWindow {
     }
 
     Rectangle {
-        anchors.fill: parent
-        anchors.margins: 4
+        id: bgRect
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.margins: 0
+
         anchors.leftMargin: 12
         anchors.rightMargin: 12
-        color: "transparent"
+
+        color: win.dynamic_island ? Colors.surface_container : "transparent"
+        radius: 24
+        width: win.dynamic_island ? 850 : (win.width - 24)
+        clip: true
+
+        Behavior on width {
+            NumberAnimation {
+                duration: 400
+                easing.type: Easing.InOutQuart
+                easing.overshoot: 0.8
+            }
+        }
+
+        Behavior on color {
+            ColorAnimation {
+                duration: 200
+                easing.type: Easing.InOutQuart
+            }
+        }
 
         // 2. WORKSPACES
         RowLayout {
@@ -509,15 +536,13 @@ PanelWindow {
 
                     Repeater {
                         id: wsRepeater
-
                         model: 5
-
                         Item {
                             id: wsDelegate
-
                             required property int index
                             property int wsId: wsDelegate.index + 1
                             property bool isActive: win.activeWsId === wsDelegate.wsId // --- READ FROM CACHE ---
+
                             property var wsWindows: hyCache.wsMap[wsDelegate.wsId] ?? []
                             property int winCount: wsDelegate.wsWindows.length
                             property bool hasWindows: wsDelegate.winCount > 0
@@ -527,6 +552,7 @@ PanelWindow {
 
                             width: wsDelegate.hasWindows ? (wsDelegate.winCount * 22 + 12) : 26
                             height: win.itemHeight
+
                             y: wsPress.pressed ? 1 : ((!wsDelegate.isActive && wsHover.hovered) ? -2 : 0)
                             scale: (wsPress.pressed ? 0.96 : 1) * ((!wsDelegate.isActive && wsHover.hovered) ? 1.1 : 1)
 
@@ -704,16 +730,14 @@ PanelWindow {
             // 3. MEDIA & TITLE
             Item {
                 id: mediaItem
-
+                Layout.fillWidth: true
+                Layout.preferredHeight: 36
+                Layout.alignment: Qt.AlignHCenter
                 property MprisPlayer player: Mpris.players.values[0] ?? null
                 property bool isPlaying: mediaItem.player && mediaItem.player.playbackState === MprisPlaybackState.Playing
                 property string trackTitle: mediaItem.player ? mediaItem.player.trackTitle : ""
                 property string trackArtist: mediaItem.player ? mediaItem.player.trackArtist : ""
-
-                Layout.fillWidth: true
-                Layout.preferredHeight: win.itemHeight + 12
-                Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenter: parent.verticalCenter // Dynamic island
 
                 Rectangle {
                     visible: !mediaItem.isPlaying
@@ -731,8 +755,7 @@ PanelWindow {
                         font.weight: 700
                         font.pixelSize: 13
                         color: palette.textPrimary
-                        width: Math.max(implicitWidth, 300)
-                        Layout.maximumWidth: 300
+                        width: Math.min(activeTitle.implicitWidth, win.width / 3.5)
                         elide: Text.ElideRight
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -750,7 +773,6 @@ PanelWindow {
 
                     RowLayout {
                         id: mediaRow
-
                         anchors.centerIn: parent
                         spacing: 10
 
