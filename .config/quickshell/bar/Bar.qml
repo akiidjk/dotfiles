@@ -886,7 +886,7 @@ PanelWindow {
                     anchors.centerIn: parent
                     radius: win.itemHeight / 2
                     color: palette.bg
-                    implicitWidth: win.dynamic_island ? Math.min(activeTitle.implicitWidth + 24, win.width / 7) : activeTitle.implicitWidth + 48
+                    implicitWidth: win.dynamic_island ? Math.min(activeTitle.implicitWidth + 24, win.width / 7) : Math.min(activeTitle.implicitWidth + 24, win.width / 3)
                     implicitHeight: win.itemHeight
 
                     Text {
