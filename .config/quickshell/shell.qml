@@ -35,8 +35,6 @@ ShellRoot {
 
             function changeLayout() {
                 bar.dynamic_island = !bar.dynamic_island;
-                // bar.visible = !bar.visible;
-                // bar.visible = !bar.visible;
             }
 
             function toggleWallPicker() {

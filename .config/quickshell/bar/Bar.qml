@@ -356,8 +356,8 @@ PanelWindow {
 
         Behavior on color {
             ColorAnimation {
-                duration: 200
-                easing.type: Easing.InOutQuart
+                duration: 300
+                easing.type: Easing.Linear
             }
         }
 
@@ -785,7 +785,7 @@ PanelWindow {
                     return "󰁺";
                 }
 
-                Layout.preferredWidth: win.dynamic_island ? 10 : 74
+                Layout.preferredWidth: win.dynamic_island ? 40 : 74
                 Layout.preferredHeight: win.itemHeight
                 visible: batStatus.value !== ""
                 icon: batteryItem.dynamicIcon
