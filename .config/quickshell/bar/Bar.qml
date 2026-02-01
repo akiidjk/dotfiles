@@ -17,7 +17,6 @@ import "../colors.js" as Colors
 PanelWindow {
     id: win
 
-    property bool dynamic_island: false
     property bool isDarkMode: true // --- SHARED HEIGHT PARAM ---
     property int itemHeight: win.implicitHeight - 6
     property int activeWsId: Hyprland.focusedMonitor.activeWorkspace.id ?? 1 // -- Volume Widgets Things
@@ -25,7 +24,7 @@ PanelWindow {
     property int volume: 0
     property bool volumeMuted: false // --- THEME ---
 
-    signal requestHubToggle()
+    signal requestHubToggle
 
     function sh(cmd) {
         return ["bash", "-c", cmd];
@@ -36,120 +35,120 @@ PanelWindow {
     }
 
     // --- ICON MAP ---
-        function getIcon(cls) {
-            var c = (cls || "").toLowerCase();
-            if (c.includes("firefox") || c.includes("zen") || c.includes("librewolf"))
-                return "󰈹";
-            if (c.includes("chromium") || c.includes("chrome") || c.includes("thorium"))
-                return "";
-            if (c.includes("brave"))
-                return "";
-            if (c.includes("qutebrowser"))
-                return "󰖟";
-            if (c.includes("kitty"))
-                return "󰄛";
-            if (c.includes("alacritty") || c.includes("foot") || c.includes("terminal") || c.includes("ghostty") || c.includes("wezterm"))
-                return "";
-            if (c.includes("code") || c.includes("codium"))
-                return "󰨞";
-            if (c.includes("sublime"))
-                return "󰅳";
-            if (c.includes("neovide") || c.includes("nvim"))
-                return "";
-            if (c.includes("idea") || c.includes("jetbrains"))
-                return "";
-            if (c.includes("pycharm"))
-                return "";
-            if (c.includes("webstorm"))
-                return "";
-            if (c.includes("clion"))
-                return "";
-            if (c.includes("android"))
-                return "󰀴";
-            if (c.includes("kate") || c.includes("texteditor"))
-                return "󰈔";
-            if (c.includes("nautilus") || c.includes("org.gnome.nautilus") || c.includes("files"))
-                return "";
-            if (c.includes("thunar") || c.includes("dolphin") || c.includes("nemo"))
-                return "";
-            if (c.includes("discord") || c.includes("vesktop"))
-                return "󰙯";
-            if (c.includes("slack"))
-                return "󰒱";
-            if (c.includes("telegram"))
-                return "";
-            if (c.includes("signal"))
-                return "󰭹";
-            if (c.includes("element"))
-                return "󰘨";
-            if (c.includes("whatsapp"))
-                return "󰖣";
-            if (c.includes("spotify"))
-                return "";
-            if (c.includes("vlc"))
-                return "󰕼";
-            if (c.includes("mpv") || c.includes("haruna") || c.includes("strawberry") || c.includes("rhythmbox") || c.includes("totem"))
-                return "";
-            if (c.includes("gimp"))
-                return "";
-            if (c.includes("inkscape"))
-                return "󰕙";
-            if (c.includes("krita"))
-                return "";
-            if (c.includes("blender"))
-                return "󰂫";
-            if (c.includes("audacity"))
-                return "󰎈";
-            if (c.includes("obs"))
-                return "";
-            if (c.includes("kdenlive"))
-                return "󰕧";
-            if (c.includes("steam"))
-                return "";
-            if (c.includes("lutris"))
-                return "󰺵";
-            if (c.includes("heroic"))
-                return "󰊖";
-            if (c.includes("prismlauncher"))
-                return "󰍳";
-            if (c.includes("writer"))
-                return "󰈬";
-            if (c.includes("calc"))
-                return "󰧷";
-            if (c.includes("impress"))
-                return "󰈧";
-            if (c.includes("libreoffice"))
-                return "󰈙";
-            if (c.includes("evince"))
-                return "󰈦";
-            if (c.includes("thunderbird"))
-                return "";
-            if (c.includes("settings") || c.includes("missioncenter"))
-                return "";
-            if (c.includes("look"))
-                return "";
-            if (c.includes("systemmonitor"))
-                return "󰄨";
-            if (c.includes("pavucontrol"))
-                return "󰕾";
-            if (c.includes("calculator"))
-                return "󰃬";
-            if (c.includes("weather"))
-                return "";
-            if (c.includes("evercal"))
-                return "󰃭";
-            if (c.includes("playing"))
-                return "󰎄";
-            if (c.includes("photos") || c.includes("org.gnome.loupe") || c.includes("imv") || c.includes("feh") || c.includes("eog") || c.includes("gthumb") || c.includes("qimgv") || c.includes("viewnior"))
-                return "";
-            if (c.includes("swappy"))
-                return "󰫕";
-            if (c.includes("zed"))
-                return "";
-            return "";
+    function getIcon(cls) {
+        var c = (cls || "").toLowerCase();
+        if (c.includes("firefox") || c.includes("zen") || c.includes("librewolf"))
+            return "󰈹";
+        if (c.includes("chromium") || c.includes("chrome") || c.includes("thorium"))
+            return "";
+        if (c.includes("brave"))
+            return "";
+        if (c.includes("qutebrowser"))
+            return "󰖟";
+        if (c.includes("kitty"))
+            return "󰄛";
+        if (c.includes("alacritty") || c.includes("foot") || c.includes("terminal") || c.includes("ghostty") || c.includes("wezterm"))
+            return "";
+        if (c.includes("code") || c.includes("codium"))
+            return "󰨞";
+        if (c.includes("sublime"))
+            return "󰅳";
+        if (c.includes("neovide") || c.includes("nvim"))
+            return "";
+        if (c.includes("idea") || c.includes("jetbrains"))
+            return "";
+        if (c.includes("pycharm"))
+            return "";
+        if (c.includes("webstorm"))
+            return "";
+        if (c.includes("clion"))
+            return "";
+        if (c.includes("android"))
+            return "󰀴";
+        if (c.includes("kate") || c.includes("texteditor"))
+            return "󰈔";
+        if (c.includes("nautilus") || c.includes("org.gnome.nautilus") || c.includes("files"))
+            return "";
+        if (c.includes("thunar") || c.includes("dolphin") || c.includes("nemo"))
+            return "";
+        if (c.includes("discord") || c.includes("vesktop"))
+            return "󰙯";
+        if (c.includes("slack"))
+            return "󰒱";
+        if (c.includes("telegram"))
+            return "";
+        if (c.includes("signal"))
+            return "󰭹";
+        if (c.includes("element"))
+            return "󰘨";
+        if (c.includes("whatsapp"))
+            return "󰖣";
+        if (c.includes("spotify"))
+            return "";
+        if (c.includes("vlc"))
+            return "󰕼";
+        if (c.includes("mpv") || c.includes("haruna") || c.includes("strawberry") || c.includes("rhythmbox") || c.includes("totem"))
+            return "";
+        if (c.includes("gimp"))
+            return "";
+        if (c.includes("inkscape"))
+            return "󰕙";
+        if (c.includes("krita"))
+            return "";
+        if (c.includes("blender"))
+            return "󰂫";
+        if (c.includes("audacity"))
+            return "󰎈";
+        if (c.includes("obs"))
+            return "";
+        if (c.includes("kdenlive"))
+            return "󰕧";
+        if (c.includes("steam"))
+            return "";
+        if (c.includes("lutris"))
+            return "󰺵";
+        if (c.includes("heroic"))
+            return "󰊖";
+        if (c.includes("prismlauncher"))
+            return "󰍳";
+        if (c.includes("writer"))
+            return "󰈬";
+        if (c.includes("calc"))
+            return "󰧷";
+        if (c.includes("impress"))
+            return "󰈧";
+        if (c.includes("libreoffice"))
+            return "󰈙";
+        if (c.includes("evince"))
+            return "󰈦";
+        if (c.includes("thunderbird"))
+            return "";
+        if (c.includes("settings") || c.includes("missioncenter"))
+            return "";
+        if (c.includes("look"))
+            return "";
+        if (c.includes("systemmonitor"))
+            return "󰄨";
+        if (c.includes("pavucontrol"))
+            return "󰕾";
+        if (c.includes("calculator"))
+            return "󰃬";
+        if (c.includes("weather"))
+            return "";
+        if (c.includes("evercal"))
+            return "󰃭";
+        if (c.includes("playing"))
+            return "󰎄";
+        if (c.includes("photos") || c.includes("org.gnome.loupe") || c.includes("imv") || c.includes("feh") || c.includes("eog") || c.includes("gthumb") || c.includes("qimgv") || c.includes("viewnior"))
+            return "";
+        if (c.includes("swappy"))
+            return "󰫕";
+        if (c.includes("zed"))
+            return "";
+        return "";
     }
 
-    function getDefaultAudioIcon(volume: double) : string {
+    function getDefaultAudioIcon(volume: double): string {
         // Muted
         // Low volume
         // Medium volume
@@ -164,7 +163,7 @@ PanelWindow {
             return ""; // High volume
     }
 
-    function getMediaIcon(identity: string) : string {
+    function getMediaIcon(identity: string): string {
         if (identity == "Spotify")
             return "";
         else if (identity == "YouTube")
@@ -176,7 +175,7 @@ PanelWindow {
     }
 
     implicitHeight: 32
-    // implicitWidth: win.dynamic_island ? 850 : undefined
+    // implicitWidth: root.dynamic_island ? 850 : undefined
     color: "transparent" // --- GLOBAL STATE --- // Theme mode: default is always dark, false will activate light mode
 
     margins.top: 10
@@ -212,13 +211,11 @@ PanelWindow {
     QtObject {
         id: hyCache
 
-        property var wsMap: ({
-        }) // wsId
+        property var wsMap: ({}) // wsId
         property bool pending: false
 
         function rebuild() {
-            const m = {
-            };
+            const m = {};
             const list = Hyprland.toplevels.values ?? [];
             for (const tl of list) {
                 const id = tl?.workspace?.id;
@@ -235,7 +232,7 @@ PanelWindow {
 
         function scheduleRebuild() {
             if (pending)
-                return ;
+                return;
 
             pending = true;
             Qt.callLater(() => {
@@ -267,7 +264,7 @@ PanelWindow {
     Connections {
         function onRawEvent(ev) {
             if (!ev || !ev.name)
-                return ;
+                return;
 
             // Check for events
             if (ev.name === "openwindow" || ev.name === "closewindow" || ev.name === "movewindowv2" || ev.name === "workspacev2" || ev.name === "activewindowv2" || ev.name === "urgent") {
@@ -297,7 +294,7 @@ PanelWindow {
 												ac=$(cat /sys/class/power_supply/AC*/online /sys/class/power_supply/ADP*/online 2>/dev/null | head -n1)
 												echo "$cap|$status|$ac"
 								`]
-        parse: function(o) {
+        parse: function (o) {
             var s = String(o ?? "").trim();
             var p = s.split("|");
             return {
@@ -341,9 +338,9 @@ PanelWindow {
         anchors.leftMargin: 12
         anchors.rightMargin: 12
 
-        color: win.dynamic_island ? Colors.surface_container : "transparent"
+        color: dynamic_island ? Colors.surface_container : "transparent"
         radius: 24
-        width: win.dynamic_island ? 850 : (win.width - 24)
+        width: dynamic_island ? 850 : (win.width - 24)
         clip: true
 
         Behavior on width {
@@ -400,7 +397,6 @@ PanelWindow {
                             duration: 260
                             easing.type: Easing.OutCubic
                         }
-
                     }
 
                     Behavior on width {
@@ -408,10 +404,7 @@ PanelWindow {
                             duration: 240
                             easing.type: Easing.OutCubic
                         }
-
                     }
-
-
                 }
                 // HOVER PILL
                 Item {
@@ -447,7 +440,6 @@ PanelWindow {
                                 position: 1
                                 color: palette.hoverPillG2
                             }
-
                         }
 
                         Behavior on x {
@@ -456,7 +448,6 @@ PanelWindow {
                                 easing.type: Easing.OutBack
                                 easing.overshoot: 1.1
                             }
-
                         }
 
                         Behavior on width {
@@ -465,9 +456,7 @@ PanelWindow {
                                 easing.type: Easing.OutBack
                                 easing.overshoot: 1.08
                             }
-
                         }
-
                     }
 
                     Behavior on opacity {
@@ -475,9 +464,7 @@ PanelWindow {
                             duration: 140
                             easing.type: Easing.OutCubic
                         }
-
                     }
-
                 }
 
                 Item {
@@ -505,7 +492,6 @@ PanelWindow {
                                 duration: 120
                                 easing.type: Easing.OutCubic
                             }
-
                         }
 
                         Behavior on width {
@@ -513,9 +499,7 @@ PanelWindow {
                                 duration: 120
                                 easing.type: Easing.OutCubic
                             }
-
                         }
-
                     }
 
                     Behavior on opacity {
@@ -523,9 +507,7 @@ PanelWindow {
                             duration: 90
                             easing.type: Easing.OutCubic
                         }
-
                     }
-
                 }
 
                 Row {
@@ -546,7 +528,7 @@ PanelWindow {
                             property var wsWindows: hyCache.wsMap[wsDelegate.wsId] ?? []
                             property int winCount: wsDelegate.wsWindows.length
                             property bool hasWindows: wsDelegate.winCount > 0
-                            property bool isUrgent: wsDelegate.wsWindows.some(function(tl) {
+                            property bool isUrgent: wsDelegate.wsWindows.some(function (tl) {
                                 return tl.urgent;
                             })
 
@@ -583,9 +565,7 @@ PanelWindow {
                                     ColorAnimation {
                                         duration: 140
                                     }
-
                                 }
-
                             }
 
                             Row {
@@ -640,9 +620,7 @@ PanelWindow {
                                                     to: Colors.tertiary
                                                     duration: 200
                                                 }
-
                                             }
-
                                         }
 
                                         Text {
@@ -663,7 +641,6 @@ PanelWindow {
                                                 ColorAnimation {
                                                     duration: 140
                                                 }
-
                                             }
 
                                             Behavior on scale {
@@ -672,15 +649,10 @@ PanelWindow {
                                                     easing.type: Easing.OutBack
                                                     easing.overshoot: 1.5
                                                 }
-
                                             }
-
                                         }
-
                                     }
-
                                 }
-
                             }
 
                             MouseArea {
@@ -692,12 +664,10 @@ PanelWindow {
                                 onReleased: {
                                     if (wsContainer.pressedId === wsDelegate.wsId)
                                         wsContainer.pressedId = 0;
-
                                 }
                                 onCanceled: {
                                     if (wsContainer.pressedId === wsDelegate.wsId)
                                         wsContainer.pressedId = 0;
-
                                 }
                                 onClicked: win.det("hyprctl dispatch workspace " + wsDelegate.wsId)
                             }
@@ -707,7 +677,6 @@ PanelWindow {
                                     duration: 180
                                     easing.type: Easing.OutCubic
                                 }
-
                             }
 
                             Behavior on scale {
@@ -716,15 +685,10 @@ PanelWindow {
                                     easing.type: Easing.OutBack
                                     easing.overshoot: 1.08
                                 }
-
                             }
-
                         }
-
                     }
-
                 }
-
             }
 
             // 6. BATTERY
@@ -785,7 +749,7 @@ PanelWindow {
                     return "󰁺";
                 }
 
-                Layout.preferredWidth: win.dynamic_island ? 40 : 74
+                Layout.preferredWidth: dynamic_island ? 30 : 74
                 Layout.preferredHeight: win.itemHeight
                 visible: batStatus.value !== ""
                 icon: batteryItem.dynamicIcon
@@ -799,7 +763,6 @@ PanelWindow {
                 onPluggedChanged: {
                     if (batteryItem.plugged)
                         surgeAnim.restart();
-
                 }
 
                 Behavior on Layout.preferredWidth {
@@ -827,7 +790,6 @@ PanelWindow {
                         to: 1
                         duration: 500
                     }
-
                 }
 
                 Rectangle {
@@ -864,9 +826,7 @@ PanelWindow {
                         duration: 520
                         easing.type: Easing.OutCubic
                     }
-
                 }
-
             }
 
             // 3. MEDIA & TITLE
@@ -886,7 +846,7 @@ PanelWindow {
                     anchors.centerIn: parent
                     radius: win.itemHeight / 2
                     color: palette.bg
-                    implicitWidth: win.dynamic_island ? Math.min(activeTitle.implicitWidth + 24, win.width / 7) : Math.min(activeTitle.implicitWidth + 24, win.width / 3)
+                    implicitWidth: dynamic_island ? Math.min(activeTitle.implicitWidth + 24, win.width / 7) : Math.min(activeTitle.implicitWidth + 24, win.width / 3)
                     implicitHeight: win.itemHeight
 
                     Text {
@@ -902,7 +862,6 @@ PanelWindow {
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
-
                 }
 
                 Rectangle {
@@ -919,7 +878,9 @@ PanelWindow {
                         spacing: 10
 
                         Text {
-                            text: {win.getMediaIcon(mediaItem.player.identity)}
+                            text: {
+                                win.getMediaIcon(mediaItem.player.identity);
+                            }
                             font.family: Theme.iconFont
                             font.pixelSize: 14
                             color: palette.accent
@@ -942,14 +903,13 @@ PanelWindow {
                     }
                 }
 
-                MouseArea{
+                MouseArea {
                     anchors.fill: parent
                     hoverEnabled: true
                     onClicked: {
                         console.log(mediaItem.player.togglePlaying());
                     }
                 }
-
             }
 
             // 5. TRAY
@@ -1000,7 +960,6 @@ PanelWindow {
                                     window: win
                                     item: trayItem
                                 }
-
                             }
 
                             MouseArea {
@@ -1024,13 +983,9 @@ PanelWindow {
                                     easing.overshoot: 1.08
                                 }
                             }
-
                         }
-
                     }
-
                 }
-
             }
 
             // 5. VOLUME
@@ -1041,7 +996,7 @@ PanelWindow {
                 property real vol: audioNode.audio.volume
                 property bool isMuted: audioNode.audio.muted
 
-                Layout.preferredWidth: win.dynamic_island ? 10 : 42
+                Layout.preferredWidth: dynamic_island ? 10 : 42
                 Layout.preferredHeight: win.itemHeight
                 anchors.verticalCenter: parent.verticalCenter
                 visible: SystemTray.items.values.length > 0
@@ -1073,8 +1028,6 @@ PanelWindow {
                             win.det("pactl set-sink-volume @DEFAULT_SINK@ -5%");
                     }
                 }
-
-
             }
 
             // 7. CLOCK
@@ -1131,7 +1084,6 @@ PanelWindow {
                             timeText.text = Qt.formatDateTime(now, "h:mm AP");
                         }
                     }
-
                 }
 
                 Rectangle {
@@ -1174,15 +1126,12 @@ PanelWindow {
                                 position: 1
                                 color: "transparent"
                             }
-
                         }
-
                     }
 
                     layer.effect: OpacityMask {
                         maskSource: clockMask
                     }
-
                 }
 
                 NumberAnimation {
@@ -1201,7 +1150,7 @@ PanelWindow {
 
                     anchors.fill: parent
                     hoverEnabled: true
-                    onPressed: (mouse) => {
+                    onPressed: mouse => {
                         win.requestHubToggle();
                         mouse.accepted = true;
                     }
@@ -1219,9 +1168,7 @@ PanelWindow {
                             duration: 120
                             easing.type: Easing.OutCubic
                         }
-
                     }
-
                 }
 
                 Rectangle {
@@ -1237,13 +1184,8 @@ PanelWindow {
                         easing.type: Easing.OutBack
                         easing.overshoot: 1.05
                     }
-
                 }
-
             }
-
         }
-
     }
-
 }

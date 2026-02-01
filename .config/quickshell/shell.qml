@@ -11,22 +11,25 @@ import "keybindings" as Keybindings
 import "wallpicker" as WallPicker
 
 ShellRoot {
+    id: root
+
     Variants {
+        id: variants
         model: Quickshell.screens
 
         Scope {
+
             // if (keybindings.visible)
             // keybindings.forceActiveFocus();
 
             id: v
-
+            property bool dynamic_island: false
             property var modelData
 
             function toggleHub() {
                 hub.visible = !hub.visible;
                 if (hub.visible)
                     hub.forceActiveFocus();
-
             }
 
             function toggleBar() {
@@ -34,14 +37,13 @@ ShellRoot {
             }
 
             function changeLayout() {
-                bar.dynamic_island = !bar.dynamic_island;
+                v.dynamic_island = !v.dynamic_island;
             }
 
             function toggleWallPicker() {
                 wallpicker.visible = !wallpicker.visible;
                 if (wallpicker.visible)
                     wallpicker.forceActiveFocus();
-
             }
 
             function toggleKeybindings() {
@@ -108,9 +110,6 @@ ShellRoot {
                 description: "Toggle keybindings overlay"
                 onPressed: toggleKeybindings()
             }
-
         }
-
     }
-
 }
