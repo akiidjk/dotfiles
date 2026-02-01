@@ -17,6 +17,7 @@ import "../colors.js" as Colors
 PanelWindow {
     id: win
 
+    property bool dynamic_island: false
     property bool isDarkMode: true // --- SHARED HEIGHT PARAM ---
     property int itemHeight: win.implicitHeight - 6
     property int activeWsId: Hyprland.focusedMonitor.activeWorkspace.id ?? 1 // -- Volume Widgets Things

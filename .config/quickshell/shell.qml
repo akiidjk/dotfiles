@@ -23,7 +23,6 @@ ShellRoot {
             // keybindings.forceActiveFocus();
 
             id: v
-            property bool dynamic_island: false
             property var modelData
 
             function toggleHub() {
