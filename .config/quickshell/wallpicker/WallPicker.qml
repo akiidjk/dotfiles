@@ -109,7 +109,7 @@ PanelWindow {
                             grid.currentIndex = index;
                             root.currentWallpaperPath = filePath;
                             console.log("Setting wallpaper to:", root.currentWallpaperPath);
-                            Quickshell.execDetached(["/bin/sh", "-c", `matugen image -t scheme-fidelity -m dark "${filePath}" --show-colors --verbose --fallback-color "#000000" && cp "${filePath}" "${Quickshell.env("HOME")}/.current_wallpaper"`]);
+                            Quickshell.execDetached(["/bin/sh", "-c", `matugen image -t scheme-fidelity -m dark "${filePath}" --fallback-color "#000000" && cp "${filePath}" "${Quickshell.env("HOME")}/.current_wallpaper"`]);
                             event.accepted = true;
                         }
                     }
