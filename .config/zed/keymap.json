@@ -17,7 +17,7 @@
           "reveal_target": "center"
         }
       ],
-      "ctrl-shift-f": [
+      "ctrl-shift-t": [
         "task::Spawn",
         {
           "task_name": "fulltext_search",
@@ -58,11 +58,5 @@
       "ctrl-r": "editor::Rename"
     }
   },
-  {
-    "context": "Workspace",
-    "bindings": {
-      "ctrl-shift-t": "terminal_panel::Toggle"
-    }
-  }
 ]
 // CTRL-W close active item (file)
