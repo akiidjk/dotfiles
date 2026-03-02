@@ -10,6 +10,20 @@
     "context": "Workspace",
     "bindings": {
       "shift shift": "file_finder::Toggle",
+      "ctrl-p": [
+        "task::Spawn",
+        {
+          "task_name": "file_finder",
+          "reveal_target": "center"
+        }
+      ],
+      "ctrl-shift-f": [
+        "task::Spawn",
+        {
+          "task_name": "fulltext_search",
+          "reveal_target": "center"
+        }
+      ],
       "ctrl-alt-b ": "workspace::ToggleLeftDock",
       "ctrl-b": "workspace::ToggleRightDock",
       "ctrl-t": "workspace::NewTerminal"
@@ -17,10 +31,7 @@
   },
   {
     "context": "Editor",
-    "bindings": {
-      // "j k": ["workspace::SendKeystrokes", "escape"]
-      "ctrl-r": "editor::Rename"
-    }
+    "bindings": {}
   },
   {
     "context": "Editor && edit_prediction_conflict",
@@ -34,5 +45,24 @@
       // Here we also allow `alt-enter` to accept the prediction
       "alt-enter": "editor::AcceptEditPrediction"
     }
+  },
+  {
+    "context": "ProjectPanel",
+    "bindings": {
+      "ctrl-r": "project_panel::Rename"
+    }
+  },
+  {
+    "context": "Editor",
+    "bindings": {
+      "ctrl-r": "editor::Rename"
+    }
+  },
+  {
+    "context": "Workspace",
+    "bindings": {
+      "ctrl-shift-t": "terminal_panel::Toggle"
+    }
   }
 ]
+// CTRL-W close active item (file)
