@@ -1,7 +1,7 @@
 [
   {
     "label": "file_finder",
-    "command": "zed \"$(tv files ${ZED_WORKTREE_ROOT})\"",
+    "command": "zed \"$(tv -s 'fd --hidden --follow --type f .' files ${ZED_WORKTREE_ROOT})\"",
     "hide": "always",
     "allow_concurrent_runs": true,
     "use_new_terminal": true
