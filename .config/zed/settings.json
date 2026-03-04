@@ -1,20 +1,59 @@
 {
-  "use_smartcase_search": false,
-  "restore_on_startup": "last_session",
-  "use_system_prompts": true,
-  "disable_ai": false,
+  "git": {
+    "inline_blame": {
+      "show_commit_summary": true
+    }
+  },
+  "status_bar": {
+    "cursor_position_button": false
+  },
+  "diagnostics": {
+    "inline": {
+      "enabled": true
+    }
+  },
+  "prettier": {
+    "allowed": true
+  },
+  "colorize_brackets": true,
+  "middle_click_paste": false,
+  "completions": {
+    "words_min_length": 2
+  },
+  "gutter": {
+    "runnables": false
+  },
+  "sticky_scroll": {
+    "enabled": true
+  },
+  "double_click_in_multibuffer": "open",
+  "redact_private_values": false,
+  "use_system_path_prompts": false,
+  "use_system_prompts": false,
+  "$schema": "https://raw.githubusercontent.com/zigtools/zls/refs/tags/0.15.0/schema.json",
   "agent": {
+    "favorite_models": [
+      {
+        "provider": "copilot_chat",
+        "model": "claude-sonnet-4.6",
+        "enable_thinking": false
+      },
+      {
+        "provider": "copilot_chat",
+        "model": "gpt-5-mini",
+        "enable_thinking": false
+      }
+    ],
     "play_sound_when_agent_done": true,
-    "always_allow_tool_actions": true,
-    "default_profile": "write",
+    "default_model": {
+      "provider": "copilot_chat",
+      "model": "claude-sonnet-4.6"
+    },
     "inline_assistant_model": {
       "provider": "copilot_chat",
-      "model": "gpt-4.1"
+      "model": "gpt-5-mini"
     },
-    "default_model": {
-      "model": "gpt-5.1-codex-mini",
-      "provider": "copilot_chat"
-    }
+    "model_parameters": []
   },
   "autosave": "on_focus_change",
   "base_keymap": "VSCode",
@@ -23,10 +62,9 @@
   "buffer_line_height": "comfortable",
   "confirm_quit": true,
   "cursor_blink": false,
-  "features": {
-    "edit_prediction_provider": "copilot"
-  },
   "edit_predictions": {
+    "provider": "copilot",
+    "disabled_globs": [],
     "copilot": {
       "proxy": null,
       "proxy_no_verify": null
@@ -38,18 +76,45 @@
   "hide_mouse": "on_typing_and_movement",
   "icon_theme": "Catppuccin Latte",
   "indent_guides": {
-    "coloring": "fixed",
+    "coloring": "indent_aware",
     "enabled": true
   },
   "inlay_hints": {
     "edit_debounce_ms": 700,
-    "enabled": true,
+    "enabled": false,
     "scroll_debounce_ms": 50,
     "show_other_hints": true,
     "show_parameter_hints": true,
     "show_type_hints": true
   },
   "lsp": {
+    "vtsls": {
+      "settings": {
+        "typescript": {
+          "updateImportsOnFileMove": {
+            "enabled": "always"
+          }
+        },
+        "javascript": {
+          "updateImportsOnFileMove": {
+            "enabled": "always"
+          }
+        }
+      },
+      "enable_lsp_tasks": true
+    },
+    "zls": {
+      "force_autofix": true,
+      "warn_style": true,
+      "highlight_global_var_declarations": true
+    },
+    "clangd": {
+      "binary": {
+        "arguments": [
+          "--query-driver=/usr/bin/x86_64-w64-mingw32-gcc"
+        ]
+      }
+    },
     "gopls": {
       "initialization_options": {
         "gofumpt": true
@@ -65,11 +130,19 @@
     "languages": {}
   },
   "languages": {
+    "C++": {
+      "show_edit_predictions": false
+    },
     "C": {
       "show_edit_predictions": false
     },
     "Zig": {
-      "show_edit_predictions": false
+      "formatter": "language_server",
+      "show_edit_predictions": false,
+      "format_on_save": "on",
+      "language_servers": [
+        "zls"
+      ]
     },
     "TypeScript": {
       "formatter": {
@@ -84,9 +157,11 @@
     }
   },
   "git_panel": {
+    "tree_view": true,
     "dock": "right"
   },
   "project_panel": {
+    "hide_root": true,
     "auto_fold_dirs": true,
     "auto_reveal_entries": true,
     "button": true,
@@ -106,7 +181,8 @@
   "tabs": {
     "close_position": "right",
     "file_icons": true,
-    "git_status": true
+    "git_status": true,
+    "show_diagnostics": "errors"
   },
   "telemetry": {
     "diagnostics": false,
@@ -116,7 +192,7 @@
     "alternate_scroll": "off",
     "blinking": "terminal_controlled",
     "button": false,
-    "copy_on_select": false,
+    "copy_on_select": true,
     "detect_venv": {
       "on": {
         "directories": [
@@ -128,7 +204,7 @@
       }
     },
     "dock": "bottom",
-    "font_family": "JetBrainsMono Nerd Font",
+    "font_family": "JetBrainsMono Nerd Font Mono",
     "line_height": "comfortable",
     "option_as_meta": true,
     "shell": "system",
@@ -138,7 +214,7 @@
   "theme": {
     "dark": "BetterOneDark (default)",
     "light": "One Light",
-    "mode": "system"
+    "mode": "dark"
   },
   "toolbar": {
     "breadcrumbs": true,
@@ -146,5 +222,16 @@
     "selections_menu": true
   },
   "ui_font_size": 16,
-  "vim_mode": false
+  "vim_mode": true,
+  "vim": {
+    "enable_vim_sneak": true
+  },
+  "relative_line_numbers": "enabled",
+  "tab_bar": {
+    "show": true
+  },
+  "centered_layout": {
+    "left_padding": 0.15,
+    "right_padding": 0.15
+  }
 }
