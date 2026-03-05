@@ -69,7 +69,8 @@
       "ctrl-t": "workspace::NewTerminal", // vim default: go to older tag
       "ctrl-o": "workspace::Open", // vim default: go back
       "ctrl-s": "workspace::Save", // vim default: show signature
-      "ctrl-b": "workspace::ToggleRightDock" // vim default: down
+      "ctrl-b": "workspace::ToggleRightDock", // vim default: down
+      "ctrl-w": "pane::CloseActiveItem"
     }
   },
 ]
