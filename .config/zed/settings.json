@@ -153,6 +153,10 @@
   // UI
   "status_bar": {
     "cursor_position_button": false,
+    "experimental.show": true
+  },
+  "title_bar": {
+    "show_file_path": "when_multiple_tabs"
   },
   "gutter": {
     "runnables": false,
