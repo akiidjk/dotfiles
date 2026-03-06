@@ -8,8 +8,8 @@
       "appearance": "dark",
       "style": {
         "background.appearance": "blurred",
-        "border": "#3e4452",
-        "border.variant": "#3e4452",
+        "border": "#23272e88",
+        "border.variant": "#3e445233",
         "border.focused": "#3e4452",
         "border.selected": "#3e4452",
         "border.transparent": "#3e4452",
@@ -181,7 +181,12 @@
         "syntax": {
           "comment": {
             "color": "#7F838C",
-            "font_style": null,
+            "font_style": "italic",
+            "font_weight": null
+          },
+          "comment.doc": {
+            "color": "#7F838C",
+            "font_style": "italic",
             "font_weight": null
           },
           "attribute": {
