@@ -9,20 +9,6 @@
   {
     "context": "Workspace",
     "bindings": {
-      "ctrl-p": [
-        "task::Spawn",
-        {
-          "task_name": "file_finder",
-          "reveal_target": "center"
-        }
-      ],
-      "shift shift": [
-        "task::Spawn",
-        {
-          "task_name": "fulltext_search",
-          "reveal_target": "center"
-        }
-      ],
       "ctrl-alt-b ": "workspace::ToggleLeftDock",
       "ctrl-b": "workspace::ToggleRightDock",
       "ctrl-t": "workspace::NewTerminal"
@@ -69,8 +55,7 @@
       "ctrl-t": "workspace::NewTerminal", // vim default: go to older tag
       "ctrl-o": "workspace::Open", // vim default: go back
       "ctrl-s": "workspace::Save", // vim default: show signature
-      "ctrl-b": "workspace::ToggleRightDock", // vim default: down
-      "ctrl-w": "pane::CloseActiveItem"
+      "ctrl-b": "workspace::ToggleRightDock" // vim default: down
     }
   },
 ]

@@ -155,6 +155,9 @@
     "cursor_position_button": false,
     "experimental.show": true
   },
+  "file_finder": {
+    "modal_max_width": "large"
+  },
   "title_bar": {
     "show_file_path": "when_multiple_tabs"
   },
