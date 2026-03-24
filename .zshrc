@@ -42,6 +42,7 @@ fastfetch
 
 # Aliases
 alias cd='z'
+alias f='xdg-open "$(fzf)"'
 alias ls='eza --icons'
 alias ll='eza -al --icons'
 alias ltr='eza -a --tree --level=1 --icons'
