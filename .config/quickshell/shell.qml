@@ -11,18 +11,15 @@ import "keybindings" as Keybindings
 import "wallpicker" as WallPicker
 
 ShellRoot {
-    id: root
-
     Variants {
-        id: variants
         model: Quickshell.screens
 
         Scope {
-
             // if (keybindings.visible)
             // keybindings.forceActiveFocus();
 
             id: v
+
             property var modelData
 
             function toggleHub() {
@@ -36,7 +33,8 @@ ShellRoot {
             }
 
             function changeLayout() {
-                v.dynamic_island = !v.dynamic_island;
+                bar.dynamic_island = !bar.dynamic_island;
+                layoutFile.setText(bar.dynamic_island ? "true" : "false");
             }
 
             function toggleWallPicker() {
@@ -47,6 +45,11 @@ ShellRoot {
 
             function toggleKeybindings() {
                 keybindings.visible = !keybindings.visible;
+            }
+
+            FileView {
+                id: layoutFile
+                path: Qt.resolvedUrl("./.current_layout")
             }
 
             Hub.HubWindow {

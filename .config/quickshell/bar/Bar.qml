@@ -35,6 +35,16 @@ PanelWindow {
         Quickshell.execDetached(sh(cmd));
     }
 
+    Process {
+        command: ["cat", ".current_layout"]
+        running: true // Start immediately on boot
+        stdout: StdioCollector {
+            onStreamFinished: {
+                dynamic_island = this.text === "true";
+            }
+        }
+    }
+
     // --- ICON MAP ---
     function getIcon(cls) {
         var c = (cls || "").toLowerCase();
@@ -176,7 +186,7 @@ PanelWindow {
     }
 
     implicitHeight: 32
-    // implicitWidth: root.dynamic_island ? 850 : undefined
+    // implicitWidth: win.dynamic_island ? 850 : undefined
     color: "transparent" // --- GLOBAL STATE --- // Theme mode: default is always dark, false will activate light mode
 
     margins.top: 10
@@ -339,9 +349,9 @@ PanelWindow {
         anchors.leftMargin: 12
         anchors.rightMargin: 12
 
-        color: dynamic_island ? Colors.surface_container : "transparent"
+        color: win.dynamic_island ? Colors.surface_container : "transparent"
         radius: 24
-        width: dynamic_island ? 850 : (win.width - 24)
+        width: win.dynamic_island ? 850 : (win.width - 24)
         clip: true
 
         Behavior on width {
@@ -695,7 +705,7 @@ PanelWindow {
             // 6. BATTERY
             BarItem {
                 id: batteryItem
-                anchors.verticalCenter: parent.verticalCenter
+
                 property string status: String(batStatus.value).trim()
                 property int rawCap: Number(batCap.value) || 0
                 property int cap: (batteryItem.rawCap === 0 && batteryItem.status !== "Discharging") ? 50 : batteryItem.rawCap
@@ -750,7 +760,7 @@ PanelWindow {
                     return "󰁺";
                 }
 
-                Layout.preferredWidth: dynamic_island ? 30 : 74
+                Layout.preferredWidth: win.dynamic_island ? 30 : 74
                 Layout.preferredHeight: win.itemHeight
                 visible: batStatus.value !== ""
                 icon: batteryItem.dynamicIcon
@@ -836,7 +846,38 @@ PanelWindow {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 36
                 Layout.alignment: Qt.AlignHCenter
-                property MprisPlayer player: Mpris.players.values[0] ?? null
+
+                function getPlayer(players) {
+                    var spotify = null;
+
+                    // First pass: look specifically for Spotify and return it if it's playing
+                    for (var i = 0; i < (players ? players.length : 0); i++) {
+                        var p = players[i];
+                        if (!p)
+                            continue;
+
+                        if (p.identity === "Spotify") {
+                            spotify = p;
+                            if (p.playbackState === MprisPlaybackState.Playing)
+                                return p;
+                        }
+                    }
+
+                    // Second pass: if no playing Spotify, return any other player that is playing
+                    for (var j = 0; j < (players ? players.length : 0); j++) {
+                        var q = players[j];
+                        if (!q)
+                            continue;
+
+                        if (q.playbackState === MprisPlaybackState.Playing)
+                            return q;
+                    }
+
+                    // Nothing is playing
+                    return null;
+                }
+
+                property MprisPlayer player: getPlayer(Mpris.players.values || [])
                 property bool isPlaying: mediaItem.player && mediaItem.player.playbackState === MprisPlaybackState.Playing
                 property string trackTitle: mediaItem.player ? mediaItem.player.trackTitle : ""
                 property string trackArtist: mediaItem.player ? mediaItem.player.trackArtist : ""
@@ -847,7 +888,7 @@ PanelWindow {
                     anchors.centerIn: parent
                     radius: win.itemHeight / 2
                     color: palette.bg
-                    implicitWidth: dynamic_island ? Math.min(activeTitle.implicitWidth + 24, win.width / 7) : Math.min(activeTitle.implicitWidth + 24, win.width / 3)
+                    implicitWidth: win.dynamic_island ? Math.min(activeTitle.implicitWidth + 24, win.width / 7) : Math.min(activeTitle.implicitWidth + 24, win.width / 3)
                     implicitHeight: win.itemHeight
 
                     Text {
@@ -908,7 +949,7 @@ PanelWindow {
                     anchors.fill: parent
                     hoverEnabled: true
                     onClicked: {
-                        console.log(mediaItem.player.togglePlaying());
+                        mediaItem.player.togglePlaying();
                     }
                 }
             }
@@ -996,8 +1037,8 @@ PanelWindow {
                 property var audioNode: Pipewire.defaultAudioSink
                 property real vol: audioNode.audio.volume
                 property bool isMuted: audioNode.audio.muted
+                Layout.preferredWidth: win.dynamic_island ? 10 : 42
 
-                Layout.preferredWidth: dynamic_island ? 10 : 42
                 Layout.preferredHeight: win.itemHeight
                 anchors.verticalCenter: parent.verticalCenter
                 visible: SystemTray.items.values.length > 0
