@@ -369,23 +369,32 @@ PanelWindow {
             }
         }
 
-        // 2. WORKSPACES
         RowLayout {
             anchors.fill: parent
             spacing: 10
 
+            // 2. WORKSPACES
             Rectangle {
                 id: wsContainer
 
                 property int hoveredId: 0
-                property var hoveredItem: (wsContainer.hoveredId > 0) ? wsRepeater.itemAt(wsContainer.hoveredId - 1) : null
                 property int pressedId: 0
-                property var pressedItem: (wsContainer.pressedId > 0) ? wsRepeater.itemAt(wsContainer.pressedId - 1) : null // ACTIVE PILL
+
+                function itemByWsId(id) {
+                    for (let i = 0; i < wsRepeater.count; i++) {
+                        const it = wsRepeater.itemAt(i);
+                        if (it && it.wsId === id)
+                            return it;
+                    }
+                    return null;
+                }
+
+                property var hoveredItem: wsContainer.itemByWsId(wsContainer.hoveredId)
+                property var pressedItem: wsContainer.itemByWsId(wsContainer.pressedId)
 
                 Layout.preferredHeight: win.itemHeight
                 Layout.preferredWidth: wsRow.width + 22
                 Layout.alignment: Qt.AlignVCenter
-                anchors.verticalCenter: parent.verticalCenter
                 radius: win.itemHeight / 2
                 color: palette.bg
                 clip: true
@@ -394,14 +403,15 @@ PanelWindow {
                     id: activePill
 
                     property int currentId: win.activeWsId
-                    property var targetItem: wsRepeater.itemAt(activePill.currentId - 1)
+                    property var targetItem: wsContainer.itemByWsId(activePill.currentId)
 
-                    x: activePill.targetItem ? (wsRow.x + activePill.targetItem.x) : 0
-                    width: activePill.targetItem ? activePill.targetItem.width : 0
+                    x: activePill.targetItem ? (wsRow.x + activePill.targetItem.x) : x
+                    width: activePill.targetItem ? activePill.targetItem.width : width
                     height: win.itemHeight - 12
                     anchors.verticalCenter: parent.verticalCenter
                     radius: (win.itemHeight - 12) / 2
                     color: palette.activePill
+                    opacity: activePill.targetItem ? 1 : 0
 
                     Behavior on x {
                         NumberAnimation {
@@ -416,8 +426,14 @@ PanelWindow {
                             easing.type: Easing.OutCubic
                         }
                     }
+
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: 120
+                            easing.type: Easing.OutCubic
+                        }
+                    }
                 }
-                // HOVER PILL
                 Item {
                     id: hoverPillLayer
 
@@ -430,8 +446,8 @@ PanelWindow {
 
                         property var t: wsContainer.hoveredItem
 
-                        x: hoverPillRect.t ? (wsRow.x + hoverPillRect.t.x) : 0
-                        width: hoverPillRect.t ? hoverPillRect.t.width : 0
+                        x: hoverPillRect.t ? (wsRow.x + hoverPillRect.t.x) : x
+                        width: hoverPillRect.t ? hoverPillRect.t.width : width
                         height: win.itemHeight - 9
                         anchors.verticalCenter: parent.verticalCenter
                         radius: (win.itemHeight - 9) / 2
@@ -490,8 +506,8 @@ PanelWindow {
 
                         property var t: wsContainer.pressedItem
 
-                        x: pressPillRect.t ? (wsRow.x + pressPillRect.t.x) : 0
-                        width: pressPillRect.t ? pressPillRect.t.width : 0
+                        x: pressPillRect.t ? (wsRow.x + pressPillRect.t.x) : x
+                        width: pressPillRect.t ? pressPillRect.t.width : width
                         height: win.itemHeight - 9
                         anchors.verticalCenter: parent.verticalCenter
                         radius: (win.itemHeight - 9) / 2
@@ -529,22 +545,26 @@ PanelWindow {
 
                     Repeater {
                         id: wsRepeater
-                        model: 5
+                        model: Hyprland.workspaces.values
                         Item {
                             id: wsDelegate
                             required property int index
-                            property int wsId: wsDelegate.index + 1
-                            property bool isActive: win.activeWsId === wsDelegate.wsId // --- READ FROM CACHE ---
+                            required property var modelData
 
-                            property var wsWindows: hyCache.wsMap[wsDelegate.wsId] ?? []
+                            readonly property var wsContainerRef: wsContainer
+                            readonly property var hyCacheRef: hyCache
+                            readonly property var colorsRef: Colors
+                            readonly property var winRef: win
+
+                            property int wsId: Number((wsDelegate.modelData && wsDelegate.modelData.id) ? wsDelegate.modelData.id : (wsDelegate.index + 1))
+                            property bool isActive: wsDelegate.winRef.activeWsId === wsDelegate.wsId
+
+                            property var wsWindows: wsDelegate.hyCacheRef.wsMap[wsDelegate.wsId] ?? []
                             property int winCount: wsDelegate.wsWindows.length
                             property bool hasWindows: wsDelegate.winCount > 0
-                            property bool isUrgent: wsDelegate.wsWindows.some(function (tl) {
-                                return tl.urgent;
-                            })
 
                             width: wsDelegate.hasWindows ? (wsDelegate.winCount * 22 + 12) : 26
-                            height: win.itemHeight
+                            height: wsDelegate.winRef.itemHeight
 
                             y: wsPress.pressed ? 1 : ((!wsDelegate.isActive && wsHover.hovered) ? -2 : 0)
                             scale: (wsPress.pressed ? 0.96 : 1) * ((!wsDelegate.isActive && wsHover.hovered) ? 1.1 : 1)
@@ -554,9 +574,9 @@ PanelWindow {
 
                                 onHoveredChanged: {
                                     if (hovered)
-                                        wsContainer.hoveredId = wsDelegate.wsId;
-                                    else if (wsContainer.hoveredId === wsDelegate.wsId)
-                                        wsContainer.hoveredId = 0;
+                                        wsDelegate.wsContainerRef.hoveredId = wsDelegate.wsId;
+                                    else if (wsDelegate.wsContainerRef.hoveredId === wsDelegate.wsId)
+                                        wsDelegate.wsContainerRef.hoveredId = 0;
                                 }
                             }
 
@@ -570,7 +590,7 @@ PanelWindow {
                                 font.pixelSize: 14
                                 lineHeight: 0.8
                                 verticalAlignment: Text.AlignVCenter
-                                color: wsDelegate.isActive ? Colors.on_primary : (wsHover.hovered ? Colors.primary : Colors.on_secondary)
+                                color: wsDelegate.isActive ? wsDelegate.colorsRef.on_primary : (wsHover.hovered ? wsDelegate.colorsRef.primary : wsDelegate.colorsRef.on_secondary)
 
                                 Behavior on color {
                                     ColorAnimation {
@@ -588,13 +608,15 @@ PanelWindow {
 
                                 Repeater {
                                     id: wsWinRepeater
-
                                     model: wsDelegate.wsWindows
 
                                     Item {
                                         id: wsWinItem
 
                                         required property var modelData
+                                        readonly property var wsDelegateRef: wsDelegate
+                                        readonly property var colorsRef: wsDelegate.colorsRef
+                                        readonly property var winRef: wsDelegate.winRef
                                         property string safeClass: {
                                             const o = wsWinItem.modelData.lastIpcObject;
                                             var c = o.class ?? "";
@@ -611,24 +633,24 @@ PanelWindow {
                                         }
 
                                         width: 22
-                                        height: 22 // --- ipc ---
+                                        height: 22
 
                                         QtObject {
                                             id: flashColor
 
-                                            property color val: Colors.primary
+                                            property color val: wsWinItem.colorsRef.primary
 
                                             SequentialAnimation on val {
                                                 running: wsWinItem.modelData.urgent
                                                 loops: Animation.Infinite
 
                                                 ColorAnimation {
-                                                    to: Colors.error
+                                                    to: wsWinItem.colorsRef.error
                                                     duration: 200
                                                 }
 
                                                 ColorAnimation {
-                                                    to: Colors.tertiary
+                                                    to: wsWinItem.colorsRef.tertiary
                                                     duration: 200
                                                 }
                                             }
@@ -638,13 +660,13 @@ PanelWindow {
                                             id: wsWinText
 
                                             anchors.centerIn: parent
-                                            text: win.getIcon(wsWinItem.safeClass)
+                                            text: wsWinItem.winRef.getIcon(wsWinItem.safeClass)
                                             font.family: Theme.iconFont
                                             font.pixelSize: 18
                                             lineHeight: 0.8
                                             verticalAlignment: Text.AlignVCenter
-                                            scale: (wsDelegate.isActive && wsHover.hovered) ? 1.25 : 1
-                                            color: wsDelegate.isActive ? Colors.background : (wsWinItem.modelData.urgent ? flashColor.val : (wsHover.hovered ? Colors.secondary : Colors.on_surface_variant))
+                                            scale: (wsWinItem.wsDelegateRef.isActive && wsHover.hovered) ? 1.25 : 1
+                                            color: wsWinItem.wsDelegateRef.isActive ? wsWinItem.colorsRef.background : (wsWinItem.modelData.urgent ? flashColor.val : (wsHover.hovered ? wsWinItem.colorsRef.secondary : wsWinItem.colorsRef.on_surface_variant))
 
                                             Behavior on color {
                                                 enabled: !wsWinItem.modelData.urgent
@@ -671,16 +693,16 @@ PanelWindow {
 
                                 anchors.fill: parent
                                 hoverEnabled: true
-                                onPressed: wsContainer.pressedId = wsDelegate.wsId
+                                onPressed: wsDelegate.wsContainerRef.pressedId = wsDelegate.wsId
                                 onReleased: {
-                                    if (wsContainer.pressedId === wsDelegate.wsId)
-                                        wsContainer.pressedId = 0;
+                                    if (wsDelegate.wsContainerRef.pressedId === wsDelegate.wsId)
+                                        wsDelegate.wsContainerRef.pressedId = 0;
                                 }
                                 onCanceled: {
-                                    if (wsContainer.pressedId === wsDelegate.wsId)
-                                        wsContainer.pressedId = 0;
+                                    if (wsDelegate.wsContainerRef.pressedId === wsDelegate.wsId)
+                                        wsDelegate.wsContainerRef.pressedId = 0;
                                 }
-                                onClicked: win.det("hyprctl dispatch workspace " + wsDelegate.wsId)
+                                onClicked: wsDelegate.winRef.det("hyprctl dispatch workspace " + wsDelegate.wsId)
                             }
 
                             Behavior on y {
