@@ -29,3 +29,8 @@ output_path = '~/.config/btop/themes/matugen.conf'
 input_path = './templates/quickshell-colors'
 output_path = '~/.config/quickshell/colors.js'
 post_hook = 'pkill quickshell && quickshell &'
+
+[templates.spicetify]
+input_path = './templates/spicetify-colors.conf'
+output_path = '~/.config/spicetify/Themes/text/color.ini'
+post_hook = 'spicetify config current_theme text color_scheme Matugen; spicetify apply'
