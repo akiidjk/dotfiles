@@ -1,12 +1,35 @@
 {
-  "$schema": "https://raw.githubusercontent.com/zigtools/zls/refs/tags/0.15.0/schema.json",
+  "search": {
+    "center_on_match": true,
+    "include_ignored": true
+  },
+  "use_smartcase_search": true,
+  "proxy": "",
+  "cursor_shape": "block",
+  "cli_default_open_behavior": "new_window",
+  "outline_panel": {
+    "dock": "left"
+  },
+  "collaboration_panel": {
+    "dock": "left"
+  },
+  "enable_language_server": true,
+  "agent_servers": {
+    "codex-acp": {
+      "type": "registry"
+    }
+  },
   // Theme
   "theme": {
-    "dark": "BetterOneDark (default)",
+    "dark": "BetterOneDark (Borderless)",
     "light": "One Light",
     "mode": "dark"
   },
-  "icon_theme": "Light Charmed Icons",
+  "icon_theme": {
+    "mode": "light",
+    "light": "Light Charmed Icons",
+    "dark": "Light Charmed Icons"
+  },
   "ui_font_size": 16,
   "colorize_brackets": true,
   "base_keymap": "VSCode",
@@ -39,11 +62,6 @@
       },
       "enable_lsp_tasks": true
     },
-    "zls": {
-      "force_autofix": true,
-      "warn_style": true,
-      "highlight_global_var_declarations": true
-    },
     "clangd": {
       "binary": {
         "arguments": [
@@ -63,7 +81,6 @@
         }
       }
     },
-    "languages": {}
   },
   "languages": {
     "C++": {
@@ -73,6 +90,7 @@
       "show_edit_predictions": false
     },
     "Zig": {
+      "enable_language_server": true,
       "formatter": "language_server",
       "show_edit_predictions": false,
       "format_on_save": "on",
@@ -105,6 +123,7 @@
     "words_min_length": 2
   },
   "agent": {
+    "dock": "right",
     "favorite_models": [
       {
         "provider": "copilot_chat",
@@ -117,14 +136,16 @@
         "enable_thinking": false
       }
     ],
-    "play_sound_when_agent_done": true,
+    "play_sound_when_agent_done": "always",
     "default_model": {
-      "provider": "copilot_chat",
-      "model": "claude-sonnet-4.6"
+      "effort": "high",
+      "enable_thinking": true,
+      "provider": "zed.dev",
+      "model": "claude-sonnet-4-6"
     },
     "inline_assistant_model": {
       "provider": "copilot_chat",
-      "model": "gpt-5-mini"
+      "model": "gemini-3.1-pro-preview"
     },
     "model_parameters": []
   },
@@ -153,20 +174,20 @@
   // UI
   "status_bar": {
     "cursor_position_button": false,
-    "experimental.show": false
+    "experimental.show": true,
   },
   "file_finder": {
     "modal_max_width": "large"
   },
   "title_bar": {
-    "show_file_path": "when_multiple_tabs"
+    "show_menus": null,
   },
   "gutter": {
     "runnables": false,
     "min_line_number_digits": 0
   },
   "sticky_scroll": {
-    "enabled": true
+    "enabled": false
   },
   "indent_guides": {
     "coloring": "indent_aware",
@@ -247,13 +268,10 @@
   "formatter": "language_server",
   "extend_comment_on_newline": false,
   "horizontal_scroll_margin": 1,
-  "verical_scroll_margin": 1,
   "when_closing_with_no_tabs": "keep_window_open",
   // Vim
-  "vim_mode": true,
-  "vim": {
-    "enable_vim_sneak": true
-  },
+  "vim_mode": false,
+  "vim": {},
   // Other
   "telemetry": {
     "diagnostics": false,
