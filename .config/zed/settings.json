@@ -1,7 +1,7 @@
 {
   "search": {
     "center_on_match": true,
-    "include_ignored": true
+    "include_ignored": false
   },
   "use_smartcase_search": true,
   "proxy": "",
