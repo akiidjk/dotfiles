@@ -1,12 +1,27 @@
 local inFocusOpacity = "0.95"
 local notInFocusOpacity = "0.8"
 
+
+
 hl.window_rule({
     suppress_event = "maximize",
     match = {
         class = ".*"
     }
 })
+
+hl.window_rule({
+    no_initial_focus = true,
+    match = {
+        class = "^$",
+        title = "^$",
+        xwayland = 1,
+        float = 1,
+        fullscreen = 0,
+        pin = 0
+    }
+})
+
 
 hl.window_rule({
     opacity = inFocusOpacity .. " " .. notInFocusOpacity,
@@ -31,16 +46,6 @@ hl.window_rule({
 hl.window_rule({
     opacity = inFocusOpacity .. " " .. notInFocusOpacity,
     match = { title = "^.*(Discord).*$" }
-})
-
-hl.window_rule({
-    opacity = inFocusOpacity .. " " .. notInFocusOpacity,
-    match = { title = "^.*(Telegram).*$" }
-})
-
-hl.window_rule({
-    opacity = inFocusOpacity .. " " .. notInFocusOpacity,
-    match = { title = "^.*(Code).*$" }
 })
 
 hl.window_rule({
@@ -81,7 +86,9 @@ hl.window_rule({
 hl.window_rule({
     fullscreen = true,
     tile = true,
-    match = { class = "^(dev.zed.Zed)$" }
+    match = {
+        class = "dev.zed.Zed",
+    }
 })
 
 hl.window_rule({
@@ -89,17 +96,5 @@ hl.window_rule({
     opacity = "1.0",
     match = {
         title = "^(Picture-in-Picture|Firefox|Zen)$"
-    }
-})
-
-hl.window_rule({
-    no_initial_focus = true,
-    match = {
-        class = "^$",
-        title = "^$",
-        xwayland = 1,
-        float = 1,
-        fullscreen = 0,
-        pin = 0
     }
 })
