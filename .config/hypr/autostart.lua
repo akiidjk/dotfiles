@@ -3,7 +3,6 @@
 -- #################
 
 hl.on("hyprland.start", function()
-    hl.exec_cmd("quickshell")
     hl.exec_cmd("wl-paste --type text --watch cliphist store")  -- Stores only text data
     hl.exec_cmd("wl-paste --type image --watch cliphist store") -- Stores only image data
     hl.exec_cmd("wl-clip-persist --clipboard regular")
@@ -29,7 +28,9 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("fcitx5 -D")
 
     -- set up the wallpaper
-    hl.exec_cmd("awww-daemon & sleep 1 && $HOME/.config/hypr/scripts/wallpapers/set.sh \"$HOME/.current_wallpaper\"")
+    hl.exec_cmd("awww-daemon & sleep 1 && ~/.config/hypr/scripts/init_wallpapers.sh")
+
+    hl.exec_cmd("quickshell")
 
     -- Start plugins
     hl.exec_cmd("hyprpm reload")
