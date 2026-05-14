@@ -76,8 +76,8 @@ PanelWindow {
     focusable: visible
     WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
-    property string profileName: Config.PROFILE_NAME
-    property string profileImage: Config.PROFILE_IMG
+    property string profileName: Quickshell.env("USER")
+    property string profileImage: "/home/" + Quickshell.env("USER") + "/.config/wallpapers/icons/spidy_black.jpeg"
     property bool batteryCardActive: false
     property int topGap: 8
     property int rightGap: 10

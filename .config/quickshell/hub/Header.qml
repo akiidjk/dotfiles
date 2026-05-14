@@ -12,8 +12,8 @@ Item {
     id: root
     property bool active: true
     property QtObject theme: null
-    property string profileName: Config.PROFILE_NAME
-    property string profileImage: Config.PROFILE_IMG
+    property string profileName: Quickshell.env("USER")
+    property string profileImage: "/home/" + Quickshell.env("USER") + "/.config/wallpapers/icons/spidy_black.jpeg"
 
     property bool expanded: false
     signal closeRequested
