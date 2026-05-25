@@ -705,6 +705,17 @@ PanelWindow {
                                 onClicked: wsDelegate.winRef.det("hyprctl dispatch workspace " + wsDelegate.wsId)
                             }
 
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: {
+                                    if (wsDelegate.winCount === 0)
+                                        return;
+                                    console.log("Focusing windows on workspace", wsDelegate.wsId);
+                                    wsDelegate.winRef.det(`hyprctl dispatch 'hl.dsp.focus({ workspace = "${wsDelegate.wsId}" })'`);
+                                }
+                            }
+
                             Behavior on y {
                                 NumberAnimation {
                                     duration: 180
