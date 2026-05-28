@@ -10,7 +10,7 @@ hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal), { description = "Open
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager), { description = "Open file manager" })
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser), { description = "Open browser" })
 hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd(editor), { description = "Open editor" })
-hl.bind("ALT + L", hl.dsp.exec_cmd("hyprlock"), { description = "Lock screen" })
+hl.bind("ALT + L", hl.dsp.exec_cmd("hyprlock --grace 5"), { description = "Lock screen" })
 
 hl.bind("SUPER + SHIFT + C", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/hyprPicker.sh"),
     { description = "Color picker" })
