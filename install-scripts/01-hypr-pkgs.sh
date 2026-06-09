@@ -31,6 +31,8 @@ Extra=(
   jless
   spotify-launcher
   spicetify-cli
+  plymouth
+  mkinitcpio
 )
 
 hypr_package=(
