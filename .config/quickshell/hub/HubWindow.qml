@@ -76,7 +76,7 @@ PanelWindow {
     focusable: visible
     WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
-    property string profileName: Quickshell.env("USER")
+    property string profileName: Quickshell.env("USER") || "User"
     property string profileImage: "/home/" + Quickshell.env("USER") + "/.config/wallpapers/icons/spidy_black.jpeg"
     property bool batteryCardActive: false
     property int topGap: 8
@@ -194,6 +194,12 @@ PanelWindow {
                     id: battery
                     Layout.fillWidth: true
                     active: win.batteryCardActive
+                    theme: theme
+                }
+
+                ThemeColorCard {
+                    id: themeColor
+                    Layout.fillWidth: true
                     theme: theme
                 }
 
