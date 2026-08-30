@@ -12,4 +12,4 @@ var sliderH = 24
 
 // Fonts
 var textFont = 'Manrope'
-var iconFont = 'JetBrainsMono Nerd Font'
+var iconFont = 'JetBrains Mono Nerd Font Propo'
