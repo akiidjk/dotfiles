@@ -210,16 +210,6 @@ PanelWindow {
         onExited: lingerTimer.restart()
     }
 
-    RectangularShadow {
-        // anchors.fill: card
-        // radius: card.radius
-        // blur: 18
-        // spread: 0
-        // offset: Qt.vector2d(0, 4)
-        // color: Qt.rgba(0, 0, 0, 0.4)
-        // opacity: card.opacity
-    }
-
     Rectangle {
         id: card
         anchors.horizontalCenter: parent.horizontalCenter
