@@ -1,9 +1,11 @@
-https://github.com/user-attachments/assets/745f42ad-1740-44a6-94be-d1e21377d450
+https://github.com/user-attachments/assets/4cce715e-3181-4a4c-a435-0a28aa6e7619
 
 # Hyprland Dotfiles for Arch based distro
 This repository contains my personal configuration files for Hyprland on Arch.
 
-<img width="1919" height="1078" alt="swappy-20260131_210028" src="https://github.com/user-attachments/assets/ebf26662-e2a4-46a1-825f-24339372a2ef" />
+<img width="1920" height="1078" alt="swappy-20260831_222318" src="https://github.com/user-attachments/assets/34974c2e-1d61-44c4-ad9e-518cf53f8680" />
+
+
 
 ## Quick Install
 
@@ -35,7 +37,7 @@ chmod +x install.sh
 > This setup assumes you have basic knowledge of Linux command line and package management.
 > Make sure to back up your existing configuration files before applying these dotfiles.
 
-<img width="1920" height="1080" alt="swappy-20260131_210215" src="https://github.com/user-attachments/assets/9369d737-a257-4eee-aa5c-42f3217edd7f" />
+<img width="1914" height="1077" alt="swappy-20260831_221209" src="https://github.com/user-attachments/assets/dea5fc3a-eeaa-4e23-a8dc-d42a939bdb55" />
 
 
 ### Core System dependencies
@@ -157,8 +159,8 @@ Once installed via yay, you can set Zen Browser as your default browser and impo
   - customize Zen Browser settings to your preference.
   - import zen mods from .config/.zen/zen-mods-export.json
 
-<img width="1920" height="1080" alt="swappy-20260131_210816" src="https://github.com/user-attachments/assets/237024ff-1a2c-4748-8aba-311c78df7535" />
-<img width="1920" height="1080" alt="swappy-20260131_210741" src="https://github.com/user-attachments/assets/4592087d-affb-4c5f-a5c7-dadac69d6a08" />
+<img width="1918" height="1078" alt="swappy-20260831_222415" src="https://github.com/user-attachments/assets/f4761661-d448-42ed-aeb5-0893c2835b29" />
+<img width="1916" height="1075" alt="swappy-20260831_221555" src="https://github.com/user-attachments/assets/b4c96347-ccff-465f-aab7-2ca749bd6c20" />
 
 
 
@@ -350,7 +352,8 @@ Here are some useful aliases defined in my shell configuration:
 | `mp4ToMov`      | `~/scripts/mp4ToMov.sh`                                                                                                         | Convert MP4 files to MOV format                           |
 | `movToMp4`      | `~/scripts/movToMp4.sh`                                                                                                         | Convert MOV files to MP4 format                           |
 
-<img width="1692" height="960" alt="img5" src="https://github.com/user-attachments/assets/0140de84-fa86-487f-8d7d-8a5215fcf792" />
+<img width="1918" height="1077" alt="swappy-20260831_223410" src="https://github.com/user-attachments/assets/405b7e88-a3cc-4ab0-8801-8e09f1c29637" />
+
 
 ## Configuration Structure
 
@@ -457,7 +460,7 @@ sudo systemctl start sddm
 
 For the complete keybinding configuration, see `~/.config/hypr/keybinds.conf`
 
-<img width="1920" height="1080" alt="swappy-20260131_211348" src="https://github.com/user-attachments/assets/923d35f9-449d-4233-be3e-fe784bb4fd58" />
+<img width="1918" height="1080" alt="swappy-20260831_222345" src="https://github.com/user-attachments/assets/27a3aed6-d91b-4fe8-91ee-01b0aff19f95" />
 
 ## Resources
 
