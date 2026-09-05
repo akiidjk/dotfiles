@@ -40,6 +40,9 @@ PanelWindow {
 
     readonly property var c: Appearance.colors
     readonly property var cfg: Config.data
+    // ponytail: debug-only backdrop colors so each layout container's bounds are visible; drop this + the Rectangle child in each container once inspected
+    readonly property var debugColors: ["#40ff0000", "#40ff8c00", "#4000c800", "#4090ee00", "#4000ffff", "#4040a0ff", "#400064ff", "#40ffff00", "#40ff00ff", "#409600c8", "#40009696", "#408b4513", "#40ff69b4", "#404b0082", "#40808080"]
+    property bool debugLayers: false
 
     // ── player ────────────────────────────────────────────
     readonly property var player: {
@@ -132,6 +135,9 @@ PanelWindow {
         function toggle(): void {
             island.hubOpen = !island.hubOpen;
         }
+        function toggleDebug(): void {
+            island.debugLayers = !island.debugLayers;
+        }
     }
 
     readonly property bool media: playing || autoShow
@@ -192,8 +198,14 @@ PanelWindow {
         id: hitArea
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
-        width: island.tucked ? 520 : (island.mode === "hub" ? 468 : island.maxW)
-        height: island.tucked ? 6 : (island.mode === "hub" ? island.hubMaxH : island.maxH) + island.topMargin
+        width: island.tucked ? 520 : island.cardW
+        height: island.tucked ? 6 : island.cardH + island.topMargin
+
+        Rectangle {
+            anchors.fill: parent
+            color: island.debugColors[0]
+            visible: island.debugLayers
+        }
     }
 
     // top-edge hover zone that brings the island back while tucked for fullscreen.
@@ -208,6 +220,22 @@ PanelWindow {
         enabled: island.fullscreen
         onEntered: lingerTimer.stop()
         onExited: lingerTimer.restart()
+
+        Rectangle {
+            anchors.fill: parent
+            color: island.debugColors[1]
+            visible: island.debugLayers
+        }
+    }
+
+    RectangularShadow {
+        // anchors.fill: card
+        // radius: card.radius
+        // blur: 18
+        // spread: 0
+        // offset: Qt.vector2d(0, 4)
+        // color: Qt.rgba(0, 0, 0, 0.4)
+        // opacity: card.opacity
     }
 
     Rectangle {
@@ -297,10 +325,22 @@ PanelWindow {
                 }
             }
 
+            Rectangle {
+                anchors.fill: parent
+                color: island.debugColors[2]
+                visible: island.debugLayers
+            }
+
             // centre the clock when there's no media
             Item {
                 Layout.fillWidth: true
                 visible: island.mode === "bar"
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: island.debugColors[3]
+                    visible: island.debugLayers
+                }
             }
 
             Art {
@@ -328,6 +368,13 @@ PanelWindow {
                 Layout.rightMargin: 2
                 spacing: 2
                 visible: barView.compact
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: island.debugColors[4]
+                    visible: island.debugLayers
+                }
+
                 Repeater {
                     model: 4
                     Item {
@@ -377,6 +424,12 @@ PanelWindow {
             Item {
                 Layout.fillWidth: true
                 visible: island.mode === "bar"
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: island.debugColors[5]
+                    visible: island.debugLayers
+                }
             }
         }
 
@@ -397,6 +450,12 @@ PanelWindow {
                 }
             }
 
+            Rectangle {
+                anchors.fill: parent
+                color: island.debugColors[6]
+                visible: island.debugLayers
+            }
+
             Workspaces {
                 Layout.alignment: Qt.AlignVCenter
             }
@@ -413,10 +472,22 @@ PanelWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
 
+                Rectangle {
+                    anchors.fill: parent
+                    color: island.debugColors[7]
+                    visible: island.debugLayers
+                }
+
                 RowLayout {
                     anchors.fill: parent
                     spacing: 12
                     visible: island.hasTrack
+
+                    Rectangle {
+                        anchors.fill: parent
+                        color: island.debugColors[8]
+                        visible: island.debugLayers
+                    }
 
                     Art {
                         size: 34
@@ -427,6 +498,13 @@ PanelWindow {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 1
+
+                        Rectangle {
+                            anchors.fill: parent
+                            color: island.debugColors[9]
+                            visible: island.debugLayers
+                        }
+
                         Text {
                             Layout.fillWidth: true
                             text: island.player?.trackTitle ?? ""
@@ -448,6 +526,12 @@ PanelWindow {
                     Row {
                         Layout.alignment: Qt.AlignVCenter
                         spacing: 12
+
+                        Rectangle {
+                            anchors.fill: parent
+                            color: island.debugColors[10]
+                            visible: island.debugLayers
+                        }
 
                         IslandGlyph {
                             glyph: "\u{f048}"
@@ -503,6 +587,13 @@ PanelWindow {
                     anchors.centerIn: parent
                     spacing: 0
                     visible: !island.hasTrack
+
+                    Rectangle {
+                        anchors.fill: parent
+                        color: island.debugColors[11]
+                        visible: island.debugLayers
+                    }
+
                     Text {
                         Layout.alignment: Qt.AlignHCenter
                         text: Qt.formatDateTime(dateClock.date, "dddd")
@@ -557,14 +648,33 @@ PanelWindow {
                 }
             }
 
+            Rectangle {
+                anchors.fill: parent
+                color: island.debugColors[12]
+                visible: island.debugLayers
+            }
+
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 12
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: island.debugColors[13]
+                    visible: island.debugLayers
+                }
+
                 Workspaces {
                     Layout.alignment: Qt.AlignVCenter
                 }
                 Item {
                     Layout.fillWidth: true
+
+                    Rectangle {
+                        anchors.fill: parent
+                        color: island.debugColors[14]
+                        visible: island.debugLayers
+                    }
                 }
                 Clock {
                     Layout.alignment: Qt.AlignVCenter
