@@ -3,6 +3,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Services.Mpris
+import Quickshell.Services.Pipewire
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
@@ -17,9 +18,8 @@ PanelWindow {
     readonly property int topMargin: 8
     readonly property int maxW: 860
     readonly property int maxH: 54
+    readonly property int collapsedH: 36
     readonly property int hubMaxH: 780   // window must be tall enough for the open hub + notifs
-
-    screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0]
 
     // toggled by shell.qml (Super+H), like the old bar
     property bool shown: true
@@ -31,9 +31,9 @@ PanelWindow {
         right: true
     }
     implicitHeight: hubMaxH + topMargin * 2 + 24   // fixed — surface never resizes
-    exclusiveZone: -1
+    exclusiveZone: collapsedH
     color: "transparent"
-    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.layer: WlrLayer.Top
     mask: Region {
         item: hitArea
     }
@@ -43,6 +43,34 @@ PanelWindow {
     // ponytail: debug-only backdrop colors so each layout container's bounds are visible; drop this + the Rectangle child in each container once inspected
     readonly property var debugColors: ["#40ff0000", "#40ff8c00", "#4000c800", "#4090ee00", "#4000ffff", "#4040a0ff", "#400064ff", "#40ffff00", "#40ff00ff", "#409600c8", "#40009696", "#408b4513", "#40ff69b4", "#404b0082", "#40808080"]
     property bool debugLayers: false
+
+    // ── volume OSD ───────────────────────────────────────────────
+    PwObjectTracker {
+        objects: Pipewire.defaultAudioSink ? [Pipewire.defaultAudioSink] : []
+    }
+    readonly property var audio: Pipewire.defaultAudioSink?.audio ?? null
+    readonly property int volumePercent: Math.round((audio?.volume ?? 0) * 100)
+    property bool volumeOsdVisible: false
+
+    function showVolumeOsd() {
+        volumeOsdVisible = true;
+        volumeOsdTimer.restart();
+    }
+
+    Connections {
+        target: island.audio
+        function onVolumeChanged() {
+            island.showVolumeOsd();
+        }
+        function onMutedChanged() {
+            island.showVolumeOsd();
+        }
+    }
+    Timer {
+        id: volumeOsdTimer
+        interval: 1400
+        onTriggered: island.volumeOsdVisible = false
+    }
 
     // ── player ────────────────────────────────────────────
     readonly property var player: {
@@ -130,21 +158,11 @@ PanelWindow {
         interval: 250
         onTriggered: grab.settled = true
     }
-    IpcHandler {
-        target: "island"
-        function toggle(): void {
-            island.hubOpen = !island.hubOpen;
-        }
-        function toggleDebug(): void {
-            island.debugLayers = !island.debugLayers;
-        }
-    }
-
     readonly property bool media: playing || autoShow
     readonly property string mode: hubOpen ? "hub" : (hovered ? "full" : (media && hasTrack ? "compact" : "bar"))
 
-    readonly property int cardW: mode === "hub" ? 468 : mode === "full" ? maxW : mode === "compact" ? 344 : 96
-    readonly property int cardH: mode === "hub" ? Math.min(hubMaxH, Math.ceil(hubView.implicitHeight + 24)) : mode === "full" ? maxH : 36
+    readonly property int cardW: mode === "hub" ? 468 : mode === "full" ? maxW : mode === "compact" ? 520 : 300
+    readonly property int cardH: mode === "hub" ? Math.min(hubMaxH, Math.ceil(hubView.implicitHeight + 24)) : mode === "full" ? maxH : collapsedH
     readonly property int cardR: mode === "hub" ? 28 : mode === "full" ? 24 : 18
 
     SystemClock {
@@ -331,16 +349,20 @@ PanelWindow {
                 visible: island.debugLayers
             }
 
-            // centre the clock when there's no media
+            Workspaces {
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            Rectangle {
+                Layout.alignment: Qt.AlignVCenter
+                implicitWidth: 1
+                implicitHeight: 16
+                color: Appearance.withAlpha(island.c.surfaceVariantFg, 0.2)
+            }
+
             Item {
                 Layout.fillWidth: true
                 visible: island.mode === "bar"
-
-                Rectangle {
-                    anchors.fill: parent
-                    color: island.debugColors[3]
-                    visible: island.debugLayers
-                }
             }
 
             Art {
@@ -696,6 +718,65 @@ PanelWindow {
 
             Hub {
                 Layout.fillWidth: true
+            }
+        }
+    }
+
+    Rectangle {
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        anchors.topMargin: island.maxH + 14
+        width: 280
+        height: 58
+        radius: 18
+        color: Appearance.withAlpha(island.c.background, 0.94)
+        border.width: 1
+        border.color: Appearance.withAlpha(island.c.outline, 0.18)
+        opacity: island.volumeOsdVisible ? 1 : 0
+        visible: opacity > 0
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: Appearance.aFast
+            }
+        }
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 18
+            anchors.rightMargin: 18
+            spacing: 12
+
+            Text {
+                text: island.audio?.muted ? "\u{f026}" : "\u{f028}"
+                font.family: island.cfg.font
+                font.pixelSize: 17
+                color: island.c.backgroundFg
+            }
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 7
+                radius: height / 2
+                color: Appearance.withAlpha(island.c.surfaceVariantFg, 0.2)
+
+                Rectangle {
+                    width: island.audio?.muted ? 0 : parent.width * Math.min(island.volumePercent, 100) / 100
+                    height: parent.height
+                    radius: parent.radius
+                    color: island.c.primary
+                    Behavior on width {
+                        NumberAnimation {
+                            duration: Appearance.aFast
+                        }
+                    }
+                }
+            }
+            Text {
+                text: island.audio?.muted ? "0" : island.volumePercent
+                font.family: island.cfg.fontDisplay
+                font.pixelSize: 12
+                font.weight: Font.Medium
+                color: island.c.backgroundFg
             }
         }
     }

@@ -2,6 +2,7 @@
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Hyprland
 import "island" as Island
 import "keybindings" as Keybindings
@@ -10,8 +11,38 @@ import "wallpicker" as WallPicker
 ShellRoot {
     id: root
 
-    Island.Island {
-        id: island
+    Variants {
+        id: islands
+        model: Quickshell.screens
+
+        Island.Island {
+            required property var modelData
+            screen: modelData
+        }
+    }
+
+    function focusedIsland() {
+        for (let i = 0; i < islands.instances.length; i++) {
+            const candidate = islands.instances[i];
+            if (candidate.screen?.name === Hyprland.focusedMonitor?.name)
+                return candidate;
+        }
+        return islands.instances[0] ?? null;
+    }
+
+    function toggleHub() {
+        const island = focusedIsland();
+        if (island)
+            island.hubOpen = !island.hubOpen;
+    }
+
+    IpcHandler {
+        target: "island"
+        function toggle(): void { root.toggleHub(); }
+        function toggleDebug(): void {
+            for (let i = 0; i < islands.instances.length; i++)
+                islands.instances[i].debugLayers = !islands.instances[i].debugLayers;
+        }
     }
 
     WallPicker.WallPicker {
@@ -28,14 +59,22 @@ ShellRoot {
     GlobalShortcut {
         name: "barToggle"
         description: "Toggle island"
-        onPressed: island.shown = !island.shown
+        onPressed: {
+            let shown = false;
+            for (let i = 0; i < islands.instances.length; i++) {
+                if (islands.instances[i].shown)
+                    shown = true;
+            }
+            for (let i = 0; i < islands.instances.length; i++)
+                islands.instances[i].shown = !shown;
+        }
     }
 
     // Super+N — open / close the island's control centre (replaces the old hub)
     GlobalShortcut {
         name: "hubToggle"
         description: "Toggle island hub"
-        onPressed: island.hubOpen = !island.hubOpen
+        onPressed: root.toggleHub()
     }
 
     GlobalShortcut {
