@@ -23,7 +23,7 @@ PanelWindow {
     // --- DATA HANDLING ---
     property var allBinds: []
     property var symbolMap: ({
-            "Super": "",
+            "Super": "Super",
             "Ctrl": "󰘴",
             "Alt": "󰘵",
             "Shift": "󰘶",
