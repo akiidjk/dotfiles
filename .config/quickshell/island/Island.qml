@@ -115,31 +115,6 @@ PanelWindow {
     property bool fullscreen: false
     readonly property bool tucked: fullscreen && !hovered && !hubOpen
 
-    // reactive: true whenever the focused workspace has any fullscreen/maximized window
-    readonly property bool _hasFs: Hyprland.focusedWorkspace?.hasFullscreen ?? false
-    on_HasFsChanged: {
-        if (_hasFs)
-            fsQuery.running = true;
-        else
-            // find out which mode it is
-            island.fullscreen = false;
-    }
-
-    Process {
-        id: fsQuery
-        command: ["hyprctl", "activewindow", "-j"]
-        stdout: StdioCollector {
-            id: fsOut
-            onStreamFinished: {
-                let mode = 0;
-                try {
-                    mode = JSON.parse(fsOut.text).fullscreen ?? 0;
-                } catch (e) {}
-                island.fullscreen = (mode === 2 || mode === 3);
-            }
-        }
-    }
-
     HyprlandFocusGrab {
         id: grab
         windows: [island]
@@ -235,7 +210,7 @@ PanelWindow {
         width: 520
         height: island.topMargin + 8      // overlaps the card's top so there's no dead gap
         hoverEnabled: true
-        enabled: island.fullscreen
+        enabled: true
         onEntered: lingerTimer.stop()
         onExited: lingerTimer.restart()
 
