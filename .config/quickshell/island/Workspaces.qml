@@ -9,16 +9,23 @@ RowLayout {
     readonly property var c: Appearance.colors
     readonly property var cfg: Config.data
 
+    // HyprlandMonitor for the screen this island lives on — set by Island.qml.
+    // Null until Hyprland reports the monitor; then we show only its workspaces.
+    property var monitor: null
+
     spacing: Appearance.gapSmall
     visible: cfg.showWorkspaces
 
     Repeater {
-        model: Hyprland.workspaces
+        model: root.monitor
+            ? Hyprland.workspaces.values.filter(w => w.monitor === root.monitor)
+            : Hyprland.workspaces
 
         delegate: Rectangle {
             id: pill
             required property var modelData
-            readonly property bool active: modelData.focused
+            // .active = focused on its own monitor (per-monitor), unlike .focused (global)
+            readonly property bool active: modelData.active
 
             Layout.alignment: Qt.AlignVCenter
             implicitWidth: active ? 30 : 20

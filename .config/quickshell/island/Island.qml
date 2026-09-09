@@ -40,6 +40,9 @@ PanelWindow {
 
     readonly property var c: Appearance.colors
     readonly property var cfg: Config.data
+    // Hyprland monitor for this island's screen — lets Workspaces show this
+    // monitor's desktops, not the globally-focused one.
+    readonly property var hyprMonitor: screen ? Hyprland.monitorFor(screen) : null
     // ponytail: debug-only backdrop colors so each layout container's bounds are visible; drop this + the Rectangle child in each container once inspected
     readonly property var debugColors: ["#40ff0000", "#40ff8c00", "#4000c800", "#4090ee00", "#4000ffff", "#4040a0ff", "#400064ff", "#40ffff00", "#40ff00ff", "#409600c8", "#40009696", "#408b4513", "#40ff69b4", "#404b0082", "#40808080"]
     property bool debugLayers: false
@@ -325,6 +328,7 @@ PanelWindow {
             }
 
             Workspaces {
+                monitor: island.hyprMonitor
                 Layout.alignment: Qt.AlignVCenter
             }
 
@@ -454,6 +458,7 @@ PanelWindow {
             }
 
             Workspaces {
+                monitor: island.hyprMonitor
                 Layout.alignment: Qt.AlignVCenter
             }
 
@@ -662,6 +667,7 @@ PanelWindow {
                 }
 
                 Workspaces {
+                    monitor: island.hyprMonitor
                     Layout.alignment: Qt.AlignVCenter
                 }
                 Item {
