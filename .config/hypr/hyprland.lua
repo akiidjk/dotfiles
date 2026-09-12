@@ -96,3 +96,6 @@ require("windowrule")
 -- ### EXTENSIONS ###
 -- ##################
 require("vicinae")
+
+-- HyprMod managed settings
+require("hyprland-gui")
