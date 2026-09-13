@@ -4,6 +4,25 @@
 
 # Determine the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Back up any existing files/dirs that this repo is about to overwrite in $HOME
+backup_dotfiles() {
+	local backup_dir="$HOME/dotfiles-backup-$(date +%Y%m%d-%H%M%S)"
+	local backed_up=false
+
+	for item in .[!.]* *; do
+		[ -e "$HOME/$item" ] || continue
+		mkdir -p "$backup_dir"
+		cp -r "$HOME/$item" "$backup_dir/"
+		backed_up=true
+	done
+
+	if [ "$backed_up" = true ]; then
+		echo "Existing dotfiles backed up to $backup_dir"
+	fi
+}
+
+backup_dotfiles
 cp -r . ~/
 rm -r ~/install-scripts ~/install.sh *.log Install-Logs dotfiles
 

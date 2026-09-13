@@ -96,14 +96,8 @@ alias -g C='| wl-copy' # Copy output to clipboard
 # Expands history expressions like !! or !$ when you press space/tab
 bindkey ' ' magic-space
 
-# chpwd Hook - Run Commands on Directory Change
 chpwd() {
     ls
-    if command -v git >/dev/null 2>&1; then
-        if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-            git pull --ff-only 2>/dev/null || true
-        fi
-    fi
 }
 
 
