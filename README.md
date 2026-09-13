@@ -350,9 +350,6 @@ Simple run `SUPER + K`
 Based on various dotfile configurations and customized for personal use.
 
 - [JaKooLit - Arch Hyprland Installer (Base of installer)](https://github.com/JaKooLit/Arch-Hyprland)
-- [Invincible-Dots by mkhmtolzhas](https://github.com/mkhmtolzhas/Invincible-Dots)
-- [dots by 1amSimp1e (Hyprland section)](https://github.com/1amSimp1e/dots?tab=readme-ov-file#hypr)
-- [Surface-dots by snes19xx](https://github.com/snes19xx/surface-dots)
 
 ## License
 
