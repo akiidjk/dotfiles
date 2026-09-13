@@ -8,10 +8,17 @@ import QtQuick
 Singleton {
     id: root
     readonly property alias model: notifModel
-    property bool active: false           // the hub sets this true while open
 
     ListModel { id: notifModel }
     property var _dismissed: ({})
+    property var _seen: ({})
+    property int unreadCount: 0
+
+    function markAllRead() {
+        for (let i = 0; i < notifModel.count; i++)
+            root._seen[notifModel.get(i).nid] = true;
+        root.unreadCount = 0;
+    }
 
     function _sh(c) { return ["bash", "-lc", c]; }
 
@@ -25,7 +32,7 @@ Singleton {
     }
     Timer {
         interval: 2000
-        running: root.active
+        running: true
         repeat: true
         triggeredOnStart: true
         onTriggered: proc.running = true
@@ -73,12 +80,19 @@ Singleton {
         notifModel.clear();
         for (const it of items)
             notifModel.append(it);
+        let unread = 0;
+        for (const it of items)
+            if (!root._seen[it.nid])
+                unread++;
+        root.unreadCount = unread;
     }
 
     function dismiss(id, index) {
         root._dismissed[id] = true;
         if (index !== undefined && index >= 0 && index < notifModel.count)
             notifModel.remove(index);
+        if (!root._seen[id])
+            root.unreadCount = Math.max(0, root.unreadCount - 1);
         Quickshell.execDetached(root._sh("makoctl dismiss -n " + id + " >/dev/null 2>&1 || true"));
     }
 
@@ -86,6 +100,7 @@ Singleton {
         for (let i = notifModel.count - 1; i >= 0; i--)
             root._dismissed[notifModel.get(i).nid] = true;
         notifModel.clear();
+        root.unreadCount = 0;
         Quickshell.execDetached(root._sh("makoctl dismiss -a >/dev/null 2>&1 || true"));
     }
 }

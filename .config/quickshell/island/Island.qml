@@ -106,6 +106,8 @@ PanelWindow {
         interval: 350
     }
     property bool hubOpen: false
+    onHubOpenChanged: if (hubOpen)
+        NotifService.markAllRead()
     // cardHover (a HoverHandler) reports hover over the whole card regardless of which
     // child MouseArea currently has the pointer — no more expand/collapse glitch loop.
     readonly property bool hovered: cardHover.hovered || edgeHover.containsMouse || lingerTimer.running
@@ -430,6 +432,37 @@ PanelWindow {
                     anchors.fill: parent
                     color: island.debugColors[5]
                     visible: island.debugLayers
+                }
+            }
+
+            // unread-notification bell — only in compact (now-playing) mode, only while unread > 0
+            Row {
+                Layout.alignment: Qt.AlignVCenter
+                spacing: 4
+                visible: island.mode === "compact" && NotifService.unreadCount > 0
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: ""
+                    font.family: island.cfg.font
+                    font.pixelSize: 13
+                    color: island.c.primary
+                }
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    implicitWidth: Math.max(14, badgeText.implicitWidth + 6)
+                    implicitHeight: 14
+                    radius: 7
+                    color: island.c.primary
+                    Text {
+                        id: badgeText
+                        anchors.centerIn: parent
+                        text: NotifService.unreadCount
+                        color: island.c.primaryFg
+                        font.family: island.cfg.fontDisplay
+                        font.pixelSize: 9
+                        font.weight: Font.Bold
+                    }
                 }
             }
         }
