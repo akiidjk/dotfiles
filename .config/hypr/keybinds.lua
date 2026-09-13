@@ -29,6 +29,9 @@ hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.fullscreen({ mode = 0, internal
 hl.bind(mainMod .. " + T", hl.dsp.window.float(), { description = "Toggle floating" })
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"), { description = "Toggle split" })
 hl.bind(mainMod .. " + G", hl.dsp.layout("swapsplit"), { description = "Swap split" })
+hl.bind(mainMod .. " + SHIFT + CTRL + M", hl.dsp.window.move({ workspace = "special:magic" }),
+    { description = "Move window to magic workspace" })
+hl.bind("SUPER + S", hl.dsp.workspace.toggle_special("magic"), { description = "Toggle magic workspace" })
 
 -- Window Switch
 hl.bind(mainMod .. " + left", hl.dsp.focus({ direction = "left" }), { description = "Focus left" })
@@ -52,8 +55,8 @@ for i = 1, 10 do
 end
 -- hl.bind(mainMod .. " + 0", hl.dsp.workspace(10))
 hl.bind(mainMod .. " + Tab", hl.dsp.focus({ workspace = "previous" }), { description = "Focus previous workspace" })
-hl.bind(mainMod .. " + left", hl.dsp.focus({ workspace = "-1" }), { description = "Focus left workspace" })
-hl.bind(mainMod .. " + right", hl.dsp.focus({ workspace = "+1" }), { description = "Focus right workspace" })
+-- hl.bind(mainMod .. " + left", hl.dsp.focus({ workspace = "-1" }), { description = "Focus left workspace" })
+-- hl.bind(mainMod .. " + right", hl.dsp.focus({ workspace = "+1" }), { description = "Focus right workspace" })
 
 -- Move/resize windows with mainMod + LMB/RMB and dragging
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true, description = "Drag window" })

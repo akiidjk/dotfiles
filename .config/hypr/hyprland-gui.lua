@@ -9,7 +9,7 @@ hl.config({
         },
         dim_inactive = false,
         dim_strength = 0.1,
-        rounding = 6,
+        rounding = 12,
         shadow = {
             offset = "2 1",
             range = 6,
@@ -18,8 +18,9 @@ hl.config({
     general = {
         allow_tearing = true,
         border_size = 0,
-        gaps_in = 3,
-        gaps_out = 15,
+        gaps_in = 15,
+        gaps_out = 60,
+        layout = "scrolling",
         snap = {
             enabled = true,
             respect_gaps = true,
