@@ -23,9 +23,6 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("blueman-applet") -- Make sure you have installed blueman
     hl.exec_cmd("nm-applet")
 
-    -- For keyboard
-    hl.exec_cmd("fcitx5 -D")
-
     -- set up the wallpaper
     hl.exec_cmd("awww-daemon & sleep 1 && ~/.config/hypr/scripts/init_wallpapers.sh")
 
