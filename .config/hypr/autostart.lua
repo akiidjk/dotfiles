@@ -22,7 +22,6 @@ hl.on("hyprland.start", function()
     -- Bluetooth
     hl.exec_cmd("blueman-applet") -- Make sure you have installed blueman
     hl.exec_cmd("nm-applet")
-    hl.exec_cmd("blueman-tray")
 
     -- For keyboard
     hl.exec_cmd("fcitx5 -D")
