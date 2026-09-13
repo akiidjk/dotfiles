@@ -1,9 +1,11 @@
-https://github.com/user-attachments/assets/4cce715e-3181-4a4c-a435-0a28aa6e7619
+https://github.com/user-attachments/assets/d4ee26ca-e82c-40df-b5a7-f257a6471f7e
+
 
 # Hyprland Dotfiles for Arch based distro
 This repository contains my personal configuration files for Hyprland on Arch.
 
-<img width="1920" height="1078" alt="swappy-20260831_222318" src="https://github.com/user-attachments/assets/34974c2e-1d61-44c4-ad9e-518cf53f8680" />
+<img width="1920" height="1080" alt="swappy-20260913_155508" src="https://github.com/user-attachments/assets/b7f824d9-2e52-4872-89aa-9a981e6f0936" />
+
 
 
 
@@ -37,8 +39,7 @@ chmod +x install.sh
 > This setup assumes you have basic knowledge of Linux command line and package management.
 > Make sure to back up your existing configuration files before applying these dotfiles.
 
-<img width="1914" height="1077" alt="swappy-20260831_221209" src="https://github.com/user-attachments/assets/dea5fc3a-eeaa-4e23-a8dc-d42a939bdb55" />
-
+<img width="1920" height="1080" alt="swappy-20260913_171810" src="https://github.com/user-attachments/assets/c943c8ca-57b1-4801-b4ea-5672378ecaca" />
 
 ### Core System dependencies
 ```bash
@@ -149,9 +150,8 @@ hyprpm update
 hyprpm add https://github.com/virtcode/hypr-dynamic-cursors
 hyprpm enable dynamic-cursors
 ```
-
-<img width="1918" height="1078" alt="swappy-20260831_222415" src="https://github.com/user-attachments/assets/f4761661-d448-42ed-aeb5-0893c2835b29" />
-<img width="1916" height="1075" alt="swappy-20260831_221555" src="https://github.com/user-attachments/assets/b4c96347-ccff-465f-aab7-2ca749bd6c20" />
+<img width="1918" height="1080" alt="swappy-20260831_222345" src="https://github.com/user-attachments/assets/27a3aed6-d91b-4fe8-91ee-01b0aff19f95" />
+<img width="1920" height="1080" alt="swappy-20260913_171941" src="https://github.com/user-attachments/assets/b45a2c1e-1dcf-43c5-a07d-4582f0a88f16" />
 
 ## Shell Configuration (`.zshrc`)
 
@@ -334,8 +334,7 @@ sudo systemctl start sddm
 
 Simple run `SUPER + K`
 
-<img width="1918" height="1080" alt="swappy-20260831_222345" src="https://github.com/user-attachments/assets/27a3aed6-d91b-4fe8-91ee-01b0aff19f95" />
-
+<img width="1919" height="1080" alt="swappy-20260913_172045" src="https://github.com/user-attachments/assets/a977171d-145e-4ce8-93eb-542fe580d716" />
 ## Resources
 
 - **Hyprland Installation**: https://github.com/JaKooLit/Arch-Hyprland.git
@@ -345,11 +344,6 @@ Simple run `SUPER + K`
 - **Oh My Zsh**: https://ohmyz.sh/
 - **Starship Prompt**: https://starship.rs/
 - **Quickshell**: https://quickshell.org/
-
-## Todo
-
-- [x] Better Wallpaper selector
-- [x] Keybinds Help menu
 
 ## Credits
 
