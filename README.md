@@ -150,71 +150,8 @@ hyprpm add https://github.com/virtcode/hypr-dynamic-cursors
 hyprpm enable dynamic-cursors
 ```
 
-### Zen Browser setup
-
-Once installed via yay, you can set Zen Browser as your default browser and import your previous settings.
-
-### Setup: 
-  - import your bookmarks and settings from your previous browser.
-  - customize Zen Browser settings to your preference.
-  - import zen mods from .config/.zen/zen-mods-export.json
-
 <img width="1918" height="1078" alt="swappy-20260831_222415" src="https://github.com/user-attachments/assets/f4761661-d448-42ed-aeb5-0893c2835b29" />
 <img width="1916" height="1075" alt="swappy-20260831_221555" src="https://github.com/user-attachments/assets/b4c96347-ccff-465f-aab7-2ca749bd6c20" />
-
-
-
-### Setup default mime apps
-```bash
-# PDF → Zen Browser
-xdg-mime default zen.desktop application/pdf
-
-# Images → loupe
-xdg-mime default loupe.desktop image/jpeg
-xdg-mime default loupe.desktop image/png
-xdg-mime default loupe.desktop image/webp
-xdg-mime default loupe.desktop image/gif
-
-# SVG → Zen Browser
-xdg-mime default zen.desktop image/svg+xml
-
-# Video → mpv
-xdg-mime default mpv.desktop video/mp4
-xdg-mime default mpv.desktop video/x-matroska
-xdg-mime default mpv.desktop video/webm
-xdg-mime default mpv.desktop video/x-msvideo
-
-# Audio → mpv
-xdg-mime default mpv.desktop audio/mpeg
-xdg-mime default mpv.desktop audio/mp3
-xdg-mime default mpv.desktop audio/wav
-xdg-mime default mpv.desktop audio/flac
-xdg-mime default mpv.desktop audio/ogg
-xdg-mime default mpv.desktop audio/aac
-xdg-mime default mpv.desktop audio/x-m4a
-xdg-mime default mpv.desktop audio/webm
-
-# Source code (generic) → Zed
-xdg-mime default zed.desktop text/x-source
-xdg-mime default zed.desktop text/x-script
-
-# Common programming languages → Zed
-xdg-mime default zed.desktop text/x-python
-xdg-mime default zed.desktop text/x-c
-xdg-mime default zed.desktop text/x-csrc
-xdg-mime default zed.desktop text/x-chdr
-xdg-mime default zed.desktop text/x-c++
-xdg-mime default zed.desktop text/x-c++src
-xdg-mime default zed.desktop text/x-java
-xdg-mime default zed.desktop text/x-go
-xdg-mime default zed.desktop text/x-rustsrc
-xdg-mime default zed.desktop text/x-php
-xdg-mime default zed.desktop text/x-shellscript
-xdg-mime default zed.desktop application/javascript
-xdg-mime default zed.desktop text/javascript
-xdg-mime default zed.desktop text/css
-xdg-mime default zed.desktop text/html
-```
 
 ## Shell Configuration (`.zshrc`)
 
@@ -349,8 +286,7 @@ Here are some useful aliases defined in my shell configuration:
 | `togglemirror`  | `~/scripts/toggle_mirror.sh`                                                                                                    | Toggle display mirror                                     |
 | `webup`         | `python3 -m http.server 6969`                                                                                                   | Start a simple web server on port 6969                    |
 | `pymain`        | `echo -e "\n\ndef main():\n    pass\n\nif __name__ == \"__main__\":\n    main()" > main.py`                                    | Create a basic Python main function template in main.py   |
-| `mp4ToMov`      | `~/scripts/mp4ToMov.sh`                                                                                                         | Convert MP4 files to MOV format                           |
-| `movToMp4`      | `~/scripts/movToMp4.sh`                                                                                                         | Convert MOV files to MP4 format                           |
+
 
 <img width="1918" height="1077" alt="swappy-20260831_223410" src="https://github.com/user-attachments/assets/405b7e88-a3cc-4ab0-8801-8e09f1c29637" />
 
@@ -396,69 +332,7 @@ sudo systemctl start sddm
 
 ## Keybindings
 
-### Applications & Scripts
-| Keybind | Action |
-|---------|--------|
-| `SUPER + RETURN` | Open terminal (kitty) |
-| `SUPER + SPACE` | Open launcher (vicinae) |
-| `SUPER + E` | Open file manager (nautilus) |
-| `SUPER + B` | Open browser (zen-browser) |
-| `SUPER + Z` | Open text editor (zed) |
-| `ALT + L` | Lock screen (hyprlock) |
-| `SUPER + R` | Reload Waybar |
-| `SUPER + W` | Wallapaper Picker |
-| `SUPER + S` | Keybinding cheasheets |
-| `SUPER + SHIFT + C` | Open color picker (hyprpicker) |
-| `SUPER + SHIFT + S` | Screenshot area (grim + slurp + swappy) |
-| `SUPER + K` | Hide status bar |
-| `SUPER + N` | Show shell hub |
-
-### Media Controls
-| Keybind | Action |
-|---------|--------|
-| `CTRL + SHIFT + A` | Play/Pause media |
-| `CTRL + SHIFT + D` | Next track |
-| `CTRL + SHIFT + S` | Previous track |
-
-### Window Management
-| Keybind | Action |
-|---------|--------|
-| `SUPER + Q` | Close active window |
-| `SUPERSHIFT + Q` | Quit Hyprland |
-| `SUPER + F` | Fullscreen (keep bar visible) |
-| `SUPER + SHIFT + F` | Fullscreen (hide everything) |
-| `SUPER + T` | Toggle floating mode |
-| `SUPER + J` | Toggle split direction |
-| `SUPER + Arrow Keys` | Move focus between windows |
-| `SUPER + SHIFT + Arrow Keys` | Resize active window |
-
-### Workspace Management
-| Keybind | Action |
-|---------|--------|
-| `SUPER + [1-9,0]` | Switch to workspace 1-10 |
-| `SUPER + SHIFT + [1-9,0]` | Move window to workspace 1-10 |
-| `SUPER + TAB` | Switch to previous workspace |
-| `SUPER + ALT + Left/Right` | Switch to prev/next workspace |
-| `SUPER + Left/Right` | Switch to prev/next workspace |
-
-### Mouse Actions
-| Keybind | Action |
-|---------|--------|
-| `SUPER + LMB (drag)` | Move window |
-| `SUPER + RMB (drag)` | Resize window |
-
-### System Controls (Laptop)
-| Keybind | Action |
-|---------|--------|
-| `XF86AudioRaiseVolume` | Increase volume by 5% |
-| `XF86AudioLowerVolume` | Decrease volume by 5% |
-| `XF86AudioMute` | Toggle mute |
-| `XF86AudioMicMute` | Toggle microphone mute |
-| `XF86MonBrightnessUp` | Increase brightness by 30% |
-| `XF86MonBrightnessDown` | Decrease brightness by 30% |
-| `SUPERSHIFT + M` | Enable night-mode |
-
-For the complete keybinding configuration, see `~/.config/hypr/keybinds.conf`
+Simple run `SUPER + K`
 
 <img width="1918" height="1080" alt="swappy-20260831_222345" src="https://github.com/user-attachments/assets/27a3aed6-d91b-4fe8-91ee-01b0aff19f95" />
 
