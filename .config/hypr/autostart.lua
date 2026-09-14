@@ -17,7 +17,6 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
     hl.exec_cmd("systemctl --user import-environment")
     hl.exec_cmd("~/.config/hypr/scripts/screensharing.sh")
-    hl.exec_cmd("xwaylandvideobridge")
 
     -- Bluetooth
     hl.exec_cmd("blueman-applet") -- Make sure you have installed blueman
