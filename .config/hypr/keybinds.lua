@@ -12,8 +12,11 @@ hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser), { description = "Open brows
 hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd(editor), { description = "Open editor" })
 hl.bind("ALT + L", hl.dsp.exec_cmd("hyprlock --grace 5"), { description = "Lock screen" })
 
-hl.bind("SUPER + SHIFT + C", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/hyprPicker.sh"),
-    { description = "Color picker" })
+hl.bind(
+    "SUPER + SHIFT + C",
+    hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/hyprPicker.sh"),
+    { description = "Color picker" }
+)
 
 hl.bind("CTRL + SHIFT + A", hl.dsp.exec_cmd("playerctl play-pause"), { description = "Play/pause media" })
 hl.bind("CTRL + SHIFT + D", hl.dsp.exec_cmd("playerctl next"), { description = "Next media" })
@@ -22,16 +25,24 @@ hl.bind("CTRL + SHIFT + S", hl.dsp.exec_cmd("playerctl previous"), { description
 -- WM Control binds
 hl.bind(mainMod .. " + Q", hl.dsp.window.close(), { description = "Close window" })
 hl.bind("SUPER + SHIFT + Q", hl.dsp.exit(), { description = "Exit WM" })
-hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = 1, internal = 0, client = 2 }),
-    { description = "Maximize window" })
-hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.fullscreen({ mode = 0, internal = 0, client = 2 }),
-    { description = "Fullscreen window" })
+hl.bind(
+    mainMod .. " + ALT + F",
+    hl.dsp.window.fullscreen({ mode = 1, internal = 0, client = 2 }),
+    { description = "Maximize window" }
+)
+hl.bind(
+    mainMod .. " + SHIFT + F",
+    hl.dsp.window.fullscreen({ mode = 0, internal = 0, client = 2 }),
+    { description = "Fullscreen window" }
+)
+hl.bind(
+    mainMod .. " + F",
+    hl.dsp.layout("fit active"),
+    { description = "Make fit the window to all cols" }
+)
 hl.bind(mainMod .. " + T", hl.dsp.window.float(), { description = "Toggle floating" })
-hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"), { description = "Toggle split" })
-hl.bind(mainMod .. " + G", hl.dsp.layout("swapsplit"), { description = "Swap split" })
-hl.bind(mainMod .. " + SHIFT + CTRL + M", hl.dsp.window.move({ workspace = "special:magic" }),
-    { description = "Move window to magic workspace" })
-hl.bind("SUPER + S", hl.dsp.workspace.toggle_special("magic"), { description = "Toggle magic workspace" })
+hl.bind(mainMod .. " + J", hl.dsp.layout("swapcol r"), { description = "Swap right the col" })
+hl.bind(mainMod .. " + G", hl.dsp.layout("swapcol l"), { description = "Swap left the col" })
 
 -- Window Switch
 hl.bind(mainMod .. " + left", hl.dsp.focus({ direction = "left" }), { description = "Focus left" })
@@ -50,8 +61,11 @@ hl.bind(mainMod .. " + L", hl.dsp.global("quickshell:changeBarLayout"), { descri
 for i = 1, 10 do
     local key = i % 10
     hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = key }), { description = "Focus workspace " .. key })
-    hl.bind(mainMod .. " + SHIFT +" .. key, hl.dsp.window.move({ workspace = key }),
-        { description = "Move to workspace " .. key })
+    hl.bind(
+        mainMod .. " + SHIFT +" .. key,
+        hl.dsp.window.move({ workspace = key }),
+        { description = "Move to workspace " .. key }
+    )
 end
 -- hl.bind(mainMod .. " + 0", hl.dsp.workspace(10))
 hl.bind(mainMod .. " + Tab", hl.dsp.focus({ workspace = "previous" }), { description = "Focus previous workspace" })
@@ -62,33 +76,70 @@ hl.bind(mainMod .. " + Tab", hl.dsp.focus({ workspace = "previous" }), { descrip
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true, description = "Drag window" })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true, description = "Resize window" })
 
-hl.bind("SUPER + SHIFT + left", hl.dsp.window.resize({ x = -40, y = 0, relative = true }),
-    { description = "Resize window left" })
-hl.bind("SUPER + SHIFT + right", hl.dsp.window.resize({ x = 40, y = 0, relative = true }),
-    { description = "Resize window right" })
-hl.bind("SUPER + SHIFT + up", hl.dsp.window.resize({ x = 0, y = -40, relative = true }),
-    { description = "Resize window up" })
-hl.bind("SUPER + SHIFT + down", hl.dsp.window.resize({ x = 0, y = 40, relative = true }),
-    { description = "Resize window down" })
+hl.bind(
+    "SUPER + SHIFT + left",
+    hl.dsp.window.resize({ x = -40, y = 0, relative = true }),
+    { description = "Resize window left" }
+)
+hl.bind(
+    "SUPER + SHIFT + right",
+    hl.dsp.window.resize({ x = 40, y = 0, relative = true }),
+    { description = "Resize window right" }
+)
+hl.bind(
+    "SUPER + SHIFT + up",
+    hl.dsp.window.resize({ x = 0, y = -40, relative = true }),
+    { description = "Resize window up" }
+)
+hl.bind(
+    "SUPER + SHIFT + down",
+    hl.dsp.window.resize({ x = 0, y = 40, relative = true }),
+    { description = "Resize window down" }
+)
 
 -- Laptop multimedia keys for volume and LCD brightness
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"),
-    { repeating = true, description = "Raise volume" })
-hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),
-    { repeating = true, description = "Lower volume" })
-hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),
-    { repeating = true, description = "Toggle mute" })
-hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),
-    { repeating = true, description = "Toggle mic mute" })
-hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightnessctl s 30%+"),
-    { repeating = true, description = "Raise brightness" })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl s 30%-"),
-    { repeating = true, description = "Lower brightness" })
+hl.bind(
+    "XF86AudioRaiseVolume",
+    hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"),
+    { repeating = true, description = "Raise volume" }
+)
+hl.bind(
+    "XF86AudioLowerVolume",
+    hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),
+    { repeating = true, description = "Lower volume" }
+)
+hl.bind(
+    "XF86AudioMute",
+    hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),
+    { repeating = true, description = "Toggle mute" }
+)
+hl.bind(
+    "XF86AudioMicMute",
+    hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),
+    { repeating = true, description = "Toggle mic mute" }
+)
+hl.bind(
+    "XF86MonBrightnessUp",
+    hl.dsp.exec_cmd("brightnessctl s 30%+"),
+    { repeating = true, description = "Raise brightness" }
+)
+hl.bind(
+    "XF86MonBrightnessDown",
+    hl.dsp.exec_cmd("brightnessctl s 30%-"),
+    { repeating = true, description = "Lower brightness" }
+)
 
 -- Screenshot a window
-hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd('grim -g "$(slurp)" - | swappy -f -'), { description = "Screenshot region" })
+hl.bind(
+    "SUPER + SHIFT + S",
+    hl.dsp.exec_cmd('grim -g "$(slurp)" - | swappy -f -'),
+    { description = "Screenshot region" }
+)
 
 -- Night mode and ToggleMirror scripts
 hl.bind("SUPER + M", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/toggleMirror.sh"), { description = "Toggle mirror" })
-hl.bind("SUPER + SHIFT + M", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/nightmode.sh"),
-    { description = "Toggle night mode" })
+hl.bind(
+    "SUPER + SHIFT + M",
+    hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/nightmode.sh"),
+    { description = "Toggle night mode" }
+)
