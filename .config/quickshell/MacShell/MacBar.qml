@@ -9,7 +9,7 @@
 // Hyprland (hyprland.conf syntax):
 //   windowrule = float, title:^(macbar Settings)$
 //   windowrule = center, title:^(macbar Settings)$
-//   layerrule  = blur, macspot          (Spotlight is its own layer; the bar itself needs no blur rule)
+//   layerrule  = blur, macbarbg   (the bar strip is its own layer, see below)
 //   layerrule  = ignorealpha 0.05, macspot
 //   # the bar's background is its own layer ("macbarbg", under the bar): blur it with Hyprland like this
 //   layerrule  = blur, macbarbg
@@ -22,7 +22,7 @@
 //   nmcli (Wi-Fi / VPN / Ethernet), pactl (audio device routing), hyprctl (keyboard layouts), pw-dump (privacy dots),
 //   wf-recorder (screen recording), hyprpicker (color picker), bluetoothctl (Bluetooth), brightnessctl (Display), hyprsunset (Night Shift),
 //   systemd-inhibit (Keep Awake), grim + slurp + wl-copy + notify-send (File → Screenshot),
-//   man / xdg-open (Help), wl-clipboard + cliphist (Spotlight → Clipboard, Emoji),
+//   man / xdg-open (Help), wl-clipboard (screenshots to the clipboard),
 //   wtype (only if you set keysViaWtype: true; menu shortcuts are otherwise sent with Hyprland's sendshortcut),
 //   rfkill (Airplane mode), dunstctl / makoctl / swaync-client (Focus). Missing tools just do nothing.
 //
@@ -33,25 +33,11 @@
 // Liquid Glass; the bell in the bar opens the "Notification system" panel (history, delete, Clear All, Do Not Disturb).
 // Test with: notify-send "Fitness" "Move goal achieved"
 //
-// Spotlight (the search icon) is built in and drawn in Liquid Glass. Bind it to a key with:
-//   bind = ALT, space, exec, qs -c macbar ipc call spotlight toggle
-// Hyprland (Lua):
-//   hl.bind("ALT + Space", hl.dsp.exec_cmd("qs -c macbar ipc call spotlight toggle"))
 // Wallpapers: Ctrl+Alt+W opens the wallpaper picker (Liquid Glass). Bind it with:
 //   hl.bind("CTRL + ALT + W", hl.dsp.exec_cmd("qs -c macbar ipc call wallpapers toggle"))
 //   (hyprlang:  bind = CTRL ALT, W, exec, qs -c macbar ipc call wallpapers toggle)
 // Folder: ~/Pictures/Wallpapers by default (change it inside the picker, or "wallpaperDir" in settings.json).
 // Star a wallpaper to pin it to the top. Applied through Noctalia / awww / swww / hyprpaper, or your own "wallpaperCmd" ({} = image path).
-// Clipboard history + Emoji live inside Spotlight (the clipboard and smiley buttons next to the search field):
-//   needs wl-clipboard + cliphist (this shell starts the `wl-paste --watch cliphist store` watchers itself, unless you already run them).
-//   bind = SUPER, V, exec, qs -c macbar ipc call spotlight clipboard       # Clipboard history (replace any default SUPER+V bind)
-//   bind = SUPER, period, exec, qs -c macbar ipc call spotlight emoji      # Emoji picker
-// Hyprland (Lua):
-//   hl.bind("SUPER + V", hl.dsp.exec_cmd("qs -c macbar ipc call spotlight clipboard"))
-//   hl.bind("SUPER + period", hl.dsp.exec_cmd("qs -c macbar ipc call spotlight emoji"))
-//   (use the same `qs -c <name>` prefix you use for the Spotlight bind; `ipc call spotlight apps` opens the Applications panel)
-// Return pastes the entry into the focused app, Shift+Return only copies it, Delete removes it from the history.
-// Files runs filesCmd.
 //
 // Screenshots (Print key): the screen freezes and dims, drag to select an area (a size badge follows the pointer), release to capture.
 // Return/Space = whole screen, Esc or right-click = cancel. Where it is saved (and clipboard / notification) is in System Settings → Menu Bar.
@@ -74,7 +60,6 @@ import Quickshell.Services.UPower
 import Quickshell.Services.Pipewire
 import Quickshell.Services.Mpris
 import Quickshell.Services.Notifications
-import "EmojiData.js" as EmojiData
 import "I18n.js" as I18n
 import "Fonts.js" as Fonts
 
@@ -115,15 +100,14 @@ Scope {
     }
     onAccentFromWallpaperChanged: applyWallpaperAccent()
     // every part of the shell can be switched off on its own (the installer's feature picker writes these too)
-    property bool spotlightEnabled: false    // Spotlight (the magnifier / its keybind) — off: vicinae is the launcher
     property bool ccEnabled: true            // Control Center
     property string ccStyle: "tiles"         // tiles = every control its own glass | macos = one frosted panel behind them
     property bool notificationsEnabled: true // banners + Notification Center (off = no D-Bus daemon at all, so mako/dunst can take over)
     property bool clockAppEnabled: true      // the Clock app (alarms and timers still ring while it is on)
-    readonly property bool barLayerNeeded: barEnabled || spotlightEnabled || ccEnabled || notificationsEnabled || topBar === "island"
+    readonly property bool barLayerNeeded: barEnabled || ccEnabled || notificationsEnabled || topBar === "island"
     property bool darkMode: true             // the resolved look (true = dark); follows appearanceMode
     property string appearanceMode: "dark"   // light | dark | auto (auto = light by day, dark by night)
-    readonly property bool panelDarkMode: darkMode   // Spotlight and the top bar menus follow the one Light / Dark / Auto setting
+    readonly property bool panelDarkMode: darkMode   // the top bar menus follow the one Light / Dark / Auto setting
     property color accent: "#0A84FF"
     // The UI font is Open Runde (bundled in assets/fonts, loaded by shell.qml). Settings that still say Inter move over to it.
     property string fontFamily: "Open Runde"
@@ -284,22 +268,13 @@ Scope {
     property bool showSeconds: false
     property bool showBatteryPercent: true
     property bool showTray: true
-    property bool showSearch: true
     property bool weekStartsMonday: false
     property string terminal: "kitty"
-    property string launcher: ""              // "" = built-in Spotlight; set a command (rofi, fuzzel, ...) to use an external launcher instead
     property string filesCmd: "xdg-open \"$HOME\""
-    property string clipboardCmd: "cliphist list | (fuzzel --dmenu || wofi --dmenu || rofi -dmenu) | cliphist decode | wl-copy"
-    property var appUsage: ({})               // launch counts, feeds the "Suggestions" row in Spotlight
-    property bool clipHistory: true           // keep a clipboard history for Spotlight → Clipboard (needs wl-clipboard + cliphist)
-    property bool clipAutoPaste: true         // after picking a clipboard entry / emoji, paste it into the focused app
-    property var emojiRecent: []              // recently used emoji, newest first
     property string screenshotDir: ""         // where screenshots are saved ("" = ~/Pictures/Screenshots)
     property bool screenshotSave: true        // save the PNG to screenshotDir
     property bool screenshotClipboard: true   // also copy it to the clipboard
     property bool screenshotNotify: true      // "Screenshot saved" notification
-    property int spotRequest: 0
-    property string spotWant: "home"          // which Spotlight panel the next request opens: home | clip | emoji | apps
     property int nightTemp: 4000
     // Control Center: ids of the enabled controls, in order (edit with Control Center → Edit Controls)
     property var ccControls: ["wifi", "nowplaying", "bluetooth", "airplane", "focus", "record", "nightshift", "keepawake", "display", "sound"]
@@ -312,20 +287,16 @@ Scope {
     property int kbIndex: 0                   // index of the active one
     property string kbMain: ""                // name of the main keyboard (Hyprland)
     property string recordFile: ""
-    property string fileQuery: ""
-    property string fileSearchFor: ""
-    property bool fileSearchPending: false
-    property var fileHits: []
 
     readonly property var settingKeys: ["barEnabled", "topBar", "accentFromWallpaper", "darkMode", "appearanceMode", "accent", "fontFamily", "barHeight", "glassOpacity",
         "barStyle", "barGlass", "glassRim", "glassGrain", "glassLiquid", "glassBlur", "barBgOpacity", "glassRealtime", "liveWallGlass", "glassDebug", "wallpaperPath", "use24h", "showDate",
-        "showSeconds", "showBatteryPercent", "showTray", "showSearch",
-        "spotlightEnabled", "ccEnabled", "notificationsEnabled", "clockAppEnabled", "ccStyle", "barLogoMode", "barCustomLogoPath", "barWidgets", "weekStartsMonday", "terminal", "launcher",
-        "filesCmd", "clipboardCmd", "appUsage", "clipHistory", "clipAutoPaste", "emojiRecent", "screenshotDir", "screenshotSave", "screenshotClipboard", "screenshotNotify", "nightTemp", "ccControls", "ccMigRec", "wallpaperDir", "wallpaperFavs", "wallpaperCmd", "wallpaperVideo", "wpRestorePath", "uiSounds", "lockArtBackground",
+        "showSeconds", "showBatteryPercent", "showTray",
+        "ccEnabled", "notificationsEnabled", "clockAppEnabled", "ccStyle", "barLogoMode", "barCustomLogoPath", "barWidgets", "weekStartsMonday", "terminal", "launcher",
+        "filesCmd", "screenshotDir", "screenshotSave", "screenshotClipboard", "screenshotNotify", "nightTemp", "ccControls", "ccMigRec", "wallpaperDir", "wallpaperFavs", "wallpaperCmd", "wallpaperVideo", "wpRestorePath", "uiSounds", "lockArtBackground",
         "lockClockStyle", "switcherStyle", "lockClockFont", "lockClockWeight", "lockClockMaterial", "lockClockIntensity", "lockClockTint", "lockClockDate", "autoContrast", "wallpaperAppearance", "wpPairLight", "wpPairDark",
         "notifDnd", "dnd", "nightOn", "keepAwake",
         "kbRepeatRate", "kbRepeatDelay", "mouseSens", "mouseNatural", "tpNatural", "tpTap", "tpDwt", "tpScroll"]
-    // Optional bar widgets; tray and Spotlight use their existing showTray/showSearch settings.
+    // Optional bar widgets; the tray uses its existing showTray setting.
     property var barWidgets: ["appleMenu", "appMenus", "workspaces", "volume", "keyboard", "notifications", "wifi", "bluetooth", "privacy", "controlCenter", "clock"]
     function barWidgetEnabled(id) { return barWidgets.indexOf(id) >= 0; }
     function resolvedBarLogoUrl() {
@@ -471,9 +442,9 @@ Scope {
     property real dk: effDark ? 1 : 0
     Behavior on dk { NumberAnimation { duration: 360; easing.type: Easing.OutCubic } }
     function mixc(l, d) { return Qt.rgba(l.r + (d.r - l.r) * dk, l.g + (d.g - l.g) * dk, l.b + (d.b - l.b) * dk, l.a + (d.a - l.a) * dk); }
-    // ── Dynamic text colour (top bar, menus / popovers, Spotlight) ──
+    // ── Dynamic text colour (top bar, menus / popovers) ──
     // The bar is clear glass over the wallpaper and the windows, so its text follows what is measured BEHIND it (barTone) and flips
-    // light/dark by itself. Menus and Spotlight keep their glass tint but flip their text when the measured backdrop would make the
+    // light/dark by itself. Menus keep their glass tint but flip their text when the measured backdrop would make the
     // normal colour unreadable (bgTone). Colours cross-fade (ptk / btk: 1 = white text, 0 = dark text).
     property int barTone: 0                   // measured behind the bar strip: 1 bright, -1 dark, 0 not measured yet
     readonly property bool barTextDark: barTone === 1 ? true : (barTone === -1 ? false : !darkMode)
@@ -1084,7 +1055,7 @@ Scope {
         property real ringW: 0              // width (px) of the thin border line along the edge, 0 = none
         property color borderTint: "#8A9AB5"   // wallpaper's dominant colour, for the MenuBorder drawn over each slab
         property real borderAmount: 1          // strength of that MenuBorder
-        property bool whiteEdge: true       // the light inner ring of the non-liquid pane (off for Spotlight: dark outline only)
+        property bool whiteEdge: true       // the light inner ring of the non-liquid pane (off: dark outline only)
         property real grain: 0.03
         property bool debug: false
         signal failed()
@@ -1324,7 +1295,7 @@ Scope {
         signal clicked()
         property bool bounce: false
         property bool glass: true       // false: a flat circle instead of a Liquid Glass disc
-        property bool matchMenuBorder: false // use the same outline primitive as Spotlight's search pill
+        property bool matchMenuBorder: false // use the menu border outline primitive
         property bool plain: false      // icon only: no glass disc and no click area of its own (the tile is the button)
         readonly property bool inWide: plain && parent && parent.width > 110     // icon on a wide (two-cell) tile
         // icon on a small (one-cell) tile = a "circle button": a little smaller circle with a bigger icon
@@ -2532,20 +2503,6 @@ Scope {
         return m + ":" + (r < 10 ? "0" : "") + r;
     }
     function pickColor() { sh("c=$(hyprpicker -a) && [ -n \"$c\" ] && notify-send -a macbar 'Color copied' \"$c\""); }
-    Process {
-        id: fileSearchProc
-        command: ["sh", "-c", "find \"$HOME\" -type f -iname \"*$1*\" -not -path '*/.cache/*' -not -path '*/.local/share/Trash/*' 2>/dev/null | head -n 8", "sh", root.fileQuery]
-        stdout: StdioCollector { onStreamFinished: {
-            var a=text.trim().split("\n").filter(function(x){return x!=="";});
-            if (root.fileSearchFor === root.fileQuery) { root.fileHits=a; root.fileSearchPending=false; }
-            else fileDebounce.restart();
-        } }
-        onExited: if (root.fileSearchFor !== root.fileQuery) fileDebounce.restart()
-    }
-    Timer { id: fileDebounce; interval: 260; onTriggered: {
-        if (root.fileQuery.length > 0 && !fileSearchProc.running) { root.fileSearchFor=root.fileQuery; root.fileSearchPending=true; fileSearchProc.running=true; }
-    } }
-    function updateFileSearch(q) { fileQuery=q; fileHits=[]; fileSearchPending=true; fileDebounce.restart(); }
 
     // focus / night shift / keep awake
     property bool dnd: false
@@ -2651,9 +2608,6 @@ Scope {
         var q = encodeURIComponent(n + " linux help").replace(/'/g, "%27");
         sh("if man -w " + c + " >/dev/null 2>&1; then " + terminal + " -e man " + c + "; else xdg-open 'https://duckduckgo.com/?q=" + q + "'; fi");
     }
-    function emoji() {
-        sh("for c in emote bemoji smile rofimoji wofi-emoji; do command -v $c >/dev/null 2>&1 && exec $c; done");
-    }
     function quitActive() {
         var tls = ToplevelManager.toplevels.values;
         for (var i = 0; i < tls.length; i++) if (tls[i].appId === activeAppId) tls[i].close();
@@ -2662,13 +2616,6 @@ Scope {
         var e = lookup(activeAppId);
         if (e) e.execute();
     }
-    function search() {
-        if (!spotlightEnabled && launcher === "") return;
-        spotWant = "home";
-        if (launcher !== "") sh(launcher);
-        else spotRequest++;                       // every bar window listens and the focused screen opens Spotlight
-    }
-    function spotOpen(mode) { if (!spotlightEnabled) return; spotWant = mode; spotRequest++; }
     // qs -c MacShell ipc call controlcenter toggle | open | close   (works with the menu bar switched off too)
     signal ccRequest(bool open)
     IpcHandler {
@@ -2688,13 +2635,6 @@ Scope {
         function micMute(): void { root.hwMicMute(); }
         function brightnessUp(): void { root.hwBrightness(0.05); }
         function brightnessDown(): void { root.hwBrightness(-0.05); }
-    }
-    IpcHandler {
-        target: "spotlight"
-        function toggle(): void { root.search(); }
-        function clipboard(): void { root.spotOpen("clip"); }
-        function emoji(): void { root.spotOpen("emoji"); }
-        function apps(): void { root.spotOpen("apps"); }
     }
     // ── akiidjk fork ──   qs -c MacShell ipc call topbar set menubar|island | toggle
     IpcHandler {
@@ -2722,276 +2662,9 @@ Scope {
         function close(): void { root.wallPickerOpen = false; }
     }
 
-    // ═════════════ CLIPBOARD HISTORY + EMOJI (Spotlight panels) ═════════════
-    // History comes from cliphist; its `wl-paste --watch` watchers are started here (unless you already run them), and every
-    // new entry also gets a timestamp in ~/.cache/macbar/clip-times so the list can say "Copied 4:11 pm".
-    property string clipState: "unknown"      // unknown | ok | external | missing
-    property var clipEntries: []              // newest first
-    property bool clipLoading: false
-    readonly property string clipDir: Quickshell.env("HOME") + "/.cache/macbar"
-    // the system's default colour emoji font (asked from fontconfig); Noto Color Emoji until that answers
-    property string emojiFont: "Noto Color Emoji"
-    Process {
-        running: true
-        command: ["sh", "-c", "fc-match -f '%{family[0]}|%{color}' emoji 2>/dev/null"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var p = text.trim().split("|");
-                if (p.length === 2 && p[0] !== "" && p[1].toLowerCase() === "true") root.emojiFont = p[0];
-            }
-        }
-    }
-
-    readonly property string clipStoreCmd: "cliphist store; id=$(cliphist list | head -n1 | cut -f1); t=\"$HOME/.cache/macbar/clip-times\"; "
-        + "[ -n \"$id\" ] && [ \"$id\" != \"$(tail -n1 \"$t\" 2>/dev/null | cut -f1)\" ] && printf '%s\\t%s\\n' \"$id\" \"$(date +%s)\" >> \"$t\""
-    readonly property string clipListCmd: [
-        "if ! command -v cliphist >/dev/null 2>&1; then echo '@@MISSING@@'; exit 0; fi",
-        "d=\"$HOME/.cache/macbar\"; mkdir -p \"$d/clip\"; t=\"$d/clip-times\"; touch \"$t\"",
-        "l=$(mktemp); cliphist list 2>/dev/null | head -n 300 > \"$l\"",
-        "awk -F'\\t' -v now=\"$(date +%s)\" 'FILENAME==ARGV[1]{s[$1]=1;next} !($1 in s){print $1\"\\t\"now}' \"$t\" \"$l\" >> \"$t\"",
-        "tail -n 3000 \"$t\" > \"$t.tmp\" && mv \"$t.tmp\" \"$t\"",
-        "awk -F'\\t' '$2 ~ /^\\[\\[ binary data/ {print $1}' \"$l\" | head -n 30 | while read -r id; do [ -s \"$d/clip/$id.img\" ] || cliphist decode \"$id\" > \"$d/clip/$id.img\" 2>/dev/null; done",
-        "find \"$d/clip\" -type f -mtime +3 -delete 2>/dev/null",
-        "cat \"$l\"; echo '@@TIMES@@'; cat \"$t\"; rm -f \"$l\""
-    ].join("\n")
-
-    function clipStart() {
-        if (clipHistory && barEnabled && settingsReady) clipProbe.running = true;
-        else { clipWatchText.running = false; clipWatchImg.running = false; }
-    }
-    onSettingsReadyChanged: { clipStart(); emojiEnsure(); applyWallpaperAccent(); }
-    onClipHistoryChanged: clipStart()
-    Process {
-        id: clipProbe
-        command: ["sh", "-c",
-            "if ! command -v wl-paste >/dev/null 2>&1 || ! command -v cliphist >/dev/null 2>&1; then echo missing; exit 0; fi; "
-            + "mkdir -p \"$HOME/.cache/macbar/clip\"; "
-            // look at real wl-paste processes only (`pgrep -f` also matched this very shell, so it always answered "external"
-            // and the watchers below never started)
-            + "ext=0; for p in $(pgrep -x wl-paste 2>/dev/null); do "
-            + "if tr '\\0' ' ' < /proc/$p/cmdline 2>/dev/null | grep -q cliphist; then ext=1; fi; done; "
-            + "if [ $ext = 1 ]; then echo external; else echo ok; fi"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                root.clipState = text.trim();
-                if (root.clipState === "ok") { clipWatchText.running = true; clipWatchImg.running = true; }
-            }
-        }
-    }
-    Process { id: clipWatchText; command: ["wl-paste", "--type", "text", "--watch", "sh", "-c", root.clipStoreCmd, "sh"] }
-    Process { id: clipWatchImg; command: ["wl-paste", "--type", "image", "--watch", "sh", "-c", root.clipStoreCmd, "sh"] }
-
-    function clipRefresh() {
-        if (clipLoading) return;
-        clipLoading = true;
-        clipListProc.running = true;
-    }
-    Process {
-        id: clipListProc
-        command: ["sh", "-c", root.clipListCmd]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                root.clipLoading = false;
-                if (text.indexOf("@@MISSING@@") === 0) { root.clipState = "missing"; root.clipEntries = []; return; }
-                root.clipEntries = root.clipParse(text);
-            }
-        }
-    }
-    function clipWhen(ts) {
-        if (!ts) return "";
-        var d = new Date(ts * 1000), n = new Date();
-        var tm = Qt.formatDateTime(d, root.use24h ? "HH:mm" : "h:mm ap");
-        var today = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
-        var day = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-        if (day === today) return "Copied " + tm;
-        if (day === today - 86400000) return "Copied Yesterday, " + tm;
-        return I18n.tr("Copied ") + I18n.locale().toString(d, "d MMM") + ", " + tm;
-    }
-    function clipEntry(id, txt, ts) {
-        var en = { id: id, text: txt, kind: "text", title: txt, label: I18n.tr("Text"), host: "", thumb: "", color: "" };
-        var m = /^\[\[ binary data ([\d.]+ \w+) (\w+) (\d+x\d+) \]\]$/.exec(txt);
-        if (m) {
-            en.kind = "image";
-            en.title = "Image " + m[3].replace("x", "\u00D7");
-            en.label = "Image \u2022 " + m[2].toUpperCase() + " \u2022 " + m[1];
-            en.thumb = "file://" + clipDir + "/clip/" + id + ".img";
-        } else if (/^(https?|ftp):\/\/\S+$/i.test(txt) || /^www\.\S+\.\S+$/i.test(txt)) {
-            en.kind = "url";
-            en.host = txt.replace(/^[a-z]+:\/\//i, "").split(/[\/?#]/)[0];
-            en.label = "URL \u2022 " + en.host;
-        } else if (/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(txt)) {
-            en.kind = "color";
-            en.color = txt;
-            en.label = "Color";
-        }
-        var w = clipWhen(ts);
-        en.sub = en.label + (w !== "" ? " \u2022 " + w : "");
-        return en;
-    }
-    function clipParse(out) {
-        var parts = out.split("@@TIMES@@\n");
-        var lines = parts[0].split("\n"), tl = (parts[1] || "").split("\n"), times = {}, res = [], i;
-        for (i = 0; i < tl.length; i++) {
-            var p = tl[i].split("\t");
-            if (p.length >= 2) times[p[0]] = parseInt(p[1]);
-        }
-        for (i = 0; i < lines.length; i++) {
-            var tab = lines[i].indexOf("\t");
-            if (tab < 1) continue;
-            var id = lines[i].substring(0, tab);
-            res.push(clipEntry(id, lines[i].substring(tab + 1), times[id] || 0));
-        }
-        return res;
-    }
-    function clipRunner(en) { return function () { root.clipPick(en, undefined); }; }
-    function clipFiltered(q) {
-        q = (q || "").trim().toLowerCase();
-        var src = clipEntries, out = [];
-        for (var i = 0; i < src.length && out.length < 150; i++) {
-            var en = src[i];
-            if (q !== "" && en.text.toLowerCase().indexOf(q) < 0 && en.label.toLowerCase().indexOf(q) < 0) continue;
-            var it = {};
-            for (var k in en) it[k] = en[k];
-            it.confirm = false;
-            it.run = clipRunner(en);
-            out.push(it);
-        }
-        return out;
-    }
-    function clipPick(en, paste) {
-        var id = parseInt(en.id);
-        if (isNaN(id)) return;
-        sh("cliphist decode " + id + " | wl-copy");
-        if (paste === undefined ? clipAutoPaste : paste) pasteSoon();
-    }
-    // a clipboard entry dropped on the desktop: open it (image → viewer, URL → browser, text → editor)
-    function clipOpen(en) {
-        var id = parseInt(en.id);
-        if (isNaN(id)) return;
-        if (en.kind === "url") { Quickshell.execDetached(["xdg-open", /^www\./i.test(en.text) ? "https://" + en.text : en.text]); return; }
-        var ext = en.kind === "image" ? (/(png|jpe?g|webp|gif|bmp)/i.exec(en.label) || ["png"])[0].toLowerCase() : "txt";
-        Quickshell.execDetached(["sh", "-c", 'd="${XDG_RUNTIME_DIR:-/tmp}/macshell-clip"; mkdir -p "$d"; f="$d/clip-$1.$2"; cliphist decode "$1" > "$f" && exec xdg-open "$f"',
-                                 "sh", String(id), ext]);
-    }
-    function clipDelete(en) {
-        if (!en) return;
-        var id = parseInt(en.id);
-        if (isNaN(id)) return;
-        clipEntries = clipEntries.filter(function (x) { return x.id !== en.id; });
-        sh("printf '%s\\t\\n' " + id + " | cliphist delete; rm -f \"$HOME/.cache/macbar/clip/" + id + ".img\"");
-    }
-    function clipClear() {
-        clipEntries = [];
-        sh("cliphist wipe; rm -f \"$HOME/.cache/macbar/clip-times\" \"$HOME/.cache/macbar/clip/\"*");
-    }
-    // paste into the app that had focus before Spotlight (terminals paste with Ctrl+Shift+V)
-    property var pasteFn: null
-    function pasteSoon() {
-        pasteFn = appKind(activeAppId) === "terminal" ? keys(["ctrl", "shift"], "v") : keys(["ctrl"], "v");
-        pasteTimer.restart();
-    }
-    Timer { id: pasteTimer; interval: 230; onTriggered: if (root.pasteFn) root.pasteFn() }
-
-    // emoji: search by name / keyword, categories, recents
-    // Data comes from the system's own Unicode files when they exist (emoji-test.txt = every emoji with its official name and
-    // category, CLDR annotations = search keywords), so it always matches your installed emoji font. EmojiData.js is the fallback.
-    property var emojiList: EmojiData.list
-    property string emojiSource: "bundled"
-    property bool emojiTried: false
-    readonly property var emojiIndex: {
-        var m = {}, L = root.emojiList;
-        for (var i = 0; i < L.length; i++) m[L[i][0]] = L[i];
-        return m;
-    }
-    function emojiEnsure() {
-        if (emojiTried) return;
-        emojiTried = true;
-        emojiLoadProc.running = true;
-    }
-    readonly property string emojiLoadCmd: [
-        "t=''; for f in /usr/share/unicode/emoji/emoji-test.txt /usr/share/unicode/ucd/emoji/emoji-test.txt /usr/share/unicode-emoji/emoji-test.txt /usr/local/share/unicode/emoji/emoji-test.txt \"$HOME/.local/share/unicode/emoji-test.txt\"; do [ -r \"$f\" ] && { t=\"$f\"; break; }; done",
-        "[ -z \"$t\" ] && t=$(find /usr/share /usr/local/share -maxdepth 6 -name emoji-test.txt 2>/dev/null | head -n1)",
-        "[ -z \"$t\" ] && { echo '@@NONE@@'; exit 0; }",
-        "echo '@@TEST@@'; grep -E '^(# (sub)?group:|[0-9A-F])' \"$t\"",
-        "echo '@@CLDR@@'",
-        "for d in annotations annotationsDerived; do f=''; for b in /usr/share/unicode/cldr/common /usr/share/unicode-cldr/common /usr/share/cldr/common /usr/share/unicode/cldr; do [ -r \"$b/$d/en.xml\" ] && { f=\"$b/$d/en.xml\"; break; }; done",
-        "  [ -z \"$f\" ] && f=$(find /usr/share /usr/local/share -maxdepth 7 -path \"*/$d/en.xml\" 2>/dev/null | head -n1)",
-        "  [ -n \"$f\" ] && grep -h '<annotation ' \"$f\"; done; true"
-    ].join("\n")
-    Process {
-        id: emojiLoadProc
-        command: ["sh", "-c", root.emojiLoadCmd]
-        stdout: StdioCollector { onStreamFinished: root.emojiLoad(text) }
-    }
-    function emojiLoad(out) {
-        var iT = out.indexOf("@@TEST@@\n"), iC = out.indexOf("@@CLDR@@\n");
-        if (iT < 0 || iC < iT) return;                                  // no emoji-test.txt on this system: keep EmojiData.js
-        var testTxt = out.substring(iT + 9, iC), cldrTxt = out.substring(iC + 9), m, i;
-        function unesc(x) { return x.replace(/&quot;/g, "\"").replace(/&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&"); }
-        var kw = {}, re = /<annotation cp="([^"]+)"( type="tts")?>([^<]*)<\/annotation>/g;
-        while ((m = re.exec(cldrTxt)) !== null) {
-            if (m[2]) continue;
-            var key = m[1].replace(/\uFE0F/g, "");
-            kw[key] = (kw[key] ? kw[key] + " | " : "") + unesc(m[3]);
-        }
-        var cats = { "Smileys & Emotion": 0, "People & Body": 1, "Animals & Nature": 2, "Food & Drink": 3, "Travel & Places": 4,
-                     "Activities": 5, "Objects": 6, "Symbols": 7, "Flags": 8 };
-        var cat = -1, list = [], lines = testTxt.split("\n");
-        for (i = 0; i < lines.length; i++) {
-            var ln = lines[i];
-            if (ln.charAt(0) === "#") {
-                m = /^# group: (.+)$/.exec(ln);
-                if (m) cat = cats[m[1].trim()] !== undefined ? cats[m[1].trim()] : -1;      // "Component" (skin tones, hair) -> skipped
-                continue;
-            }
-            if (cat < 0) continue;
-            m = /^[0-9A-F ]+;\s*(\S+)\s*#\s*(\S+)\s+E\d+(?:\.\d+)?\s+(.+)$/.exec(ln);
-            if (!m || m[1] !== "fully-qualified") continue;
-            var name = m[3].trim();
-            if (name.indexOf("skin tone") >= 0) continue;                  // tone variants would triple the grid; the base emoji is kept
-            var extra = (kw[m[2].replace(/\uFE0F/g, "")] || "").replace(/ \| /g, " ");
-            list.push([m[2], name, extra, cat, (name + " " + extra).toLowerCase()]);
-        }
-        if (list.length < 800) return;                                  // looks wrong, keep the bundled list
-        root.emojiList = list;
-        root.emojiSource = "system";
-    }
-    function emojiItems(q, cat) {
-        var L = root.emojiList, out = [], i;
-        q = (q || "").trim().toLowerCase();
-        if (q !== "") {
-            var hits = [];
-            for (i = 0; i < L.length; i++) {
-                var p = L[i][4].indexOf(q);
-                if (p < 0) continue;
-                var nm = L[i][1].toLowerCase();
-                // exact name, name starts with it, exact keyword (e.g. "smile" -> grinning face), a word of the name, anything else
-                hits.push([nm === q ? 0 : (nm.indexOf(q) === 0 ? 1 : ((" " + L[i][2] + " ").indexOf(" " + q + " ") >= 0 ? 2
-                           : (nm.indexOf(" " + q) >= 0 ? 3 : (p === 0 ? 4 : 5)))), i]);
-            }
-            hits.sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
-            for (i = 0; i < hits.length && i < 240; i++) out.push(L[hits[i][1]]);
-            return out;
-        }
-        if (cat === 0) {
-            for (i = 0; i < emojiRecent.length; i++) if (emojiIndex[emojiRecent[i]]) out.push(emojiIndex[emojiRecent[i]]);
-            return out;
-        }
-        for (i = 0; i < L.length; i++) if (L[i][3] === cat - 1) out.push(L[i]);
-        return out;
-    }
-    function emojiPick(en) {
-        if (!en) return;
-        var r = [en[0]];
-        for (var i = 0; i < emojiRecent.length && r.length < 24; i++) if (emojiRecent[i] !== en[0]) r.push(emojiRecent[i]);
-        emojiRecent = r;
-        Quickshell.execDetached(["sh", "-c", "printf %s \"$1\" | wl-copy", "sh", en[0]]);
-        if (clipAutoPaste) pasteSoon();
-    }
-
-    // the MacShell logo: the icon of MacShell's own windows in the Alt+Tab switcher
+    onSettingsReadyChanged: applyWallpaperAccent()
     readonly property string logoPath: decodeURIComponent(String(Qt.resolvedUrl("assets/macshell-logo.png")).replace(/^file:\/\//, ""))
-    // ── applications for Spotlight ──
+    // ── app logo + icon lookup (menus, Dock) ──
     function iconSrc(name) {
         var fb = Quickshell.iconPath("application-x-executable", true);
         if (!name) return fb;
@@ -2999,156 +2672,6 @@ Scope {
         var p = Quickshell.iconPath(name, true);
         return p !== "" ? p : fb;
     }
-    readonly property var appList: {
-        var vals = DesktopEntries.applications.values, out = [];
-        for (var i = 0; i < vals.length; i++) if (!vals[i].noDisplay) out.push(vals[i]);
-        out.sort(function (a, b) { return a.name.localeCompare(b.name); });
-        return out;
-    }
-    readonly property var appCats: [
-        ["Game", "Games"], ["Office", "Productivity & Finance"], ["Finance", "Productivity & Finance"],
-        ["Network", "Internet & Social"], ["WebBrowser", "Internet & Social"], ["Development", "Developer Tools"],
-        ["Graphics", "Graphics & Design"], ["AudioVideo", "Music & Video"], ["Audio", "Music & Video"],
-        ["Video", "Music & Video"], ["Education", "Education & Science"], ["Science", "Education & Science"],
-        ["Settings", "System"], ["System", "System"], ["Utility", "Utilities"]
-    ]
-    readonly property var catOrder: ["Games", "Productivity & Finance", "Internet & Social", "Developer Tools",
-                                     "Graphics & Design", "Music & Video", "Education & Science", "Utilities", "System"]
-    function appCategory(e) {
-        var c = e.categories || [];
-        for (var i = 0; i < appCats.length; i++)
-            for (var j = 0; j < c.length; j++)
-                if (c[j] === appCats[i][0]) return appCats[i][1];
-        return "Utilities";
-    }
-    readonly property var appSections: {
-        var list = appList, usage = appUsage, i, j;
-        var used = list.filter(function (e) { return (usage[e.id] || 0) > 0; });
-        used.sort(function (a, b) { return (usage[b.id] || 0) - (usage[a.id] || 0); });
-        var sug = used.slice(0, 10);
-        for (i = 0; i < list.length && sug.length < 5; i++) {
-            var dup = false;
-            for (j = 0; j < sug.length; j++) if (sug[j].id === list[i].id) { dup = true; break; }
-            if (!dup) sug.push(list[i]);
-        }
-        var map = {};
-        for (i = 0; i < list.length; i++) {
-            var cat = appCategory(list[i]);
-            if (!map[cat]) map[cat] = [];
-            map[cat].push(list[i]);
-        }
-        var secs = [{ name: "Suggestions", apps: sug }];
-        for (i = 0; i < catOrder.length; i++) if (map[catOrder[i]]) secs.push({ name: catOrder[i], apps: map[catOrder[i]] });
-        return secs;
-    }
-    function searchApps(q) {
-        q = (q || "").trim().toLowerCase();
-        if (q === "") return [];
-        var list = appList, hits = [];
-        for (var i = 0; i < list.length; i++) {
-            var e = list[i], n = e.name.toLowerCase(), sc = 0;
-            if (n === q) sc = 100;
-            else if (n.indexOf(q) === 0) sc = 80;
-            else if (n.indexOf(" " + q) >= 0) sc = 60;
-            else if (n.indexOf(q) >= 0) sc = 40;
-            else if ((e.genericName || "").toLowerCase().indexOf(q) >= 0) sc = 25;
-            else if ((e.comment || "").toLowerCase().indexOf(q) >= 0) sc = 10;
-            else {
-                var kw = e.keywords || [];
-                for (var k = 0; k < kw.length; k++) if (String(kw[k]).toLowerCase().indexOf(q) >= 0) { sc = 15; break; }
-            }
-            if (sc > 0) hits.push({ e: e, s: sc + Math.min(appUsage[e.id] || 0, 20) });
-        }
-        hits.sort(function (a, b) { return b.s - a.s; });
-        return hits.map(function (h) { return h.e; });
-    }
-    function appSearchSection(q) {
-        var r = searchApps(q);
-        return r.length > 0 ? [{ name: "Top Hits", apps: r }] : [];
-    }
-    function launchApp(e) {
-        var u = {};
-        for (var k in appUsage) u[k] = appUsage[k];
-        u[e.id] = (u[e.id] || 0) + 1;
-        appUsage = u;
-        saveTimer.restart();
-        e.execute();
-    }
-    function appRunner(e) { return function () { launchApp(e); }; }
-    function appItems(q, limit) {
-        var r = searchApps(q), out = [];
-        for (var i = 0; i < r.length && i < limit; i++)
-            out.push({ title: r[i].name, sub: r[i].genericName || I18n.tr("Application"), icon: iconSrc(r[i].icon),
-                       glyph: "", confirm: false, run: appRunner(r[i]) });
-        return out;
-    }
-    function actionItems(q) {
-        var all = [
-            { title: I18n.tr("Lock Screen"), glyph: "lock", run: function () { root.lockScreen(); } },
-            { title: I18n.tr("Sleep"), glyph: "moon", run: function () { root.sleepMachine(); } },
-            { title: I18n.tr("System Settings\u2026"), glyph: "gear", run: function () { openSettings(); } },
-            { title: I18n.tr("Log Out"), glyph: "logout", confirm: true, run: function () { root.logOut(); } },
-            { title: I18n.tr("Restart"), glyph: "restart", confirm: true, run: function () { sh("systemctl reboot"); } },
-            { title: I18n.tr("Shut Down"), glyph: "power", confirm: true, run: function () { sh("systemctl poweroff"); } }
-        ];
-        var s = (q || "").trim().toLowerCase(), out = [];
-        for (var i = 0; i < all.length; i++) {
-            if (s !== "" && all[i].title.toLowerCase().indexOf(s) < 0) continue;
-            out.push({ title: all[i].title, sub: I18n.tr("Action"), icon: "", glyph: all[i].glyph,
-                       confirm: all[i].confirm === true, run: all[i].run });
-        }
-        return out;
-    }
-    function calcValue(expr) {
-        var t=String(expr || "").replace(/[xX×]/g, "*").replace(/÷/g, "/");
-        if (!/^[0-9+\-*/%.()\s]+$/.test(t) || !/[0-9]/.test(t)) return null;
-        var i=0;
-        function ws(){ while(i<t.length && /\s/.test(t[i])) i++; }
-        function atom(){ ws(); if(t[i]==="+"){i++;return atom();} if(t[i]==="-"){i++;return -atom();} if(t[i]==="("){i++;var v=sum();ws();if(t[i]!==")")throw 0;i++;return v;} var m=t.substring(i).match(/^(?:\d+(?:\.\d*)?|\.\d+)/);if(!m)throw 0;i+=m[0].length;return Number(m[0]); }
-        function term(){ var v=atom(); for(;;){ws();var op=t[i];if(op!=="*"&&op!=="/"&&op!=="%")break;i++;var r=atom();if((op==="/"||op==="%")&&r===0)throw 0;v=op==="*"?v*r:(op==="/"?v/r:v%r);}return v; }
-        function sum(){var v=term();for(;;){ws();var op=t[i];if(op!=="+"&&op!=="-")break;i++;var r=term();v=op==="+"?v+r:v-r;}return v;}
-        try { var v=sum(); ws(); return i===t.length && isFinite(v) ? v : null; } catch(e){ return null; }
-    }
-    function conversion(q) {
-        var m=(q||"").trim().match(/^(-?\d+(?:\.\d+)?)\s*([a-z°]+)\s+(?:to|in)\s+([a-z°]+)$/i); if(!m)return null;
-        var val=Number(m[1]), a=m[2].toLowerCase(), b=m[3].toLowerCase();
-        var units={mm:["len",.001],cm:["len",.01],m:["len",1],km:["len",1000],in:["len",.0254],ft:["len",.3048],mi:["len",1609.344],g:["mass",.001],kg:["mass",1],lb:["mass",.45359237],oz:["mass",.0283495],ml:["vol",.001],l:["vol",1],gal:["vol",3.78541],ms:["time",.001],s:["time",1],min:["time",60],h:["time",3600],c:["temp",1],"°c":["temp",1],f:["temp",1],"°f":["temp",1]};
-        if(!units[a]||!units[b]||units[a][0]!==units[b][0])return null;
-        var result;
-        if(units[a][0]==="temp") result=(a==="f"||a==="°f")?(val-32)*5/9:val, result=(b==="f"||b==="°f")?result*9/5+32:result;
-        else result=val*units[a][1]/units[b][1];
-        return {title:Number(result.toPrecision(7))+" "+b,sub:I18n.tr("Unit conversion"),glyph:"link",run:function(){Quickshell.execDetached(["wl-copy",String(result)]);}};
-    }
-    function windowItems(q) {
-        var out=[], s=(q||"").trim().toLowerCase(); if(!s)return out;
-        var ts=Hyprland.toplevels.values;
-        for(var i=0;i<ts.length&&out.length<4;i++){
-            var t=ts[i], o=t.lastIpcObject||{}, title=String(o.title||t.title||""), cls=String(o["class"]||t.appId||""), app=root.lookup(cls), label=title||app&&app.name||cls;
-            if((label+" "+cls+" "+(app?app.name:" ")).toLowerCase().indexOf(s)<0)continue;
-            var addr=String(o.address||t.address||""); if(addr!=="" && addr.indexOf("0x")!==0) addr="0x"+addr;
-            (function(win,addr,workspace,cl,name,icon){out.push({title:name,sub:I18n.tr("Open Window"),icon:icon||"",glyph:"layers",run:function(){root.swPending={addr:addr,ws:workspace,cls:cl};swFocusTimer.restart();}});})(t,addr,o.workspace&&o.workspace.id>0?o.workspace.id:0,cls,label,app?root.iconSrc(app.icon):"");
-        }
-        return out;
-    }
-    function fileItems(q) {
-        var out=[]; for(var i=0;i<fileHits.length&&out.length<5;i++){var path=fileHits[i];out.push({title:path.substring(path.lastIndexOf("/")+1)||path,sub:path,glyph:"folder",run:(function(p){return function(){Quickshell.execDetached(["xdg-open",p]);};})(path)});} return out;
-    }
-    function homeItems(q) {
-        var out = [], s = (q || "").trim().toLowerCase();
-        if (s.indexOf("file ") === 0 || s.indexOf("find ") === 0) {
-            var fq=s.replace(/^(file|find)\s+/,"").trim(); if(fq!=="" && fileQuery!==fq) updateFileSearch(fq);
-            out=fileItems(fq); if(out.length===0) out.push({title:fileSearchPending?I18n.tr("Searching files…"):I18n.tr("No matching files"),sub:I18n.tr("Files"),glyph:"folder",run:function(){}});
-            return out;
-        }
-        if(s.length>0) out=appItems(q,4);
-        var cv=conversion(s); if(cv) out.unshift(cv);
-        else { var expr=s.replace(/^=\s*/,""); var v=calcValue(expr); if(v!==null && (s.charAt(0)==="=" || /[+*/%xX×÷()]/.test(s))) out.unshift({title:String(Number(v.toPrecision(10))),sub:I18n.tr("Calculator · Return to copy"),glyph:"search",run:function(){Quickshell.execDetached(["wl-copy",String(v)]);}}); }
-        var wins=windowItems(q); for(var j=0;j<wins.length&&out.length<6;j++)out.push(wins[j]);
-        var acts=actionItems(q); for(var k=0;k<acts.length&&out.length<6;k++)if(acts[k].title.toLowerCase().indexOf(s)===0)out.push(acts[k]);
-        if(s.length>0 && out.length<7) out.push({title:I18n.tr("Search the web for “")+q.trim()+"”",sub:I18n.tr("Web Search · Return to open"),glyph:"search",run:function(){Quickshell.execDetached(["xdg-open","https://search.brave.com/search?q="+encodeURIComponent(q.trim())]);}});
-        return out.slice(0,8);
-    }
-
     function menuModelFor(name) {
         var m = [], i;
         if (name === "apple") {
@@ -3176,8 +2699,6 @@ Scope {
                 if (!has) {
                     m.push(mi("New Terminal", "", function () { sh(terminal); }));
                     m.push(mi("Open Home Folder", "", function () { sh(filesCmd); }));
-                    m.push(msep());
-                    m.push(mi("Search\u2026", "", function () { root.search(); }));
                 } else {
                     m.push(mi(I18n.tr("About ") + n, "", function () { root.aboutActive(aw, n); }));
                     if (editor || files) {
@@ -3238,9 +2759,6 @@ Scope {
                     m.push(msep());
                     m.push(mi("Find\u2026", "Ctrl+F", keys(["ctrl"], "f")));
                 }
-                if (has) m.push(msep());
-                m.push(mi("Clipboard History\u2026", "", function () { root.spotOpen("clip"); }));
-                m.push(mi("Emoji & Symbols", "", function () { root.spotOpen("emoji"); }));
             } else if (name === "view") {
                 if (has) {
                     m.push(mi(fsMode === 2 ? "Exit Full Screen" : "Enter Full Screen", "", disp('hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" })')));
@@ -3292,7 +2810,6 @@ Scope {
                     })(tls[i]);
                 }
             } else if (name === "help") {
-                m.push(mi("Search\u2026", "", function () { root.search(); }));
                 if (has) m.push(mi(n + " Help", "", function () { root.helpFor(id, n); }));
                 m.push(msep());
                 m.push(mi("Hyprland Keybinds", "", function () { root.keybindsOpen = true; }));
@@ -3647,8 +3164,8 @@ Scope {
         barEnabled = true; topBar = "menubar"; accentFromWallpaper = true;
         darkMode = true; appearanceMode = "dark"; accent = "#0a84ff"; fontFamily = "Open Runde"; glassOpacity = 0.42; glassBlur = 5; barBgOpacity = 0.10; glassRealtime = false; liveWallGlass = false;
         barStyle = "liquid"; use24h = true; showDate = true; showSeconds = false; showBatteryPercent = true;
-        showTray = true; showSearch = true;
-        spotlightEnabled = false; ccEnabled = true; notificationsEnabled = true; clockAppEnabled = true; ccStyle = "tiles";
+        showTray = true;
+        ccEnabled = true; notificationsEnabled = true; clockAppEnabled = true; ccStyle = "tiles";
         barLogoMode = "arch"; barCustomLogoPath = "";
         barWidgets = ["appleMenu", "appMenus", "workspaces", "volume", "keyboard", "notifications", "wifi", "bluetooth", "privacy", "controlCenter", "clock"];
         ccControls = ccDefault.slice();
@@ -3821,7 +3338,7 @@ Scope {
     readonly property var monData: hub ? hub.monData : []
     readonly property var glassClients: hub ? hub.glassClients : []
     property int popCount: 0
-    onBarEnabledChanged: { if (!barEnabled) popCount = 0; clipStart(); }
+    onBarEnabledChanged: { if (!barEnabled) popCount = 0; }
     Binding { target: root.hub; property: "barWantsGeo"; value: root.liquidActive }
     // window captures are admitted by the shared gate in shell.qml (hub.tlFor): 0.2 s after a window appears, one every 110 ms
 
@@ -4326,9 +3843,9 @@ Scope {
     //   bind   = ALT, TAB, exec, qs -c macshell ipc call switcher next
     //   bind   = ALT SHIFT, TAB, exec, qs -c macshell ipc call switcher prev
     //   bindrt = ALT, Alt_L, exec, qs -c macshell ipc call switcher commit     # optional safety net: switch on ALT release
-    // (use the same `qs ...` prefix you use for the Spotlight bind). Hold ALT, tap TAB to cycle, release ALT to switch.
+    // Hold ALT, tap TAB to cycle, release ALT to switch.
     // Layer namespace: "macswitch" (only needed for a blur layerrule if you are NOT using the Liquid Glass style).
-    property real switcherBlur: 15           // blur of the switcher glass (smooth Gaussian; less than Spotlight / notifications)
+    property real switcherBlur: 15           // blur of the switcher glass (smooth Gaussian; less than notifications)
     property string switcherStyle: "glass"   // glass (Liquid Glass) | frosted | opaque — Settings → Desktop & Dock
     property bool swOpen: false
     property var swApps: []                  // open apps, most recently used first: { appId, name, icon, win, count }
@@ -4553,90 +4070,6 @@ Scope {
                     onTriggered: root.scanBt()
                 }
 
-                // Spotlight state
-                property string spMode: "home"          // home | actions | apps
-                property string spQuery: ""
-                property string spHoverLabel: ""
-                property int spSel: 0
-                property var spExpanded: ({})
-                property bool clipMenu: false           // the round "..." menu of the Clipboard panel
-                property bool spCalm: false             // Spotlight was opened by the clipboard / emoji shortcut: plain fade, no springy pop
-                property bool spReqCalm: false
-                property int emCat: 0                   // emoji category tab (0 = recents)
-                property bool spHover: false            // spSel was just changed by the pointer, so lists must not scroll to it
-                readonly property int emCols: 12
-                readonly property bool spFull: spMode === "apps" || spMode === "clip" || spMode === "emoji"
-                property var spResults: spMode === "actions" ? root.actionItems(spQuery)
-                                        : (spMode === "clip" ? root.clipFiltered(spQuery)
-                                        : (spMode === "emoji" ? root.emojiItems(spQuery, emCat)
-                                        : (spQuery.trim() === "" ? [] : root.homeItems(spQuery))))
-
-                function spSetMode(m) {
-                    spMode = m; spQuery = ""; spHoverLabel = ""; spSel = 0; armed = ""; clipMenu = false;
-                    spInput.text = ""; appsInput.text = ""; clipInput.text = ""; emojiInput.text = "";
-                    if (m === "clip") root.clipRefresh();
-                    if (m === "emoji") emCat = root.emojiRecent.length > 0 ? 0 : 1;
-                    spFocusTimer.restart();
-                }
-                function spEscape() {
-                    if (clipMenu) clipMenu = false;
-                    else if (spQuery !== "") { spInput.text = ""; appsInput.text = ""; clipInput.text = ""; emojiInput.text = ""; spQuery = ""; }
-                    else if (spMode !== "home") spSetMode("home");
-                    else pop = "";
-                }
-                function spMove(d) {
-                    var n = spResults.length;
-                    if (n > 0) spSel = (Math.min(spSel, n - 1) + d + n) % n;
-                }
-                function spActivate(i) {
-                    var it = spResults[i];
-                    if (!it) return;
-                    if (it.confirm === true && armed !== it.title) { armed = it.title; return; }
-                    pop = "";
-                    if (it.run) it.run();
-                }
-                function spEnter() {
-                    if (spMode === "apps") {
-                        var r = root.searchApps(spQuery);
-                        if (r.length > 0) { pop = ""; root.launchApp(r[0]); }
-                    } else if (spMode === "emoji") {
-                        var em = spResults[Math.min(spSel, spResults.length - 1)];
-                        if (em) { pop = ""; root.emojiPick(em); }
-                    } else spActivate(Math.min(spSel, spResults.length - 1));
-                }
-                function spKey(ev) {
-                    var k = ev.key, n = spResults.length;
-                    if (k === Qt.Key_Escape) { spEscape(); ev.accepted = true; }
-                    else if (spMode === "emoji" && (k === Qt.Key_Left || k === Qt.Key_Right || k === Qt.Key_Up || k === Qt.Key_Down)) {
-                        var d = k === Qt.Key_Left ? -1 : (k === Qt.Key_Right ? 1 : (k === Qt.Key_Up ? -emCols : emCols));
-                        if (n > 0) spSel = Math.max(0, Math.min(n - 1, Math.min(spSel, n - 1) + d));
-                        ev.accepted = true;
-                    }
-                    else if (spMode === "emoji" && (k === Qt.Key_Tab || k === Qt.Key_Backtab)) {
-                        if (spQuery.trim() === "") { emCat = (emCat + (k === Qt.Key_Tab ? 1 : 9)) % 10; spSel = 0; }
-                        ev.accepted = true;
-                    }
-                    else if (k === Qt.Key_Down) { spMove(1); ev.accepted = true; }
-                    else if (k === Qt.Key_Up) { spMove(-1); ev.accepted = true; }
-                    else if (spMode === "clip" && k === Qt.Key_Delete) {
-                        if (n > 0) root.clipDelete(spResults[Math.min(spSel, n - 1)]);
-                        ev.accepted = true;
-                    }
-                    else if (k === Qt.Key_Return || k === Qt.Key_Enter) {
-                        if (spMode === "clip" && (ev.modifiers & Qt.ShiftModifier) && n > 0) {
-                            var it = spResults[Math.min(spSel, n - 1)];
-                            pop = "";
-                            root.clipPick(it, false);       // Shift+Return: copy only, don't paste
-                        } else spEnter();
-                        ev.accepted = true;
-                    }
-                }
-                function spToggleSection(name) {
-                    var o = {};
-                    for (var k in spExpanded) o[k] = spExpanded[k];
-                    o[name] = !o[name];
-                    spExpanded = o;
-                }
                 // gutter for check marks when any entry of the open menu has one
                 readonly property bool menuLead: {
                     for (var i = 0; i < menuModel.length; i++) if (menuModel[i].checked !== undefined || menuModel[i].glyph !== undefined) return true;
@@ -4661,38 +4094,15 @@ Scope {
                 readonly property bool anyVisible: menuPop.visible || cc.visible || cal.visible || wifiPop.visible || btPop.visible || trayPop.visible || notifPop.visible || toastArea.visible || volPop.visible || kbPop.visible
                 onAnyVisibleChanged: root.popCount += (anyVisible ? 1 : -1)
                 onPopChanged: {
-                    if (pop !== "" && pop !== "spot") toneT.restart();
-                    if (pop === "spot" && ui.toastScreen) root.measureTone(win.modelData.x + ui.width / 2 - 320, win.modelData.y + ui.height * 0.4 - 30, 640, 60);
+                    if (pop !== "") toneT.restart();
                     armed = "";
                     wifiPrompt = "";
-                    spHoverLabel = "";
                     if (pop !== "cc") ccEdit = false;
                     if (pop !== "cc") ccPage = "";
                     root.notifOpen = (pop === "notif");
                     if (root.notifOpen) root.notifUnread = 0;
                     if (pop === "wifi") { root.wifiError = ""; root.scanWifi(); root.refreshConnections(); }
                     if (pop === "bt") { root.btError = ""; root.scanBt(); root.refreshBt(); }
-                    if (pop === "spot") {
-                        spMode = "home"; spQuery = ""; spSel = 0; spExpanded = ({}); clipMenu = false;
-                        spInput.text = ""; appsInput.text = ""; clipInput.text = ""; emojiInput.text = "";
-                        spFocusTimer.restart();
-                    }
-                }
-                Connections {
-                    target: root
-                    function onSpotRequestChanged() {
-                        var fm = Hyprland.focusedMonitor;
-                        if (!(!fm || fm.name === win.modelData.name || Quickshell.screens.length === 1)) return;
-                        var want = root.spotWant;
-                        if (ui.pop === "spot") {
-                            if (want === "home" || want === ui.spMode) ui.pop = "";    // same key again closes it
-                            else ui.spSetMode(want);
-                        } else {
-                            ui.spReqCalm = (want === "clip" || want === "emoji");
-                            ui.openPop("spot", 0);
-                            if (want !== "home") ui.spSetMode(want);
-                        }
-                    }
                 }
 
                 Connections {
@@ -4704,7 +4114,6 @@ Scope {
                 }
                 function openPop(name, x) {
                     if (pop === name) { pop = ""; return; }
-                    if (name === "spot") { spCalm = spReqCalm; spReqCalm = false; }
                     menuX = x;
                     if (["apple", "app", "file", "edit", "view", "window", "help"].indexOf(name) >= 0) root.refreshActive();
                     if (["apple", "app", "file", "edit", "view", "window", "help"].indexOf(name) >= 0) menuModel = root.menuModelFor(name);
@@ -4776,7 +4185,7 @@ Scope {
                     function onBarRelayout() {
                         screenSnap.takenAt = 0;
                         ui.snapFresh = false;
-                        if (ui.pop !== "" && ui.pop !== "spot") toneT.restart();
+                        if (ui.pop !== "") toneT.restart();
                         else if (barHover.hovered && ui.pop === "") screenSnap.grab();
                     }
                 }
@@ -4833,7 +4242,7 @@ Scope {
                             sourceSize.width: bd.width
                             smooth: true
                         }
-                        // animated wallpaper: plays behind the glass (menus, bar, Spotlight, switcher) only while "Animated wallpaper in glass" is on
+                        // animated wallpaper: plays behind the glass (menus, bar, switcher) only while "Animated wallpaper in glass" is on
                         // (root.glassVideo is "" otherwise, and then no decoder exists at all)
                         LiveWall {
                             z: -2
@@ -4907,10 +4316,10 @@ Scope {
                                     // REAL-TIME: with glassRealtime every capture stays live all the time, so a popover opens on
                                     // frames that are already current and nothing is torn down / restarted when it opens (the restart
                                     // is what used to show the bare wallpaper first). Backdrops that live in a window which is
-                                    // hidden right now (Spotlight, switcher, ...) are only kept warm with slow single captures.
+                                    // hidden right now (switcher, ...) are only kept warm with slow single captures.
                                     // While recording only the windows behind visible glass stay live (so the glass is real-time exactly where you see it,
                                     // e.g. a video behind the Control Center), every other window sits out.
-                                    live: !gw.gone && !root.captureHeld && bd.hostShown && (!sv.hush || gw.onGlass) && (root.glassRealtime || ui.anyVisible || levelOsd.visible || spotWin.openish || swWin.visible || wpWin.visible)
+                                    live: !gw.gone && !root.captureHeld && bd.hostShown && (!sv.hush || gw.onGlass) && (root.glassRealtime || ui.anyVisible || levelOsd.visible || swWin.visible || wpWin.visible)
                                     onCaptureSourceChanged: {
                                         // a brand-new capture grabs its first frame immediately instead of waiting for the timer
                                         // (a short delay: asking before the capture context exists only logged "no recording context is ready")
@@ -4926,7 +4335,7 @@ Scope {
                                     Timer {
                                         interval: sv.hush ? 1500 : (bd.hostShown ? 250 : 1000); repeat: true
                                         running: !root.captureHeld && !sv.live && sv.captureSource !== null
-                                                 && (!sv.hush || (bd.hostShown && (ui.anyVisible || spotWin.openish || swWin.visible || wpWin.visible)))
+                                                 && (!sv.hush || (bd.hostShown && (ui.anyVisible || swWin.visible || wpWin.visible)))
                                         onTriggered: { if (typeof sv.captureFrame === "function") sv.captureFrame(); }
                                     }
                                 }
@@ -4988,7 +4397,7 @@ Scope {
                     id: maskItem
                     x: 0; y: 0
                     width: ui.width
-                    height: (ui.pop !== "" && ui.pop !== "spot") ? ui.height : (root.menuBarShown ? root.barHeight : 0)
+                    height: ui.pop !== "" ? ui.height : (root.menuBarShown ? root.barHeight : 0)
                 }
 
                 // Liquid Glass menu bar strip: the bar itself refracts the live backdrop (wallpaper + windows), like the popovers.
@@ -5019,7 +4428,7 @@ Scope {
                 MouseArea {
                     anchors.fill: parent
                     z: 5
-                    visible: ui.pop !== "" && ui.pop !== "spot"
+                    visible: ui.pop !== ""
                     acceptedButtons: Qt.AllButtons
                     onPressed: ui.pop = ""
                 }
@@ -5420,13 +4829,6 @@ Scope {
                             Glyph { anchors.centerIn: parent; width: 16; height: 16; kind: root.showEthernet ? "ethernet" : "wifi"; level: root.wifiOn ? (root.wifiLevel || 1) : 3; flag: !root.wifiOn && !root.showEthernet; color: (root.wifiOn || root.showEthernet) ? bpal.fg : bpal.fg2 }
                             MouseArea { anchors.fill: parent; onClicked: ui.openPop("wifi", wifiBtn.mapToItem(ui, 0, 0).x) }
                         }
-                        // search
-                        Item {
-                            visible: root.showSearch
-                            width: root.showSearch ? 28 : 0; height: 28
-                            Glyph { anchors.centerIn: parent; width: 15; height: 15; kind: "search"; color: bpal.fg }
-                            MouseArea { anchors.fill: parent; onClicked: { if (root.launcher !== "") { ui.pop = ""; root.search(); } else ui.openPop("spot", 0); } }
-                        }
                         // control center
                         Item {
                             id: ccBtn
@@ -5776,7 +5178,7 @@ Scope {
                     x: ui.width - width - 10
                     // a menu / popover open where the notifications are: they slide down below it, and back up after
                     readonly property real popBottom: {
-                        if (ui.pop === "" || ui.pop === "spot") return 0;
+                        if (ui.pop === "") return 0;
                         var items = [menuPop, cc, cal, wifiPop, trayPop, volPop, kbPop], b = 0;
                         for (var i = 0; i < items.length; i++) {
                             var it = items[i];
@@ -8707,1033 +8109,6 @@ Scope {
             }
         }
 
-        // ═════════ Spotlight lives in its OWN layer (namespace "macspot") ═════════
-        // Hyprland blurs a whole layer or none of it, so Spotlight has its own layer: put the blur layerrule on
-        // "macspot" and leave "macbar" without blur.
-        PanelWindow {
-            id: spotWin
-            screen: perScreen.modelData
-            // The layer stays mapped: creating / destroying it on every open restarted the glass's window captures and
-            // Hyprland's layer animation, which is what made Spotlight flicker or vanish. Closed = invisible + click-through.
-            visible: root.spotlightEnabled
-            readonly property bool openish: ui.pop === "spot" || spot.vis > 0
-            onOpenishChanged: root.popCount += (openish ? 1 : -1)     // keeps the window-geometry poller running while Spotlight is open
-            mask: Region { item: spotWin.openish ? spotRoot : spotNoInput }
-            Item { id: spotNoInput; width: 0; height: 0 }
-            anchors { left: true; right: true; top: true; bottom: true }
-            color: "transparent"
-            exclusionMode: ExclusionMode.Ignore
-
-            WlrLayershell.namespace: "macspot"
-            WlrLayershell.layer: WlrLayer.Top
-            WlrLayershell.keyboardFocus: ui.pop === "spot" ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-
-            Item {
-                id: spotRoot
-                anchors.fill: parent
-
-                Loader {
-                    id: spotBackdrop
-                    active: root.liquidActive          // stays loaded (warm) so the window opens on ready-made frames
-                    sourceComponent: backdropComp
-                    onLoaded: { item.hostShown = true;
-                                item.region = Qt.binding(function () { return Qt.rect(spot.x - 128, spot.y - 128, spot.width + 256, spot.height + 256); }); }
-                }
-
-                // a clipboard entry being dragged out of Spotlight
-                Item {
-                    id: clipGhost
-                    z: 50
-                    property var en: null
-                    property real px: 0
-                    property real py: 0
-                    property real zoom: 1
-                    property real wob: 0
-                    property real homeX: 0
-                    property real homeY: 0
-                    visible: en !== null
-                    width: 220; height: en && en.kind === "image" ? 150 : 64
-                    x: px - width / 2; y: py - height / 2
-                    scale: zoom; rotation: wob
-                    function start(e) { en = e; zoom = 1.06; opacity = 1; homeX = px; homeY = py; wiggleClip.restart(); }
-                    function drop(out) {
-                        wiggleClip.stop();
-                        if (out) { clipLaunch.restart(); }
-                        else { clipBack.restart(); }
-                    }
-                    Rectangle {
-                        anchors.fill: parent; radius: 14
-                        color: root.panelDarkMode ? Qt.rgba(0.16, 0.16, 0.18, 0.92) : Qt.rgba(0.97, 0.97, 0.98, 0.95)
-                        border.width: 1; border.color: Qt.rgba(1, 1, 1, 0.18)
-                    }
-                    Image {
-                        visible: clipGhost.en && clipGhost.en.kind === "image"
-                        anchors.fill: parent; anchors.margins: 6
-                        source: clipGhost.en && clipGhost.en.thumb ? clipGhost.en.thumb : ""
-                        fillMode: Image.PreserveAspectCrop; asynchronous: true
-                    }
-                    Text {
-                        visible: !(clipGhost.en && clipGhost.en.kind === "image")
-                        anchors.fill: parent; anchors.margins: 12
-                        text: clipGhost.en ? clipGhost.en.text : ""
-                        wrapMode: Text.Wrap; elide: Text.ElideRight; maximumLineCount: 2
-                        color: root.panelDarkMode ? "white" : "#1d1d1f"; font.family: root.fontForWeight(font.weight, root.fontFamily); font.pixelSize: 13
-                    }
-                    SequentialAnimation {
-                        id: wiggleClip; loops: Animation.Infinite
-                        NumberAnimation { target: clipGhost; property: "wob"; to: 3; duration: 90; easing.type: Easing.InOutSine }
-                        NumberAnimation { target: clipGhost; property: "wob"; to: -3; duration: 180; easing.type: Easing.InOutSine }
-                        NumberAnimation { target: clipGhost; property: "wob"; to: 0; duration: 90; easing.type: Easing.InOutSine }
-                    }
-                    SequentialAnimation {
-                        id: clipLaunch
-                        ParallelAnimation {
-                            NumberAnimation { target: clipGhost; property: "zoom"; to: 2.2; duration: 460; easing.type: Easing.OutQuint }
-                            NumberAnimation { target: clipGhost; property: "opacity"; to: 0; duration: 460; easing.type: Easing.OutCubic }
-                            NumberAnimation { target: clipGhost; property: "wob"; to: 0; duration: 200 }
-                        }
-                        ScriptAction { script: { var e = clipGhost.en; clipGhost.en = null; ui.pop = ""; if (e) root.clipOpen(e); } }
-                    }
-                    SequentialAnimation {
-                        id: clipBack
-                        ParallelAnimation {
-                            NumberAnimation { target: clipGhost; property: "px"; to: clipGhost.homeX; duration: 380; easing.type: Easing.OutQuint }
-                            NumberAnimation { target: clipGhost; property: "py"; to: clipGhost.homeY; duration: 380; easing.type: Easing.OutQuint }
-                            NumberAnimation { target: clipGhost; property: "wob"; to: 0; duration: 200 }
-                            NumberAnimation { target: clipGhost; property: "opacity"; to: 0; duration: 380; easing.type: Easing.InCubic }
-                        }
-                        ScriptAction { script: clipGhost.en = null }
-                    }
-                }
-
-                // click outside Spotlight closes it
-                MouseArea {
-                    anchors.fill: parent
-                    acceptedButtons: Qt.AllButtons
-                    onPressed: ui.pop = ""
-                }
-
-                // Backdrop capture + blur for Spotlight's glass. Deliberately NOT inside `spot`: as children they inherited
-                // spot's opacity while it faded, so the glass refracted a half-transparent backdrop and turned into a milky
-                // blob mid-fade (the fade looked broken). Out here they always produce the real backdrop.
-                ShaderEffectSource {
-                    id: spSrc
-                    sourceItem: spotBackdrop.item     // wallpaper + live windows, captured inside this layer
-                    hideSource: true
-                    live: spotWin.openish
-                    visible: false
-                    sourceRect: Qt.rect(spot.x - 128, spot.y - 128, spot.width + 256, 684)
-                }
-                MultiEffect {
-                    id: spBlurFx
-                    source: spSrc
-                    width: spSrc.sourceRect.width; height: spSrc.sourceRect.height
-                    blurEnabled: true
-                    blurMax: 6
-                    blur: Math.min(1.0, (spg.blur * spg.blurMul) * 1.4 / 6.0)
-                    autoPaddingEnabled: false
-                    visible: false
-                }
-                // real Gaussian pre-blur of the backdrop (Qt MultiEffect): the glass shader refracts THIS texture,
-                // so there are no sampled copies of the background any more
-                ShaderEffectSource {
-                    id: spBlur
-                    sourceItem: spBlurFx
-                    live: spotWin.openish
-                    visible: false
-                }
-                MultiEffect {
-                    id: spBlur2Fx
-                    source: spBlur
-                    width: spSrc.sourceRect.width; height: spSrc.sourceRect.height
-                    blurEnabled: true
-                    blurMax: 64
-                    blur: Math.max(0.0, Math.min(1.0, (spg.blur * spg.blurMul) * 1.4 / 64.0 - 1.0))
-                    autoPaddingEnabled: false
-                    visible: false
-                }
-                // second Gaussian pass: stacks on the first one so Spotlight can blur past a single pass's 64 px limit
-                ShaderEffectSource {
-                    id: spBlur2
-                    sourceItem: spBlur2Fx
-                    live: spotWin.openish
-                    visible: false
-                }
-                GlassCtx {
-                    id: spg
-                    src: spBlur2
-                    srcRect: spSrc.sourceRect
-                    frame: spotRoot
-                    liquid: root.liquidActive
-                    shaderUrl: root.glassShaderUrl
-                    dark: root.panelDarkMode
-                    tint: root.glassOpacity
-                    strength: root.glassLiquid               // full refraction, like the Dock / Control Center
-                    rim: root.glassRim                       // same wallpaper-coloured rim + border line as the top-bar menus
-                    rimTint: 1
-                    ringW: 0.9
-                    whiteEdge: false
-                    grain: root.glassGrain
-                    blur: 15                                // Spotlight has its own blur: it ignores the global blur slider
-                    blurMul: 10.0                   // strong smooth blur (two stacked Gaussian passes); lower to see more refraction, raise to frost more
-                    debug: root.glassDebug
-                    onFailed: root.glassState = "failed"
-                }
-
-                // ═════════ Spotlight (Liquid Glass) ═════════
-                Item {
-                    id: spot
-                    z: 10
-                    width: 640
-                    readonly property var curPanel: ui.spMode === "apps" ? appsPanel : (ui.spMode === "clip" ? clipPanel : emojiPanel)
-                    height: ui.spFull ? curPanel.height : (resPanel.visible ? resPanel.y + resPanel.height : spRow.height)
-                    x: Math.round((spotRoot.width - width) / 2)
-                    // the search pill sits a little above the vertical centre of the screen (0.4 of the height; 0.5 = dead centre); the Applications panel centres itself instead
-                    y: Math.round(spotRoot.height * 0.4 - (ui.spFull ? curPanel.height / 2 : 24))
-                    Behavior on y { enabled: spot.vis > 0.99; NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-                    // opens with a springy pop; dismiss: quick fade + shrink
-                    property real vis: 0
-                    opacity: vis
-                    visible: vis > 0.001
-                    scale: ui.spCalm ? 0.98 : 0.94
-                    transformOrigin: Item.Center
-                    states: State {
-                        name: "open"
-                        when: ui.pop === "spot"
-                        PropertyChanges { target: spot; vis: 1; scale: 1 }
-                    }
-                    transitions: [
-                        Transition {
-                            from: ""; to: "open"
-                            ParallelAnimation {
-                                NumberAnimation { property: "vis"; duration: 260; easing.type: Easing.OutCubic }
-                                NumberAnimation { property: "scale"; duration: ui.spCalm ? 240 : 300; easing.type: Easing.OutQuint }
-                            }
-                        },
-                        Transition {
-                            from: "open"; to: ""
-                            ParallelAnimation {
-                                NumberAnimation { property: "vis"; duration: 190; easing.type: Easing.OutCubic }
-                                NumberAnimation { property: "scale"; to: 0.95; duration: 190; easing.type: Easing.OutCubic }
-                            }
-                        }
-                    ]
-
-                    Timer { id: spHoverClear; interval: 350; onTriggered: ui.spHoverLabel = "" }
-                    Timer {
-                        id: spFocusTimer
-                        interval: 60
-                        onTriggered: (ui.spMode === "apps" ? appsInput : (ui.spMode === "clip" ? clipInput : (ui.spMode === "emoji" ? emojiInput : spInput))).forceActiveFocus()
-                    }
-
-                    // ── search pill + the five round buttons ──
-                    Row {
-                        id: spRow
-                        spacing: 12
-                        opacity: !ui.spFull ? 1 : 0
-                        visible: opacity > 0
-                        Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-
-                        Item {
-                            id: spPill
-                            width: spot.width - 5 * 60
-                            height: 48
-                            GGlass { anchors.fill: parent; gx: spg; cornerR: 24; thickness: 22; strengthMul: 1.0; shadowAmt: 0.08 }
-                            HoverHandler { id: pillHover }
-                            ContourGlow { cornerR: 24; hovered: pillHover.hovered; at: pillHover.point.position; glowColor: root.panelDarkMode ? "white" : root.accent }
-                            MenuBorder { amount: 0.5; anchors.fill: parent; cornerR: 24; dark: root.panelDarkMode; tint: root.menuBorderColor }
-                            Glyph {
-                                x: 18; anchors.verticalCenter: parent.verticalCenter
-                                width: 18; height: 18
-                                kind: "search"; color: panelPal.fg2
-                            }
-                            // placeholder: blur-morphs between "Spotlight Search" and the hovered button's name
-                            MorphText {
-                                x: spInput.x + 3
-                                width: spInput.width
-                                anchors.verticalCenter: parent.verticalCenter
-                                visible: spInput.text === ""
-                                animateWidth: false
-                                duration: 460
-                                blurMax: 48
-                                text: ui.spHoverLabel !== "" ? ui.spHoverLabel : I18n.tr("Spotlight Search")
-                                color: panelPal.fg2
-                                font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 17
-                                elide: Text.ElideRight
-                            }
-                            TextInput {
-                                id: spInput
-                                x: 46
-                                width: parent.width - 46 - 18
-                                anchors.verticalCenter: parent.verticalCenter
-                                clip: true
-                                color: panelPal.fg
-                                selectionColor: root.accent
-                                selectedTextColor: "white"
-                                font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 17
-                                horizontalAlignment: /[\u0590-\u08ff]/.test(text) ? Text.AlignRight : Text.AlignLeft
-                                onTextChanged: { if (!ui.spFull) { ui.spQuery = text; ui.spSel = 0; ui.armed = ""; if (/^(file|find)\s+/i.test(text)) root.updateFileSearch(text.replace(/^(file|find)\s+/i, "").trim()); } }
-                                Keys.onPressed: event => ui.spKey(event)
-                            }
-                        }
-                        Repeater {
-                            model: [
-                                { k: "appstore", id: "apps", label: I18n.tr("Apps") }, { k: "folder", id: "files", label: I18n.tr("Files") },
-                                { k: "layers", id: "actions", label: I18n.tr("Actions") }, { k: "clipboard", id: "clip", label: I18n.tr("Clipboard") }, { k: "smile", id: "emoji", label: I18n.tr("Emoji") }
-                            ]
-                            delegate: CCBtn {
-                                required property var modelData
-                                t: pal; gx: spg
-                                d: 48
-                                matchMenuBorder: true
-                                bounce: true
-                                shadow: 0.18
-                                kind: modelData.k
-                                on: ui.spMode === modelData.id
-                                HoverHandler {
-                                    id: btnHover
-                                    // crossing the gap to the next button must not flash "Spotlight Search": only go back
-                                    // to it once the pointer has been off every button for 0.35 s
-                                    onHoveredChanged: {
-                                        if (hovered) { spHoverClear.stop(); ui.spHoverLabel = modelData.label; }
-                                        else if (ui.spHoverLabel === modelData.label) spHoverClear.restart();
-                                    }
-                                }
-                                ContourGlow { cornerR: 24; hovered: btnHover.hovered; at: btnHover.point.position; glowColor: root.panelDarkMode ? "white" : root.accent }
-                                onClicked: {
-                                    if (modelData.id === "apps") ui.spSetMode(ui.spMode === "apps" ? "home" : "apps");
-                                    else if (modelData.id === "actions") ui.spSetMode(ui.spMode === "actions" ? "home" : "actions");
-                                    else if (modelData.id === "files") { ui.pop = ""; root.sh("dolphin \"$HOME\""); }
-                                    else if (modelData.id === "clip") ui.spSetMode(ui.spMode === "clip" ? "home" : "clip");
-                                    else ui.spSetMode(ui.spMode === "emoji" ? "home" : "emoji");
-                                }
-                            }
-                        }
-                    }
-
-                    // ── results under the pill ──
-                    Item {
-                        id: resPanel
-                        y: spRow.height + 10
-                        width: spot.width
-                        readonly property var items: ui.spFull ? [] : ui.spResults      // clipboard / emoji / apps have their own panels
-                        property int keep: 1                         // last non-empty row count, so the panel shrinks while it fades out
-                        onItemsChanged: if (items.length > 0) keep = items.length
-                        readonly property int selIdx: Math.max(0, Math.min(ui.spSel, items.length - 1))
-                        opacity: (!ui.spFull && items.length > 0) ? 1 : 0
-                        visible: opacity > 0
-                        Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
-                        height: (items.length > 0 ? items.length : keep) * 46 + 16
-                        Behavior on height { NumberAnimation { duration: 320; easing.type: Easing.OutQuint } }
-                        GGlass { anchors.fill: parent; gx: spg; cornerR: 26; thickness: 26; strengthMul: 1.0; shadowAmt: 0.10 }
-                        MenuBorder { amount: 0.5; anchors.fill: parent; cornerR: 26; dark: root.panelDarkMode; tint: root.menuBorderColor }
-                        Item {
-                            x: 8; y: 8
-                            width: parent.width - 16
-                            height: parent.height - 16
-                            clip: true
-                            Rectangle {
-                                y: resPanel.selIdx * 46
-                                width: parent.width; height: 46; radius: 16
-                                color: (resPanel.items[resPanel.selIdx] && resPanel.items[resPanel.selIdx].confirm === true
-                                        && ui.armed === resPanel.items[resPanel.selIdx].title) ? "#FF453A" : root.accent
-                                Behavior on y { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
-                                Behavior on color { ColorAnimation { duration: 120 } }
-                            }
-                        Column {
-                            width: parent.width
-                            Repeater {
-                                model: resPanel.items
-                                delegate: Item {
-                                    id: rr
-                                    required property var modelData
-                                    required property int index
-                                    readonly property string ico: (modelData && modelData.icon) ? String(modelData.icon) : ""
-                                    readonly property bool sel: index === Math.min(ui.spSel, resPanel.items.length - 1)
-                                    readonly property bool armedNow: modelData.confirm === true && ui.armed === modelData.title
-                                    width: parent.width
-                                    height: 46
-                                    Item {
-                                        x: 12
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        width: 30; height: 30
-                                        Image {
-                                            visible: rr.ico !== ""
-                                            anchors.fill: parent
-                                            source: rr.ico
-                                            sourceSize: Qt.size(64, 64)
-                                            fillMode: Image.PreserveAspectFit
-                                            asynchronous: true
-                                            smooth: true
-                                        }
-                                        Glyph {
-                                            visible: rr.ico === ""
-                                            anchors.centerIn: parent
-                                            width: 20; height: 20
-                                            kind: (rr.modelData && rr.modelData.glyph) ? rr.modelData.glyph : ""
-                                            color: rr.sel ? "white" : panelPal.fg
-                                        }
-                                    }
-                                    Text {
-                                        x: 54
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        width: parent.width - 54 - 140
-                                        elide: Text.ElideRight
-                                        text: rr.armedNow ? I18n.tr("Press Return again to confirm") : (rr.modelData ? rr.modelData.title : "")
-                                        color: rr.sel ? "white" : panelPal.fg
-                                        font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 14
-                                    }
-                                    Text {
-                                        anchors.right: parent.right
-                                        anchors.rightMargin: 16
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: rr.modelData ? rr.modelData.sub : ""
-                                        color: rr.sel ? Qt.rgba(1, 1, 1, 0.8) : panelPal.fg2
-                                        font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 12
-                                    }
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onEntered: ui.spSel = rr.index
-                                        onClicked: ui.spActivate(rr.index)
-                                    }
-                                }
-                            }
-                        }
-                        }
-                    }
-
-                    // ── Clipboard history panel (macOS Tahoe style) ──
-                    Item {
-                        id: clipPanel
-                        opacity: ui.spMode === "clip" ? 1 : 0
-                        visible: opacity > 0
-                        scale: ui.spMode === "clip" ? 1 : 0.96
-                        transformOrigin: Item.Top
-                        Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
-                        Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                        width: spot.width
-                        readonly property var items: ui.spMode === "clip" ? ui.spResults : []
-                        readonly property int rowH: 56
-                        readonly property int shown: Math.min(items.length, 7)
-                        readonly property string emptyTitle: root.clipState === "missing" ? "Clipboard history isn't set up"
-                            : (!root.clipHistory ? "Clipboard history is off"
-                            : (root.clipLoading && root.clipEntries.length === 0 ? "Loading\u2026"
-                            : (ui.spQuery.trim() !== "" ? "No Results" : "Nothing copied yet")))
-                        readonly property string emptySub: root.clipState === "missing" ? "Install cliphist and wl-clipboard, then open this tab again"
-                            : (!root.clipHistory ? "Turn it on in System Settings \u2192 Menu Bar"
-                            : (ui.spQuery.trim() === "" && !root.clipLoading ? "Copy some text or an image and it will show up here" : ""))
-                        height: 64 + (items.length > 0 ? shown * rowH + 14 : 118)
-                        Behavior on height { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-                        GGlass { anchors.fill: parent; gx: spg; cornerR: 32; thickness: 34; strengthMul: 1.0; shadowAmt: 0.22 }
-                        MenuBorder { amount: 0.5; anchors.fill: parent; cornerR: 32; dark: root.panelDarkMode; tint: root.menuBorderColor }
-
-                        Item {
-                            id: clipHeader
-                            x: 20
-                            width: parent.width - 40
-                            height: 64
-                            Rectangle {
-                                id: clipChip
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 34; height: 34; radius: 10
-                                color: root.accent
-                                Glyph { anchors.centerIn: parent; width: 20; height: 20; kind: "clipboard"; color: "white" }
-                            }
-                            Text {
-                                id: clipLabel
-                                x: 46
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: I18n.tr("Clipboard")
-                                color: panelPal.fg
-                                font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 24; font.weight: Font.Medium
-                            }
-                            TextInput {
-                                id: clipInput
-                                x: clipLabel.x + clipLabel.width + 14
-                                width: parent.width - x - 48
-                                anchors.verticalCenter: parent.verticalCenter
-                                clip: true
-                                color: panelPal.fg
-                                selectionColor: root.accent
-                                selectedTextColor: "white"
-                                font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 24
-                                onTextChanged: { if (ui.spMode === "clip") { ui.spQuery = text; ui.spSel = 0; } }
-                                Keys.onPressed: event => ui.spKey(event)
-                            }
-                            CCBtn {
-                                t: pal; gx: spg
-                                d: 34
-                                bounce: true
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                kind: "dots"
-                                on: ui.clipMenu
-                                onClicked: ui.clipMenu = !ui.clipMenu
-                            }
-                        }
-
-                        ListView {
-                            id: clipListView
-                            x: 8; y: 64
-                            width: parent.width - 16
-                            height: clipPanel.shown * clipPanel.rowH
-                            visible: clipPanel.items.length > 0
-                            clip: true
-                            boundsBehavior: Flickable.StopAtBounds
-                            model: clipPanel.items
-                            Connections {
-                                target: ui
-                                function onSpSelChanged() {
-                                    if (ui.spHover) { ui.spHover = false; return; }
-                                    if (ui.spMode === "clip" && clipPanel.items.length > 0)
-                                        clipListView.positionViewAtIndex(Math.min(ui.spSel, clipPanel.items.length - 1), ListView.Contain);
-                                }
-                            }
-                            delegate: Item {
-                                id: cr
-                                required property var modelData
-                                required property int index
-                                readonly property bool sel: index === Math.min(ui.spSel, clipPanel.items.length - 1)
-                                width: ListView.view.width
-                                height: clipPanel.rowH
-                                Rectangle {
-                                    anchors.fill: parent
-                                    anchors.topMargin: 2; anchors.bottomMargin: 2
-                                    radius: 16
-                                    color: root.accent
-                                    opacity: cr.sel ? 1 : 0
-                                    Behavior on opacity { NumberAnimation { duration: 90 } }
-                                }
-                                Item {
-                                    x: 14
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 36; height: 36
-                                    Rectangle {
-                                        visible: cr.modelData.kind === "text" || cr.modelData.kind === "url"
-                                        anchors.fill: parent
-                                        radius: 10
-                                        color: cr.sel ? Qt.rgba(1, 1, 1, 0.22) : (root.panelDarkMode ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06))
-                                        Glyph {
-                                            anchors.centerIn: parent
-                                            width: 20; height: 20
-                                            kind: cr.modelData.kind === "url" ? "link" : "doc"
-                                            color: cr.sel ? "white" : panelPal.fg2
-                                        }
-                                    }
-                                    Rectangle {
-                                        visible: cr.modelData.kind === "color"
-                                        anchors.fill: parent
-                                        radius: 10
-                                        color: cr.modelData.kind === "color" ? cr.modelData.color : "transparent"
-                                        border.width: 1; border.color: Qt.rgba(0, 0, 0, 0.25)
-                                    }
-                                    Item {
-                                        visible: cr.modelData.kind === "image"
-                                        anchors.fill: parent
-                                        Rectangle { anchors.fill: parent; radius: 10; color: root.panelDarkMode ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06) }
-                                        Image {
-                                            anchors.fill: parent
-                                            source: cr.modelData.kind === "image" ? cr.modelData.thumb : ""
-                                            sourceSize: Qt.size(72, 72)
-                                            fillMode: Image.PreserveAspectCrop
-                                            asynchronous: true
-                                            layer.enabled: true
-                                            layer.effect: MultiEffect {
-                                                maskEnabled: true
-                                                maskSource: thMask
-                                                maskThresholdMin: 0.5
-                                                maskSpreadAtMin: 1.0
-                                            }
-                                        }
-                                        Item {
-                                            id: thMask
-                                            anchors.fill: parent
-                                            visible: false
-                                            layer.enabled: true
-                                            Rectangle { anchors.fill: parent; radius: 10; color: "black" }
-                                        }
-                                    }
-                                }
-                                Text {
-                                    x: 62; y: 9
-                                    width: parent.width - 62 - 56
-                                    elide: Text.ElideRight
-                                    text: cr.modelData ? cr.modelData.title : ""
-                                    color: cr.sel ? "white" : panelPal.fg
-                                    font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 14
-                                }
-                                Text {
-                                    x: 62; y: 31
-                                    width: parent.width - 62 - 56
-                                    elide: Text.ElideRight
-                                    text: cr.modelData ? cr.modelData.sub : ""
-                                    color: cr.sel ? Qt.rgba(1, 1, 1, 0.8) : panelPal.fg2
-                                    font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 12
-                                }
-                                Glyph {
-                                    visible: cr.sel
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: 18
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 18; height: 18
-                                    kind: "return"; color: "white"
-                                }
-                                MouseArea {
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    property point press: Qt.point(0, 0)
-                                    property bool dragged: false
-                                    onEntered: { if (ui.spSel !== cr.index) { ui.spHover = true; ui.spSel = cr.index; } }
-                                    onPressed: mouse => { press = mapToItem(spotRoot, mouse.x, mouse.y); dragged = false; }
-                                    onPositionChanged: mouse => {
-                                        if (!pressed) return;
-                                        var p = mapToItem(spotRoot, mouse.x, mouse.y);
-                                        if (!dragged && Math.abs(p.x - press.x) + Math.abs(p.y - press.y) > 14) { dragged = true; clipGhost.start(cr.modelData); }
-                                        if (dragged) { clipGhost.px = p.x; clipGhost.py = p.y; }
-                                    }
-                                    onReleased: mouse => {
-                                        if (!dragged) return;
-                                        var p = mapToItem(spotRoot, mouse.x, mouse.y);
-                                        // outside Spotlight = on the desktop → open it; inside → it flies back
-                                        var out = p.x < spot.x || p.x > spot.x + spot.width || p.y < spot.y || p.y > spot.y + spot.height;
-                                        clipGhost.drop(out);
-                                    }
-                                    onClicked: if (!dragged) ui.spActivate(cr.index)
-                                }
-                            }
-                        }
-
-                        Column {
-                            visible: clipPanel.items.length === 0
-                            x: 20; y: 64
-                            width: parent.width - 40
-                            height: 118
-                            spacing: 6
-                            topPadding: 30
-                            Text {
-                                width: parent.width
-                                horizontalAlignment: Text.AlignHCenter
-                                text: clipPanel.emptyTitle
-                                color: panelPal.fg
-                                font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 15; font.weight: Font.Medium
-                            }
-                            Text {
-                                width: parent.width
-                                horizontalAlignment: Text.AlignHCenter
-                                wrapMode: Text.WordWrap
-                                text: clipPanel.emptySub
-                                color: panelPal.fg2
-                                font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 12
-                            }
-                        }
-
-                        // the round "..." menu
-                        MouseArea { anchors.fill: parent; z: 4; visible: ui.clipMenu; onClicked: ui.clipMenu = false }
-                        Item {
-                            id: clipMenuPop
-                            z: 5
-                            visible: ui.clipMenu
-                            x: parent.width - width - 20
-                            y: 58
-                            width: 250
-                            height: 3 * 40 + 12
-                            GGlass { anchors.fill: parent; gx: spg; cornerR: 20; thickness: 26; strengthMul: 1.0; shadowAmt: 0.26 }
-                            MenuBorder { amount: 0.5; anchors.fill: parent; cornerR: 20; dark: root.panelDarkMode; tint: root.menuBorderColor }
-                            Column {
-                                x: 6; y: 6
-                                width: parent.width - 12
-                                Repeater {
-                                    model: ["auto", "del", "clear"]
-                                    delegate: Item {
-                                        id: cm
-                                        required property string modelData
-                                        width: parent.width; height: 40
-                                        readonly property bool armedNow: modelData === "clear" && ui.armed === "clipclear"
-                                        Rectangle {
-                                            anchors.fill: parent
-                                            radius: 14
-                                            color: cm.armedNow ? "#FF453A" : root.accent
-                                            opacity: cmMa.containsMouse ? 1 : 0
-                                        }
-                                        Glyph {
-                                            visible: cm.modelData === "auto" && root.clipAutoPaste
-                                            x: 12; anchors.verticalCenter: parent.verticalCenter
-                                            width: 16; height: 16
-                                            kind: "check"; color: cmMa.containsMouse ? "white" : panelPal.fg
-                                        }
-                                        Text {
-                                            x: 38
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: cm.modelData === "auto" ? I18n.tr("Paste Automatically")
-                                                  : (cm.modelData === "del" ? "Delete Selected"
-                                                  : (cm.armedNow ? "Click again to confirm" : "Clear History"))
-                                            color: cmMa.containsMouse ? "white" : ((cm.modelData === "clear") ? "#FF453A" : panelPal.fg)
-                                            font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 14
-                                        }
-                                        MouseArea {
-                                            id: cmMa
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            onClicked: {
-                                                if (cm.modelData === "auto") root.clipAutoPaste = !root.clipAutoPaste;
-                                                else if (cm.modelData === "del") {
-                                                    var n = clipPanel.items.length;
-                                                    if (n > 0) root.clipDelete(clipPanel.items[Math.min(ui.spSel, n - 1)]);
-                                                    ui.clipMenu = false;
-                                                } else {
-                                                    if (ui.armed === "clipclear") { ui.armed = ""; root.clipClear(); ui.clipMenu = false; }
-                                                    else ui.armed = "clipclear";
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // ── Emoji panel ──
-                    Item {
-                        id: emojiPanel
-                        opacity: ui.spMode === "emoji" ? 1 : 0
-                        visible: opacity > 0
-                        scale: ui.spMode === "emoji" ? 1 : 0.96
-                        transformOrigin: Item.Top
-                        Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
-                        Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                        width: spot.width
-                        readonly property int cell: 50
-                        readonly property int gridRows: 6
-                        readonly property var items: ui.spMode === "emoji" ? ui.spResults : []
-                        readonly property var cur: items[Math.min(ui.spSel, items.length - 1)]
-                        height: 64 + 42 + gridRows * cell + 46
-                        GGlass { anchors.fill: parent; gx: spg; cornerR: 32; thickness: 34; strengthMul: 1.0; shadowAmt: 0.22 }
-                        MenuBorder { amount: 0.5; anchors.fill: parent; cornerR: 32; dark: root.panelDarkMode; tint: root.menuBorderColor }
-
-                        Item {
-                            x: 20
-                            width: parent.width - 40
-                            height: 64
-                            Rectangle {
-                                id: emojiChip
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 34; height: 34; radius: 10
-                                color: root.accent
-                                Glyph { anchors.centerIn: parent; width: 20; height: 20; kind: "smile"; color: "white" }
-                            }
-                            Text {
-                                id: emojiLabel
-                                x: 46
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: I18n.tr("Emoji")
-                                color: panelPal.fg
-                                font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 24; font.weight: Font.Medium
-                            }
-                            TextInput {
-                                id: emojiInput
-                                x: emojiLabel.x + emojiLabel.width + 14
-                                width: parent.width - x
-                                anchors.verticalCenter: parent.verticalCenter
-                                clip: true
-                                color: panelPal.fg
-                                selectionColor: root.accent
-                                selectedTextColor: "white"
-                                font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 24
-                                onTextChanged: { if (ui.spMode === "emoji") { ui.spQuery = text; ui.spSel = 0; } }
-                                Keys.onPressed: event => ui.spKey(event)
-                            }
-                        }
-
-                        // category tabs
-                        Row {
-                            x: 20; y: 64
-                            opacity: ui.spQuery.trim() === "" ? 1 : 0.35
-                            Repeater {
-                                model: ["\uD83D\uDD58", "\uD83D\uDE00", "\uD83E\uDDD1", "\uD83D\uDC3B", "\uD83C\uDF54", "\u2708\uFE0F", "\u26BD", "\uD83D\uDCA1", "\uD83D\uDD23", "\uD83C\uDFF3\uFE0F"]
-                                delegate: Item {
-                                    id: tab
-                                    required property string modelData
-                                    required property int index
-                                    width: 60; height: 36
-                                    Rectangle {
-                                        anchors.centerIn: parent
-                                        width: 48; height: 32; radius: 12
-                                        color: root.accent
-                                        opacity: (ui.emCat === tab.index && ui.spQuery.trim() === "") ? 0.9 : (tabMa.containsMouse ? 0.25 : 0)
-                                        Behavior on opacity { NumberAnimation { duration: 100 } }
-                                    }
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: tab.modelData
-                                        font.family: root.emojiFont; font.pixelSize: 22
-                                    }
-                                    MouseArea {
-                                        id: tabMa
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            emojiInput.text = "";
-                                            ui.emCat = tab.index; ui.spSel = 0;
-                                            emojiInput.forceActiveFocus();
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        GridView {
-                            id: emojiGrid
-                            x: 20; y: 64 + 42
-                            width: ui.emCols * emojiPanel.cell
-                            height: emojiPanel.gridRows * emojiPanel.cell
-                            cellWidth: emojiPanel.cell
-                            cellHeight: emojiPanel.cell
-                            clip: true
-                            boundsBehavior: Flickable.StopAtBounds
-                            model: emojiPanel.items
-                            Connections {
-                                target: ui
-                                function onSpSelChanged() {
-                                    if (ui.spHover) { ui.spHover = false; return; }
-                                    if (ui.spMode === "emoji" && emojiPanel.items.length > 0)
-                                        emojiGrid.positionViewAtIndex(Math.min(ui.spSel, emojiPanel.items.length - 1), GridView.Contain);
-                                }
-                            }
-                            delegate: Item {
-                                id: ec
-                                required property var modelData
-                                required property int index
-                                readonly property bool sel: index === Math.min(ui.spSel, emojiPanel.items.length - 1)
-                                width: emojiPanel.cell; height: emojiPanel.cell
-                                Rectangle {
-                                    anchors.centerIn: parent
-                                    width: parent.width - 4; height: parent.height - 4
-                                    radius: 14
-                                    color: root.accent
-                                    opacity: ec.sel ? 1 : 0
-                                }
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: ec.modelData ? ec.modelData[0] : ""
-                                    font.family: root.emojiFont; font.pixelSize: 36
-                                }
-                                MouseArea {
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onEntered: { if (ui.spSel !== ec.index) { ui.spHover = true; ui.spSel = ec.index; } }
-                                    onClicked: { ui.pop = ""; root.emojiPick(ec.modelData); }
-                                }
-                            }
-                        }
-                        Text {
-                            visible: emojiPanel.items.length === 0
-                            x: 20; y: 64 + 42
-                            width: parent.width - 40
-                            height: emojiPanel.gridRows * emojiPanel.cell
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            text: ui.spQuery.trim() !== "" ? I18n.tr("No Results") : I18n.tr("No recently used emoji")
-                            color: panelPal.fg2
-                            font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 14
-                        }
-
-                        // footer: name of the highlighted emoji
-                        Item {
-                            x: 20; y: parent.height - 46
-                            width: parent.width - 40; height: 46
-                            Rectangle { width: parent.width; height: 1; color: panelPal.sep }
-                            Text {
-                                x: 4
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: parent.width - 180
-                                elide: Text.ElideRight
-                                text: emojiPanel.cur ? (emojiPanel.cur[0] + "  " + emojiPanel.cur[1]) : ""
-                                color: panelPal.fg2
-                                font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 13
-                            }
-                            Text {
-                                anchors.right: parent.right
-                                anchors.rightMargin: 4
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: root.clipAutoPaste ? I18n.tr("Return to insert") : I18n.tr("Return to copy")
-                                color: panelPal.fg3
-                                font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 12
-                            }
-                        }
-                    }
-
-                    // ── Applications panel ──
-                    Item {
-                        id: appsPanel
-                        opacity: ui.spMode === "apps" ? 1 : 0
-                        visible: opacity > 0
-                        scale: ui.spMode === "apps" ? 1 : 0.96
-                        transformOrigin: Item.Top
-                        Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
-                        Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                        width: spot.width
-                        height: Math.min(64 + appsCol.height + 14, 520)
-                        GGlass { anchors.fill: parent; gx: spg; cornerR: 32; thickness: 34; strengthMul: 1.0; shadowAmt: 0.22 }
-                        MenuBorder { amount: 0.5; anchors.fill: parent; cornerR: 32; dark: root.panelDarkMode; tint: root.menuBorderColor }
-
-                        Item {
-                            id: appsHeader
-                            x: 24
-                            width: parent.width - 48
-                            height: 64
-                            Glyph {
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 24; height: 24
-                                kind: "appstore"; color: panelPal.fg2
-                            }
-                            Text {
-                                x: 40 + 3
-                                anchors.verticalCenter: parent.verticalCenter
-                                visible: appsInput.text === ""
-                                text: I18n.tr("Applications")
-                                color: panelPal.fg3
-                                font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 24
-                            }
-                            TextInput {
-                                id: appsInput
-                                x: 40
-                                width: parent.width - 40 - 48
-                                anchors.verticalCenter: parent.verticalCenter
-                                clip: true
-                                color: panelPal.fg
-                                selectionColor: root.accent
-                                selectedTextColor: "white"
-                                font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 24
-                                onTextChanged: { if (ui.spMode === "apps") { ui.spQuery = text; ui.spSel = 0; } }
-                                Keys.onPressed: event => ui.spKey(event)
-                            }
-                            CCBtn {
-                                t: pal; gx: spg
-                                d: 34
-                                bounce: true
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                kind: "dots"
-                                onClicked: ui.spSetMode("home")
-                            }
-                        }
-
-                        Flickable {
-                            id: appsFlick
-                            y: 64
-                            width: parent.width
-                            height: parent.height - 64 - 6
-                            contentWidth: width
-                            contentHeight: appsCol.height + 8
-                            clip: true
-                            boundsBehavior: Flickable.StopAtBounds
-
-                            Column {
-                                id: appsCol
-                                x: 24
-                                width: appsFlick.width - 48
-
-                                Repeater {
-                                    id: appsRep
-                                    model: ui.spQuery.trim() === "" ? root.appSections : root.appSearchSection(ui.spQuery)
-                                    delegate: Column {
-                                        id: sec
-                                        required property var modelData
-                                        readonly property bool searching: ui.spQuery.trim() !== ""
-                                        readonly property bool expanded: searching || ui.spExpanded[modelData.name] === true
-                                        readonly property int shown: expanded ? modelData.apps.length : Math.min(5, modelData.apps.length)
-                                        width: appsCol.width
-
-                                        Rectangle { width: parent.width; height: 1; color: panelPal.sep }
-                                        Item {
-                                            width: parent.width
-                                            height: 38
-                                            Text {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: I18n.tr(sec.modelData.name)
-                                                color: panelPal.fg
-                                                font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 13; font.weight: Font.Bold
-                                            }
-                                            Text {
-                                                visible: !sec.searching && sec.modelData.apps.length > 5
-                                                anchors.right: parent.right
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: sec.expanded ? I18n.tr("Show Less") : I18n.tr("Show More")
-                                                color: root.accent
-                                                font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 12; font.weight: Font.Bold
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    anchors.margins: -6
-                                                    onClicked: ui.spToggleSection(sec.modelData.name)
-                                                }
-                                            }
-                                        }
-                                        Grid {
-                                            columns: 5
-                                            Repeater {
-                                                model: sec.shown
-                                                delegate: Item {
-                                                    id: cell
-                                                    required property int index
-                                                    readonly property var e: sec.modelData.apps[index]
-                                                    width: appsCol.width / 5
-                                                    height: 96
-                                                                                                                                                            Rectangle {
-                                                        anchors.fill: parent
-                                                        anchors.margins: 2
-                                                        radius: 16
-                                                        color: cma.containsMouse ? panelPal.hover : "transparent"
-                                                    }
-                                                    Image {
-                                                        anchors.horizontalCenter: parent.horizontalCenter
-                                                        y: 10
-                                                        width: 56; height: 56
-                                                        source: root.iconSrc(cell.e.icon)
-                                                        sourceSize: Qt.size(128, 128)
-                                                        fillMode: Image.PreserveAspectFit
-                                                        asynchronous: true
-                                                        smooth: true
-                                                    }
-                                                    Text {
-                                                        y: 72
-                                                        width: parent.width - 8
-                                                        x: 4
-                                                        horizontalAlignment: Text.AlignHCenter
-                                                        elide: Text.ElideRight
-                                                        text: cell.e.name
-                                                        color: panelPal.fg
-                                                        font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 12
-                                                    }
-                                                    MouseArea {
-                                                        id: cma
-                                                        anchors.fill: parent
-                                                        hoverEnabled: true
-                                                        onClicked: { ui.pop = ""; root.launchApp(cell.e); }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        Item { width: 1; height: 10 }
-                                    }
-                                }
-                                Text {
-                                    visible: ui.spQuery.trim() !== "" && appsRep.count === 0
-                                    width: parent.width
-                                    height: 90
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    text: I18n.tr("No Results")
-                                    color: panelPal.fg2
-                                    font.family: root.fontForWeight(font.weight, panelPal.fam); font.pixelSize: 14
-                                }
-                            }
-                        }
-                    }
-                }
-
-            }
-        }
         }
     }
 }

@@ -47,7 +47,6 @@ end
 -- layers popin from animation.lua is switched off for them.
 hl.layer_rule({ name = "mac-noanim", match = { namespace = "^mac" }, no_anim = true })
 hl.layer_rule({ name = "macdock",    match = { namespace = "^macdock$" },   blur = true, ignore_alpha = 0.2 })
-hl.layer_rule({ name = "macspot",    match = { namespace = "^macspot$" },   blur = true, ignore_alpha = 0.05 })
 hl.layer_rule({ name = "macbarbg",   match = { namespace = "^macbarbg$" },  blur = true, ignore_alpha = 0.05 })
 hl.layer_rule({ name = "macisland",  match = { namespace = "^macisland$" }, blur = true, ignore_alpha = 0.05 })
 

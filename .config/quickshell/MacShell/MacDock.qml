@@ -643,13 +643,13 @@ Scope {
             { id: "network",    sec: 1, name: "Network",         wg: "ethernet",   c1: "#3D9BFF", c2: "#0A6CFF", keys: "ethernet ip address vpn tailscale connection" },
             // 2 · System
             { id: "general",    sec: 2, name: "General",         glyph: "behavior", c1: "#8E8E93", c2: "#636366", keys: "shell enable disable dock menu bar panel show hide off on" },
-            { id: "appearance", sec: 2, name: "Appearance",      glyph: "appearance", c1: "#3A3A3C", c2: "#1C1C1E", keys: "theme dark light auto mode accent color glass liquid apple style translucency blur font spotlight top bar menus" },
+            { id: "appearance", sec: 2, name: "Appearance",      glyph: "appearance", c1: "#3A3A3C", c2: "#1C1C1E", keys: "theme dark light auto mode accent color glass liquid apple style translucency blur font top bar menus" },
             { id: "wallpaper",  sec: 2, name: "Wallpaper",       glyph: "wallpaper", c1: "#5AC8FA", c2: "#007AFF", keys: "wallpaper background picture image video animated live motion desktop dynamic" },
             { id: "displays",   sec: 2, name: "Displays",        wg: "sun",        c1: "#3D9BFF", c2: "#0A6CFF", keys: "brightness night shift monitor resolution refresh scale" },
             { id: "battery",    sec: 2, name: "Battery",         wg: "bolt",       c1: "#4CD964", c2: "#28A745", keys: "power energy charge profile performance" },
             // 3 · Desktop
             { id: "dock",       sec: 3, name: "Desktop & Dock",  glyph: "dock",     c1: "#2C2C2E", c2: "#1C1C1E", keys: "size icon magnification zoom spacing margin distance corner radius round square edge hide auto labels indicators bounce trash monitor preview app switcher alt tab" },
-            { id: "menubar",    sec: 3, name: "Menu Bar",        glyph: "menubar",  c1: "#3D9BFF", c2: "#0A6CFF", keys: "panel bar height clock date seconds 24 hour battery tray search spotlight week monday style liquid bluetooth screenshots" },
+            { id: "menubar",    sec: 3, name: "Menu Bar",        glyph: "menubar",  c1: "#3D9BFF", c2: "#0A6CFF", keys: "panel bar height clock date seconds 24 hour battery tray week monday style liquid bluetooth screenshots" },
             { id: "controlcenter", sec: 3, name: "Control Center", wg: "cc",       c1: "#8E8E93", c2: "#636366", keys: "modules tiles controls" },
             { id: "widgets",    sec: 3, name: "Widgets",         glyph: "widgets",  c1: "#FF9F0A", c2: "#FF7A00", keys: "desktop widgets weather clock calendar player image photo add remove arrange edit size temperature fahrenheit celsius city location" },
             // 4 · Notifications & Sound
@@ -1373,7 +1373,7 @@ Scope {
                     SRow {
                         t: pal
                         title: I18n.tr("Menu Bar")
-                        subtitle: I18n.tr("Show the panel at the top of the screen. Spotlight, Control Center and the calendar belong to it.")
+                        subtitle: I18n.tr("Show the panel at the top of the screen. Control Center and the calendar belong to it.")
                         SSwitch {
                             t: pal
                             checked: root.bar ? root.bar.barEnabled : true
@@ -1586,7 +1586,7 @@ Scope {
                     SRow {
                         t: pal
                         title: I18n.tr("Real-time glass")
-                        subtitle: I18n.tr("Keep window captures live so popovers, Spotlight and the Dock open on current pixels. Turn off to save GPU.")
+                        subtitle: I18n.tr("Keep window captures live so popovers and the Dock open on current pixels. Turn off to save GPU.")
                         SSwitch {
                             t: pal
                             checked: root.bar ? root.bar.glassRealtime : true
@@ -1646,10 +1646,6 @@ Scope {
                         SSwitch { t: pal; checked: root.bar ? root.bar.barWidgetEnabled("wifi") : true; onToggled: v => { if (root.bar) root.bar.setBarWidget("wifi", v); } }
                     }
                     SRow {
-                        t: pal; title: I18n.tr("Spotlight search")
-                        SSwitch { t: pal; checked: root.bar ? root.bar.showSearch : true; onToggled: v => { if (root.bar) root.bar.showSearch = v; } }
-                    }
-                    SRow {
                         t: pal; title: I18n.tr("Privacy indicators")
                         SSwitch { t: pal; checked: root.bar ? root.bar.barWidgetEnabled("privacy") : true; onToggled: v => { if (root.bar) root.bar.setBarWidget("privacy", v); } }
                     }
@@ -1663,29 +1659,6 @@ Scope {
                     }
                 }
 
-                SCard {
-                    t: pal
-                    SRow {
-                        t: pal
-                        title: I18n.tr("Keep clipboard history")
-                        subtitle: I18n.tr("Spotlight \u2192 Clipboard (needs wl-clipboard and cliphist). Turn off to stop recording what you copy")
-                        SSwitch {
-                            t: pal
-                            checked: root.bar ? root.bar.clipHistory : false
-                            onToggled: v => { if (root.bar) root.bar.clipHistory = v; }
-                        }
-                    }
-                    SRow {
-                        t: pal
-                        title: I18n.tr("Paste after choosing")
-                        subtitle: I18n.tr("Insert the chosen clipboard entry or emoji into the focused app (Shift+Return only copies)")
-                        SSwitch {
-                            t: pal
-                            checked: root.bar ? root.bar.clipAutoPaste : false
-                            onToggled: v => { if (root.bar) root.bar.clipAutoPaste = v; }
-                        }
-                    }
-                }
                 SLabel { t: pal; header: true; text: I18n.tr("Screenshots") }
                 SCard {
                     t: pal
@@ -1790,7 +1763,7 @@ Scope {
                 }
                 SLabel {
                     t: pal
-                    text: I18n.tr("Translucency, accent color, appearance and font are in Appearance. Commands (terminal, launcher, files, clipboard) can be edited in ~/.config/macbar/settings.json.")
+                    text: I18n.tr("Translucency, accent color, appearance and font are in Appearance. Commands (terminal, files) can be edited in ~/.config/macbar/settings.json.")
                 }
             }
         }
@@ -2031,7 +2004,7 @@ Scope {
                     SRow {
                         t: pal
                         title: I18n.tr("Appearance")
-                        subtitle: I18n.tr("Light, Dark, or Auto for everything: Dock, Menu Bar, menus, Spotlight, Settings and About. The Control Center tile and the Dark Mode menu item use this same setting.")
+                        subtitle: I18n.tr("Light, Dark, or Auto for everything: Dock, Menu Bar, menus, Settings and About. The Control Center tile and the Dark Mode menu item use this same setting.")
                         Row {
                             spacing: 14
                             SThemeTile {

@@ -310,7 +310,7 @@ The shell is a fork of [MacShell](https://github.com/0-ss/MacShell) (Quickshell,
 - **Top bar**: the macOS menu bar or my **Dynamic Island** (with its hub: media, sliders, Wi‑Fi/Bluetooth/DND, calendar, power, notifications). Switch in Settings → General → Top bar.
 - **Dock, Control Center, notifications, widgets, window switcher, screenshots** from MacShell.
 - **MacLock** lock screen (idle, suspend, lid close, `Super+L` / `Alt+L`).
-- **Launcher**: vicinae (MacShell's Spotlight is off).
+- **Launcher**: vicinae only (MacShell's Spotlight search, with its clipboard / emoji panels, is removed).
 - **Keybind viewer** and **wallpaper picker** in MacShell's Liquid Glass style.
 - **Wallpapers + colors**: one apply path, `hypr/scripts/wallpapers/apply.sh` → matugen → awww → kitty / Hyprland / btop / spicetify colors + the MacShell accent (Settings → Appearance → Accent, white-dot swatch). No shell restart.
 - English only.
