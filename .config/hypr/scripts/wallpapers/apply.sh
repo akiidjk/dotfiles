@@ -4,4 +4,4 @@
 set -e
 [ -f "$1" ] || { echo "usage: apply.sh <image>" >&2; exit 1; }
 matugen image -t scheme-fidelity --source-color-index 0 -m dark "$1" --fallback-color "#000000"
-cp "$1" ~/.current_wallpaper
+[ "$1" -ef ~/.current_wallpaper ] || cp "$1" ~/.current_wallpaper
