@@ -10,4 +10,6 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("vicinae server")
 end)
 
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("vicinae toggle"))
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("vicinae toggle"), {
+    description = "Toggle vicinae",
+})

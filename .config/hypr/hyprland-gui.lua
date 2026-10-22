@@ -39,3 +39,21 @@ hl.config({
         animate_mouse_windowdragging = true,
     },
 })
+
+-- Monitors
+hl.monitor({
+    output = "HDMI-A-1",
+    disabled = false,
+    mode = "1920x1080@60.00Hz",
+    position = "1930x630",
+    scale = 1,
+    cm = "srgb",
+})
+hl.monitor({
+    output = "eDP-1",
+    disabled = false,
+    mode = "1920x1080@60.01Hz",
+    position = "0x1100",
+    scale = 1,
+    cm = "srgb",
+})

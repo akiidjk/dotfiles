@@ -1,102 +1,102 @@
-image = "/home/akiidjk/.config/wallpapers/eyes.png"
+image = "/home/akiidjk/.config/wallpapers/1920x1080_anime_a_person_standing_on_a_broken_object_in_a_field_with_a_large_white_moon.jpg"
 
-background = "#131314ff"
+background = "#121415ff"
 
 error = "#ffb4abff"
 
 error_container = "#93000aff"
 
-inverse_on_surface = "#313030ff"
+inverse_on_surface = "#2f3132ff"
 
-inverse_primary = "#5c5e64ff"
+inverse_primary = "#3a6477ff"
 
-inverse_surface = "#e5e2e2ff"
+inverse_surface = "#e2e2e4ff"
 
-on_background = "#e5e2e2ff"
+on_background = "#e2e2e4ff"
 
 on_error = "#690005ff"
 
 on_error_container = "#ffdad6ff"
 
-on_primary = "#2e3035ff"
+on_primary = "#003546ff"
 
-on_primary_container = "#c7c7cdff"
+on_primary_container = "#ffffffff"
 
-on_primary_fixed = "#191c20ff"
+on_primary_fixed = "#001f2aff"
 
-on_primary_fixed_variant = "#45474cff"
+on_primary_fixed_variant = "#204c5eff"
 
-on_secondary = "#303032ff"
+on_secondary = "#23323aff"
 
-on_secondary_container = "#e1dfe2ff"
+on_secondary_container = "#d2e3ecff"
 
-on_secondary_fixed = "#1b1b1dff"
+on_secondary_fixed = "#0e1d24ff"
 
-on_secondary_fixed_variant = "#464649ff"
+on_secondary_fixed_variant = "#3a4951ff"
 
-on_surface = "#e5e2e2ff"
+on_surface = "#e2e2e4ff"
 
-on_surface_variant = "#c6c6cbff"
+on_surface_variant = "#c1c7ccff"
 
-on_tertiary = "#372f29ff"
+on_tertiary = "#492906ff"
 
-on_tertiary_container = "#d3c4bcff"
+on_tertiary_container = "#ffffffff"
 
-on_tertiary_fixed = "#221a15ff"
+on_tertiary_fixed = "#2e1600ff"
 
-on_tertiary_fixed_variant = "#4f453eff"
+on_tertiary_fixed_variant = "#633e1bff"
 
-outline = "#909095ff"
+outline = "#8b9296ff"
 
-outline_variant = "#45474bff"
+outline_variant = "#41484cff"
 
-primary = "#c5c6ccff"
+primary = "#a2cde2ff"
 
-primary_container = "#35373cff"
+primary_container = "#3c6679ff"
 
-primary_fixed = "#e2e2e8ff"
+primary_fixed = "#bee9ffff"
 
-primary_fixed_dim = "#c5c6ccff"
+primary_fixed_dim = "#a2cde2ff"
 
 scrim = "#000000ff"
 
-secondary = "#c7c6c8ff"
+secondary = "#b9c9d2ff"
 
-secondary_container = "#464649ff"
+secondary_container = "#3a4951ff"
 
-secondary_fixed = "#e4e2e4ff"
+secondary_fixed = "#d5e5efff"
 
-secondary_fixed_dim = "#c7c6c8ff"
+secondary_fixed_dim = "#b9c9d2ff"
 
 shadow = "#000000ff"
 
-source_color = "#35373cff"
+source_color = "#3c6679ff"
 
-surface = "#131314ff"
+surface = "#121415ff"
 
-surface_bright = "#3a3939ff"
+surface_bright = "#37393bff"
 
-surface_container = "#201f20ff"
+surface_container = "#1e2021ff"
 
-surface_container_high = "#2a2a2aff"
+surface_container_high = "#282a2cff"
 
-surface_container_highest = "#353435ff"
+surface_container_highest = "#333536ff"
 
-surface_container_low = "#1c1b1cff"
+surface_container_low = "#1a1c1dff"
 
-surface_container_lowest = "#0e0e0eff"
+surface_container_lowest = "#0c0e10ff"
 
-surface_dim = "#131314ff"
+surface_dim = "#121415ff"
 
-surface_tint = "#c5c6ccff"
+surface_tint = "#a2cde2ff"
 
-surface_variant = "#45474bff"
+surface_variant = "#41484cff"
 
-tertiary = "#d2c4bbff"
+tertiary = "#f2bc8eff"
 
-tertiary_container = "#3e352fff"
+tertiary_container = "#815832ff"
 
-tertiary_fixed = "#efe0d7ff"
+tertiary_fixed = "#ffdcc1ff"
 
-tertiary_fixed_dim = "#d2c4bbff"
+tertiary_fixed_dim = "#f2bc8eff"
 

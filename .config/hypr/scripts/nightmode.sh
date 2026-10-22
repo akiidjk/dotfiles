@@ -2,7 +2,7 @@
 
 if pgrep -x "hyprsunset" > /dev/null
 then
-    killall -9 hyprsunset
+    pkill hyprsunset
     notify-send "🌞 Day Mode Activated" -u "low"
 else
     hyprsunset -t 3500 &

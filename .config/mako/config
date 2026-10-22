@@ -1,9 +1,11 @@
-# Global Config
-font=JetBrains Mono Nerd Font Propo 14
+# Configurazione Mako generata con Matugen
+
+# --- Aspetto Generale ---
+font=JetBrains Mono Nerd Font Propo 9
 width=350
 height=150
 margin=16
-padding=20
+padding=14
 border-size=1
 border-radius=12
 icons=1
@@ -11,47 +13,45 @@ max-icon-size=48
 default-timeout=5000
 ignore-timeout=0
 
-# Layout & Format
-# Mimics CSS: Bold summary, smaller body text
-format=<b>%s</b>\n<span size="90%">%b</span>
+# --- Colori Base (Matugen) ---
 
-# ----------------------------------------------------------------
-# COLORS
-# Replace the variables below with your actual Hex codes.
-# ----------------------------------------------------------------
+# Text -> @on_surface
+text-color=#e2e2e4
 
-# Background: @background with 85% opacity (D9 is 85% in Hex)
-background-color=#282828D9
-text-color=#ffffff
+# Background -> @surface (con opacità ~85% -> D9)
+# Nota: Mako accetta #RRGGBBAA
+background-color=#121415D9
 
-# Border: Mapped to "@selected" (@color2 from your CSS)
-border-color=#89b4fa
+# Selected/Border -> @tertiary
+border-color=#f2bc8e
 
-# Progress Bar: Mapped to "@selected"
-progress-color=source #89b4fa
+# Progress Bar -> @tertiary (sovrapposto)
+progress-color=over #f2bc8e
 
-# ----------------------------------------------------------------
-# URGENCY OVERRIDES
-# ----------------------------------------------------------------
+# --- Sezioni per Urgenza ---
 
 [urgency=low]
-# Optional: Dimmer border for low priority
-border-color=#45475a
+border-color=#f2bc8e
 
 [urgency=normal]
-border-color=#89b4fa
+border-color=#f2bc8e
+
+[urgency=high]
+# Urgent -> @error
+border-color=#ffb4ab
+border-size=2
+default-timeout=0
 
 [urgency=critical]
-# Mapped to "@urgent" (@color6 from your CSS)
-border-color=#f38ba8
-# Critical notifications usually stick around until dismissed
-default-timeout=0
-# CSS specified a thicker border for critical
+# Urgent -> @error
+border-color=#ffb4ab
 border-size=2
+default-timeout=0
 
-# ----------------------------------------------------------------
-# MODE OVERRIDES
-# ----------------------------------------------------------------
+# --- Categorie Specifiche (Opzionale) ---
+# Simula lo stile del pulsante di chiusura se necessario,
+# ma Mako non ha pulsanti fluttuanti come SwayNC.
 
-[mode=dnd]
-invisible=1
+[category=mpd]
+border-color=#b9c9d2
+default-timeout=2000

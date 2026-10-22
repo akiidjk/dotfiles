@@ -1,5 +1,5 @@
-local inFocusOpacity = "0.95"
-local notInFocusOpacity = "0.8"
+local inFocusOpacity = "1"
+local notInFocusOpacity = "0.9"
 
 
 
