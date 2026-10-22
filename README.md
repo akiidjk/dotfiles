@@ -46,7 +46,8 @@ chmod +x install.sh
 # Update system first
 sudo pacman -Syu
 
-# Install Hyprland and core dependencies
+# Install Hyprland (0.55+, Lua config) and core dependencies
+# hyprlock is not the locker: MacLock checks the password through its PAM file (/etc/pam.d/hyprlock)
 sudo pacman -S hyprland hypridle hyprlock xdg-desktop-portal-hyprland hyprpolkitagent
 # Display and graphics
 sudo pacman -S wl-clipboard wl-clip-persist cliphist grim slurp swappy
@@ -57,8 +58,8 @@ sudo pacman -S pipewire pipewire-pulse pipewire-alsa wireplumber pavucontrol
 # Blue light filter
 sudo pacman -S hyprsunset
 
-# Notifications
-sudo pacman -S mako libnotify
+# Notifications (the daemon is MacShell itself: do not install mako / dunst / swaync)
+sudo pacman -S libnotify
 
 # Terminal and shell
 sudo pacman -S kitty starship tmux
@@ -66,8 +67,10 @@ sudo pacman -S kitty starship tmux
 # File managers and utilities
 sudo pacman -S nautilus yazi
 
-# Shell
-sudo pacman -S quickshell
+# Desktop shell: MacShell + MacLock (Quickshell)
+sudo pacman -S quickshell qt6-declarative qt6-wayland qt6-svg qt6-shadertools \
+  ffmpeg zenity inotify-tools power-profiles-daemon wf-recorder wtype python-numpy papirus-icon-theme
+sudo systemctl enable --now power-profiles-daemon bluetooth
 
 # Text editor
 sudo pacman -S vim neovim zed
@@ -76,7 +79,7 @@ sudo pacman -S vim neovim zed
 yay -S matugen
 
 # Other utilities
-sudo pacman -S fastfetch brightnessctl playerctl pamixer wofi fzf ripgrep bat eza jless
+sudo pacman -S fastfetch brightnessctl playerctl pamixer fzf ripgrep bat eza jless
 ```
 
 ### AUR Packages
@@ -87,7 +90,7 @@ sudo pacman -S fastfetch brightnessctl playerctl pamixer wofi fzf ripgrep bat ez
 yay -S zen-browser-bin
 
 # Install AUR packages
-yay -S hyprpicker vicinae-bin cava awww
+yay -S hyprpicker vicinae-bin cava awww mpvpaper
 ```
 
 ### Fonts Installation
@@ -103,9 +106,9 @@ sudo pacman -S adobe-source-code-pro-fonts \
   ttf-jetbrains-mono-nerd \
   ttf-nerd-fonts-symbols-mono \
   ttf-victor-mono \
-  ttf-nerd-fonts-symbols \ 
+  ttf-nerd-fonts-symbols \
   noto-fonts \
-  fontconfig \
+  fontconfig
 
 mkdir -p ~/.local/share/fonts
 cp -r ~/.config/fonts/* ~/.local/share/fonts/
@@ -142,6 +145,15 @@ echo -e "[Theme]\nCurrent=pixel" | sudo tee /etc/sddm.conf
 ```
 
 ## Post installation
+
+### MacShell first run
+```bash
+# UI sounds (synthesized into ~/.local/share/sounds/macshell)
+python3 ~/.config/hypr-macshell/scripts/macshell-make-sounds.py
+# first wallpaper + matugen theme (afterwards just use Super+W)
+~/.config/hypr/scripts/wallpapers/apply.sh ~/.config/wallpapers/decline.png
+```
+Then log in to Hyprland: `hypr/macshell.lua` starts `qs -c MacShell`.
 
 ### Hyprplugin download
 ```bash
@@ -291,34 +303,51 @@ Here are some useful aliases defined in my shell configuration:
 <img width="1918" height="1077" alt="swappy-20260831_223410" src="https://github.com/user-attachments/assets/405b7e88-a3cc-4ab0-8801-8e09f1c29637" />
 
 
+## Desktop shell: MacShell (akiidjk edition)
+
+The shell is a fork of [MacShell](https://github.com/0-ss/MacShell) (Quickshell, macOS-style, Liquid Glass) merged with my own pieces:
+
+- **Top bar**: the macOS menu bar or my **Dynamic Island** (with its hub: media, sliders, Wi‑Fi/Bluetooth/DND, calendar, power, notifications). Switch in Settings → General → Top bar.
+- **Dock, Control Center, notifications, widgets, window switcher, screenshots** from MacShell.
+- **MacLock** lock screen (idle, suspend, lid close, `Super+L` / `Alt+L`).
+- **Launcher**: vicinae (MacShell's Spotlight is off).
+- **Keybind viewer** and **wallpaper picker** in MacShell's Liquid Glass style.
+- **Wallpapers + colors**: one apply path, `hypr/scripts/wallpapers/apply.sh` → matugen → awww → kitty / Hyprland / btop / spicetify colors + the MacShell accent (Settings → Appearance → Accent, white-dot swatch). No shell restart.
+- English only.
+
+Do not run MacShell's own `install.sh` / `macshell-update`: they would overwrite the fork.
+
 ## Configuration Structure
 
-- **mako/** - Notification daemon
-- **matugent/** - Color scheme generator config
+- **matugen/** - Color scheme generator config (templates: kitty, Hyprland, btop, spicetify, MacShell accent)
 - **fastfetch/** - System information tool config
 - **fonts/** - Custom Nerd Fonts (JetBrains Mono, Iosevka, etc.)
-- **hypr/** - Hyprland window manager configuration
-  - `hyprland.conf` - Main config file
-  - `keybinds.conf` - Keyboard shortcuts
-  - `animations.conf` - Animation settings
-  - `monitors.conf` - Monitor configuration
-  - `hypridle.conf` - Config for hypridle
-  - `autostart.conf` - All startup script and app to run
-  - `hyprcolors.conf` - Color configuration with pywal
-  - `hyprlock.conf` - Hyprlock config
-  - `vicinae.conf` - Vicinae config
-  - `plugins.conf` - Hyprland plugin config
-  - `windowrule.conf` - Window rule for hyprland
-  - `scripts/` - Utility scripts
+- **hypr/** - Hyprland window manager configuration (Lua, 0.55+)
+  - `hyprland.lua` - Main config file (requires the modules below)
+  - `keybinds.lua` - Keyboard shortcuts
+  - `macshell.lua` - MacShell / MacLock: autostart, shell keybinds, hardware keys, layer and window rules
+  - `animation.lua` - Animation settings
+  - `monitors.lua` - Monitor configuration (nwg-displays)
+  - `input.lua` - Keyboard / mouse / touchpad
+  - `hypridle.conf` - Idle + sleep → MacLock
+  - `autostart.lua` - Startup scripts and apps
+  - `hyprcolors.lua` + `colors.lua` - Colors (`colors.lua` is generated by matugen)
+  - `vicinae.lua` - Vicinae launcher
+  - `windowrule.lua` - Window rules
+  - `hyprland-gui.lua` - Settings managed by HyprMod
+  - `hyprshade.toml` - Screen shaders (hyprshade timer)
+  - `scripts/` - Utility scripts (`wallpapers/apply.sh`, night mode, color picker, mirror, screensharing, Spotify notifications)
+- **hypr-macshell/scripts/** - MacShell helpers (video wallpapers, Game Mode, UI sound generator)
+- **quickshell/MacShell/** - The shell (fork; the island / keybinds / wallpaper picker are the `Island*`, `KeybindsPanel`, `WallPickerPanel` files)
+- **quickshell/MacLock/** - The lock screen
 - **kitty/** - Terminal emulator configuration
 - **nvim/** - Neovim configuration with Lazy.vim
 - **starship.toml** - Shell prompt configuration
 - **tmux/** - Terminal multiplexer config
-- **vicinae/** - Window management tool config
-- **quickshell/** - Status bar configuration + hub
+- **vicinae/** - Launcher config
 - **yazi/** - Terminal file manager config
 - **zed/** - Zed editor configuration
-- **wallpaper/** - Collection of wallpaper and images used in the configuration
+- **wallpapers/** - Collection of wallpaper and images used in the configuration
 
 ### Start Hyprland
 ```bash
@@ -332,9 +361,22 @@ sudo systemctl start sddm
 
 ## Keybindings
 
-Simple run `SUPER + K`
+Simple run `SUPER + K` (or Help → Hyprland Keybinds in the menu bar). The shell ones:
+
+| Keys | Action |
+|------|--------|
+| `SUPER + Space` | vicinae |
+| `SUPER + K` | Keybind viewer |
+| `SUPER + W` | Wallpaper picker |
+| `SUPER + H` | Show / hide the top bar |
+| `SUPER + N` | Island hub (Control Center in menu-bar mode) |
+| `SUPER + ,` | MacShell Settings |
+| `SUPER + L` / `ALT + L` | Lock (MacLock) |
+| `ALT + TAB` | Window switcher |
+| `PRINT` | Screenshot (MacShell), `SUPER + SHIFT + S` grim + swappy |
 
 <img width="1919" height="1080" alt="swappy-20260913_172045" src="https://github.com/user-attachments/assets/a977171d-145e-4ce8-93eb-542fe580d716" />
+
 ## Resources
 
 - **Hyprland Installation**: https://github.com/JaKooLit/Arch-Hyprland.git
@@ -350,6 +392,7 @@ Simple run `SUPER + K`
 Based on various dotfile configurations and customized for personal use.
 
 - [JaKooLit - Arch Hyprland Installer (Base of installer)](https://github.com/JaKooLit/Arch-Hyprland)
+- [0-ss/MacShell](https://github.com/0-ss/MacShell) - the shell and lock screen this setup forks (Rickky and vSuol)
 
 ## License
 

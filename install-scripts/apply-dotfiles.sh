@@ -29,8 +29,14 @@ rm -r ~/install-scripts ~/install.sh *.log Install-Logs dotfiles
 # Set execute permissions for scripts
 chmod +x ~/scripts/*.sh
 chmod +x ~/.config/hypr/scripts/*.sh
-chmod +x ~/.config/hypr/scripts/hyprpicker
 chmod +x ~/.config/hypr/scripts/wallpapers/*.sh
+chmod +x ~/.config/hypr-macshell/scripts/*
+chmod +x ~/.config/quickshell/MacLock/*.sh ~/.config/quickshell/MacLock/*.py
+
+# MacShell: UI sounds (synthesized into ~/.local/share/sounds/macshell) and the first wallpaper accent
+python3 ~/.config/hypr-macshell/scripts/macshell-make-sounds.py
+mkdir -p ~/.config/macshell
+grep -m1 '^primary ' ~/.config/hypr/colors.lua | grep -oE '#[0-9a-fA-F]{6}' > ~/.config/macshell/accent || true
 
 #Install others fonts
 mkdir -p ~/.local/share/fonts

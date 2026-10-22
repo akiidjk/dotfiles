@@ -2,10 +2,10 @@
 # 💫 https://github.com/JaKooLit 💫 #
 # Bluetooth Stuff #
 
+# Bluetooth UI is MacShell's Control Center (no blueman)
 blue=(
   bluez
   bluez-utils
-  blueman
 )
 
 if ! source "$(dirname "$(readlink -f "$0")")/logger.sh"; then

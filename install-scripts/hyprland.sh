@@ -4,7 +4,7 @@
 
 hypr_eco=(
   hypridle
-  hyprlock
+  hyprlock   # not used as the locker: MacLock checks the password through its PAM file (/etc/pam.d/hyprlock)
 )
 
 hypr=(

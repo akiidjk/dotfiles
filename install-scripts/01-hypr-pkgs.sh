@@ -17,7 +17,6 @@ Extra=(
   neovim
   zed
   matugen-bin
-  wofi
   fzf
   ripgrep
   bat
@@ -33,6 +32,24 @@ Extra=(
   spicetify-cli
   plymouth
   mkinitcpio
+)
+
+# MacShell (~/.config/quickshell/MacShell) + MacLock: what the shell, the Liquid Glass and the helpers need
+macshell_package=(
+  quickshell
+  qt6-declarative
+  qt6-wayland
+  qt6-svg
+  qt6-shadertools          # qsb: compiles the Liquid Glass shader
+  mpvpaper                 # video wallpapers
+  ffmpeg                   # video wallpaper thumbnails
+  zenity                   # file / folder pickers
+  inotify-tools            # wallpaper + Trash watching
+  power-profiles-daemon    # power profiles / Game Mode
+  wf-recorder              # screen recording
+  wtype                    # menu bar shortcuts sent to apps
+  python-numpy             # macshell-make-sounds.py (UI sounds)
+  papirus-icon-theme       # Dock / app icons
 )
 
 hypr_package=(
@@ -51,25 +68,19 @@ hypr_package=(
   kitty
   kvantum
   libspng
-  network-manager-applet
   qadwaitadecorations-qt5
   qadwaitadecorations-qt6
   pamixer
   pavucontrol
   playerctl
   python-requests
-  python-pyquery
   qt5ct
   qt6ct
-  qt6-svg
   slurp
   swappy
-  quickshell
   unzip # needed later
-  wallust
   wget
   wl-clipboard
-  wlogout
   xdg-user-dirs
   xdg-utils
   yad
@@ -93,11 +104,13 @@ hypr_package_2=(
 )
 
 # List of packages to uninstall as it conflicts some packages
+# (MacShell is the notification daemon, so no dunst / mako / swaync)
 uninstall=(
   aylurs-gtk-shell
   dunst
   cachyos-hyprland-settings
   mako
+  swaync
   rofi
   wallust-git
   rofi-lbonn-wayland
@@ -141,7 +154,7 @@ printf "\n%.0s" {1..1}
 # Installation of main components
 NOTE "Installing KooL's Hyprland necessary packages ...."
 
-for PKG1 in "${hypr_package[@]}" "${hypr_package_2[@]}" "${Extra[@]}"; do
+for PKG1 in "${hypr_package[@]}" "${hypr_package_2[@]}" "${Extra[@]}" "${macshell_package[@]}"; do
   install_package "$PKG1"
 done
 

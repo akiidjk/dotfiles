@@ -103,7 +103,7 @@ done
 
 # copy additional oh-my-zsh themes from assets
 if [ -d "$HOME/.oh-my-zsh/themes" ]; then
-    cp -r assets/add_zsh_theme/* ~/.oh-my-zsh/themes >> 2>&1
+    cp -r assets/add_zsh_theme/* ~/.oh-my-zsh/themes >> "$LOG_FILE" 2>&1
 fi
 
 printf "\n%.0s" {1..2}

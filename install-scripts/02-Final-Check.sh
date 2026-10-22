@@ -6,18 +6,18 @@
 packages=(
   cliphist
   kvantum
-  rofi-wayland
   imagemagick
-  swaync
   cmake
-  wallust
-  waybar
   wl-clipboard
-  wlogout
   kitty
   hypridle
   hyprlock
   hyprland
+  quickshell
+  qt6-shadertools
+  awww
+  matugen-bin
+  vicinae-bin
 )
 
 # Local packages that should be in /usr/local/bin/
