@@ -3851,23 +3851,6 @@ Scope {
                     t: pal
                     SRow {
                         t: pal
-                        title: I18n.tr("Install dependencies")
-                        subtitle: I18n.tr("Installs everything MacShell uses (Quickshell, awww, mpvpaper, ffmpeg, wf-recorder, fonts, icons…) with your package manager, in a terminal")
-                        SButton {
-                            t: pal
-                            text: I18n.tr("Install\u2026")
-                            onClicked: {
-                                var inst = Quickshell.env("HOME") + "/.local/share/macshell/install.sh";
-                                var term = root.bar ? root.bar.terminal : "kitty";
-                                Quickshell.execDetached(["sh", "-c", term + " -e sh -c '\"$0\" --deps-only; echo; echo Press Enter to close; read x'", inst]);
-                            }
-                        }
-                    }
-                }
-                SCard {
-                    t: pal
-                    SRow {
-                        t: pal
                         title: I18n.tr("Reset MacShell")
                         subtitle: I18n.tr("Restore every setting to its default (appearance, Dock, Menu Bar, widgets, lock screen, input). Pinned apps and your widgets' layout are kept.")
                         SButton {

@@ -4158,7 +4158,6 @@ Scope {
     property string wpPairLight: ""
     property string wpPairDark: ""
     readonly property bool wpHasPair: wpPairLight !== "" && wpPairDark !== ""
-    readonly property string dynwallScript: Quickshell.env("HOME") + "/.config/hypr-macshell/scripts/macshell-dynwall.sh"
     // "<name>-Light.ext" ↔ "<name>-Dark.ext" in the same folder (from the folder scan)
     function wpPairOf(path) {
         var m = /^(.*[-_ ])(light|dark)(\.[a-z0-9]+)$/i.exec(path || "");

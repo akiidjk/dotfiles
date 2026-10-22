@@ -18,8 +18,8 @@ hl.config({
     general = {
         allow_tearing = true,
         border_size = 0,
-        gaps_in = 15,
-        gaps_out = 60,
+        gaps_in = 10,
+        gaps_out = 25,
         layout = "scrolling",
         snap = {
             enabled = true,
