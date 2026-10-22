@@ -45,7 +45,7 @@ macshell_package=(
   ffmpeg                   # video wallpaper thumbnails
   zenity                   # file / folder pickers
   inotify-tools            # wallpaper + Trash watching
-  power-profiles-daemon    # power profiles / Game Mode
+  power-profiles-daemon    # power profiles (Settings → Battery)
   wf-recorder              # screen recording
   wtype                    # menu bar shortcuts sent to apps
   python-numpy             # macshell-make-sounds.py (UI sounds)

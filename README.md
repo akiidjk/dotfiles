@@ -337,7 +337,7 @@ Do not run MacShell's own `install.sh` / `macshell-update`: they would overwrite
   - `hyprland-gui.lua` - Settings managed by HyprMod
   - `hyprshade.toml` - Screen shaders (hyprshade timer)
   - `scripts/` - Utility scripts (`wallpapers/apply.sh`, night mode, color picker, mirror, screensharing, Spotify notifications)
-- **hypr-macshell/scripts/** - MacShell helpers (video wallpapers, Game Mode, UI sound generator)
+- **hypr-macshell/scripts/** - MacShell helpers (video wallpapers, UI sound generator)
 - **quickshell/MacShell/** - The shell (fork; the island / keybinds / wallpaper picker are the `Island*`, `KeybindsPanel`, `WallPickerPanel` files)
 - **quickshell/MacLock/** - The lock screen
 - **kitty/** - Terminal emulator configuration

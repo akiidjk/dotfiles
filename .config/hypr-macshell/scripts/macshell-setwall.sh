@@ -86,7 +86,7 @@ stop_video() {
         [ -n "$g" ] && kill -TERM -- "-$g" 2>/dev/null
         rm -f "$supfile"
     fi
-    # mpvpaper can ignore SIGTERM (and a Game Mode SIGSTOP blocks it): wake it, ask, then force it
+    # mpvpaper can ignore SIGTERM (and a SIGSTOP blocks it): wake it, ask, then force it
     pkill -CONT -x mpvpaper 2>/dev/null
     pkill -TERM -x mpvpaper 2>/dev/null
     for i in 1 2 3 4 5; do pgrep -x mpvpaper >/dev/null || break; sleep 0.1; done

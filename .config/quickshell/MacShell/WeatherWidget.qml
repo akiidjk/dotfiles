@@ -42,7 +42,7 @@ Item {
     property url shaderUrl: ""
     property url wallUrl: ""
     property string wallVideo: ""        // animated wallpaper to play behind the glass ("" = none / real-time glass off)
-    property bool wallPaused: false      // desktop covered / Game Mode: keep the decoder idle
+    property bool wallPaused: false      // desktop covered: keep the decoder idle
     property real screenW: 1920
     property real screenH: 1080
     property real glassOpacity: 0.42    // Translucency

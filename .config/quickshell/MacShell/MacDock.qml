@@ -646,7 +646,7 @@ Scope {
             { id: "appearance", sec: 2, name: "Appearance",      glyph: "appearance", c1: "#3A3A3C", c2: "#1C1C1E", keys: "theme dark light auto mode accent color glass liquid apple style translucency blur font spotlight top bar menus" },
             { id: "wallpaper",  sec: 2, name: "Wallpaper",       glyph: "wallpaper", c1: "#5AC8FA", c2: "#007AFF", keys: "wallpaper background picture image video animated live motion desktop dynamic" },
             { id: "displays",   sec: 2, name: "Displays",        wg: "sun",        c1: "#3D9BFF", c2: "#0A6CFF", keys: "brightness night shift monitor resolution refresh scale" },
-            { id: "battery",    sec: 2, name: "Battery",         wg: "bolt",       c1: "#4CD964", c2: "#28A745", keys: "power energy charge profile performance game mode gaming fullscreen" },
+            { id: "battery",    sec: 2, name: "Battery",         wg: "bolt",       c1: "#4CD964", c2: "#28A745", keys: "power energy charge profile performance" },
             // 3 · Desktop
             { id: "dock",       sec: 3, name: "Desktop & Dock",  glyph: "dock",     c1: "#2C2C2E", c2: "#1C1C1E", keys: "size icon magnification zoom spacing margin distance corner radius round square edge hide auto labels indicators bounce trash monitor preview app switcher alt tab" },
             { id: "menubar",    sec: 3, name: "Menu Bar",        glyph: "menubar",  c1: "#3D9BFF", c2: "#0A6CFF", keys: "panel bar height clock date seconds 24 hour battery tray search spotlight week monday style liquid bluetooth screenshots" },
@@ -878,7 +878,6 @@ Scope {
                                 width: prefsGlassGeo.mw; height: prefsGlassGeo.mh
                                 video: root.bar ? root.bar.glassVideo : ""
                                 live: root.glassLive && prefsWindow.visible
-                                paused: !!root.bar && root.bar.gaming
                             }
                         }
                         ShaderEffectSource {
@@ -2574,20 +2573,6 @@ Scope {
                         }
                     }
                 }
-                SLabel { t: pal; header: true; text: I18n.tr("Game Mode") }
-                SCard {
-                    t: pal
-                    SRow {
-                        t: pal; title: I18n.tr("Game Mode")
-                        subtitle: I18n.tr("Turns off blur, shadows, animations and Liquid Glass, pauses an animated wallpaper and uses the performance power profile. Everything comes back when it turns off.")
-                        SSwitch { t: pal; checked: root.bar ? root.bar.gamingMode : false; onToggled: v => { if (root.bar) root.bar.gamingMode = v; } }
-                    }
-                    SRow {
-                        t: pal; title: I18n.tr("Turn on automatically for fullscreen games")
-                        subtitle: root.bar && root.bar.gamingAutoActive ? I18n.tr("On now: a game is fullscreen") : I18n.tr("Steam, Sober (Roblox), Minecraft, Lutris, Heroic and Windows games")
-                        SSwitch { t: pal; checked: root.bar ? root.bar.gamingAuto : true; onToggled: v => { if (root.bar) root.bar.gamingAuto = v; } }
-                    }
-                }
             }
         }
 
@@ -4053,7 +4038,7 @@ Scope {
         settingsEnabled = true;
         if (bar) {
             bar.resetSettings();
-            bar.uiSounds = true; bar.gamingMode = false; bar.gamingAuto = true; bar.lockArtBackground = true;
+            bar.uiSounds = true; bar.lockArtBackground = true;
             bar.applyLockClockPreset("glass");
             bar.wallpaperAppearance = "auto"; bar.notifDnd = false; bar.nightOn = false; bar.keepAwake = false;
             bar.kbRepeatRate = 35; bar.kbRepeatDelay = 250; bar.mouseSens = 0; bar.mouseNatural = false;
@@ -4488,10 +4473,10 @@ Scope {
     // ═════════════ LIQUID GLASS BACKEND ═════════════
     // glassState: "idle" → "building" (qsb running) → "ready" | "failed". "failed" falls back to Normal Blur.
     property string glassState: "idle"
-    readonly property bool liquidActive: dockStyle === "liquid" && glassState === "ready" && !(bar && bar.gaming)
+    readonly property bool liquidActive: dockStyle === "liquid" && glassState === "ready"
     // Settings' own glass (back / forward pill, knobs of switches and sliders): available whenever the shader is built,
     // whatever the Dock style is
-    readonly property bool settingsGlass: glassState === "ready" && !(bar && bar.gaming)
+    readonly property bool settingsGlass: glassState === "ready"
     readonly property string glassShaderSrc: decodeURIComponent(Qt.resolvedUrl("liquidglass.frag").toString().replace("file://", ""))
     readonly property string glassShaderOut: configDir + "/liquidglass.frag.qsb"
     readonly property url glassShaderUrl: "file://" + glassShaderOut
@@ -5055,7 +5040,7 @@ Scope {
                             anchors.fill: parent
                             video: root.bar ? root.bar.glassVideo : ""
                             live: root.glassLive
-                            paused: !!root.bar && (root.bar.gaming || root.bar.screenCovered[win.modelData.name] === true)
+                            paused: !!root.bar && root.bar.screenCovered[win.modelData.name] === true
                         }
 
                         ListModel { id: wm }
@@ -5108,7 +5093,7 @@ Scope {
                                         // longer freeze the glass: only the closing window's own capture stops.
                                         // Real-time glass OFF: the old behaviour (15 fps polling, paused while windows open / close).
                                         readonly property bool canRun: root.glassRT
-                                            ? !(root.hub && root.hub.captureQuiet) && !(root.bar && root.bar.gaming) && !gw.gone && !gw.closing
+                                            ? !(root.hub && root.hub.captureQuiet) && !gw.gone && !gw.closing
                                             : (!root.glassHold && !ui.tucked)
                                         live: root.glassRT && canRun && gw.overlap && !ui.tucked
                                         Timer {

@@ -73,15 +73,15 @@ ShellRoot {
         // windowCapture = false (Dock Preferences, or  qs -c <config> ipc call glass captures false) switches the window previews off.
         readonly property bool windowCapture: macDock.windowCapture      // Dock Preferences -> "Live window capture" (saved in macdock/settings.json)
         property bool churn: false
-        readonly property bool captureHold: churn || !windowCapture || macBar.gaming
+        readonly property bool captureHold: churn || !windowCapture
         // Liquid Glass: only stage 1, and only while windows open / close. Live capture pauses (the glass keeps its last frame, the capture
         // source stays attached, so nothing goes blank), then resumes. Not tied to the previews switch, never cut.
-        readonly property bool glassHold: churn || macBar.gaming
+        readonly property bool glassHold: churn
         property bool captureCut: false
         // Dock previews no longer pause as a whole while windows open / close (that froze every preview for ~1.5 s):
         // only the CLOSING window's own preview stops its live capture, the moment Hyprland announces the close
         // (before the toplevel is destroyed, so no frame is ever aborted in flight). Everything else keeps running.
-        readonly property bool previewHold: !windowCapture || macBar.gaming
+        readonly property bool previewHold: !windowCapture
         property var closingWins: ({})
         onCaptureHoldChanged: { if (captureHold) cutDelay.restart(); else { cutDelay.stop(); captureCut = false; } }
         Timer { id: cutDelay; interval: 500; onTriggered: sharedHub.captureCut = true }
@@ -350,13 +350,6 @@ ShellRoot {
         function clear(): void { macBar.notifClearAnimated(); }
         // the lock screen: a notification swiped away
         function dismiss(id: int): void { macBar.notifDelete(id); macBar.notifUnread = Math.max(0, macBar.notifUnread - 1); }
-    }
-    // qs -c MacShell ipc call gaming toggle | on | off
-    IpcHandler {
-        target: "gaming"
-        function toggle(): void { macBar.gamingMode = !macBar.gaming; }
-        function on(): void { macBar.gamingMode = true; }
-        function off(): void { macBar.gamingMode = false; macBar.gamingAutoActive = false; }
     }
     // qs -c <config> ipc call glass captures false   (true to switch window previews back on)
     IpcHandler {

@@ -3,7 +3,7 @@
 // picture, so the glass shows the wallpaper moving in real time.
 // `video` is what the shell hands in as bar.glassVideo: "" while "Animated wallpaper in glass" is off (the default), otherwise a small
 // 720 px / 30 fps copy of the wallpaper. With `video` empty, `live` false, or the wallpaper a still picture again, the Loader is inactive
-// and no decoder exists at all. `paused` keeps the decoder idle (desktop covered by windows, Game Mode) without tearing it down.
+// and no decoder exists at all. `paused` keeps the decoder idle (desktop covered by windows) without tearing it down.
 import QtQuick
 import QtMultimedia
 

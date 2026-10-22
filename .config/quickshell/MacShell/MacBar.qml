@@ -217,7 +217,7 @@ Scope {
         barToneProc.running = true;
     }
     Timer { id: barToneT; interval: 350; onTriggered: root.measureBar() }          // debounce: after a resize / wallpaper / window change settles
-    Timer { interval: 2500; repeat: true; running: root.autoContrast && root.barEnabled && !root.gaming; onTriggered: root.measureBar() }
+    Timer { interval: 2500; repeat: true; running: root.autoContrast && root.barEnabled; onTriggered: root.measureBar() }
     Connections {
         target: root
         function onBarHeightChanged() { barToneT.restart(); }
@@ -270,11 +270,6 @@ Scope {
         lockClockStyle = name;
     }
     property bool uiSounds: true              // Apple-style UI sounds (volume pop, notification, screenshot, charger, lock)
-    property bool gamingMode: false           // Game Mode switched on by hand
-    property bool gamingAuto: true            // Game Mode turns itself on while a game is fullscreen
-    property bool gamingAutoActive: false
-    readonly property bool gaming: gamingMode || gamingAutoActive
-    property bool ccMigGame: false            // one-time: add the Game Mode tile to an existing Control Center layout
     property bool barGlass: true              // the bar strip itself is Liquid Glass (needs barStyle "liquid")
     property real barBgOpacity: 0.10          // fill of the separate "macbarbg" layer (0 = layer hidden). Must stay above the layerrule's ignore_alpha (0.05) for Hyprland to blur it
     property bool glassRealtime: false        // live-capture every window all the time; off by default now that popovers refract a screen snapshot       // keep every window capture live all the time (no wallpaper-first delay when a popover opens)
@@ -326,7 +321,7 @@ Scope {
         "barStyle", "barGlass", "glassRim", "glassGrain", "glassLiquid", "glassBlur", "barBgOpacity", "glassRealtime", "liveWallGlass", "glassDebug", "wallpaperPath", "use24h", "showDate",
         "showSeconds", "showBatteryPercent", "showTray", "showSearch",
         "spotlightEnabled", "ccEnabled", "notificationsEnabled", "clockAppEnabled", "ccStyle", "barLogoMode", "barCustomLogoPath", "barWidgets", "weekStartsMonday", "terminal", "launcher",
-        "filesCmd", "clipboardCmd", "appUsage", "clipHistory", "clipAutoPaste", "emojiRecent", "screenshotDir", "screenshotSave", "screenshotClipboard", "screenshotNotify", "nightTemp", "ccControls", "ccMigRec", "wallpaperDir", "wallpaperFavs", "wallpaperCmd", "wallpaperVideo", "wpRestorePath", "uiSounds", "gamingMode", "gamingAuto", "ccMigGame", "lockArtBackground",
+        "filesCmd", "clipboardCmd", "appUsage", "clipHistory", "clipAutoPaste", "emojiRecent", "screenshotDir", "screenshotSave", "screenshotClipboard", "screenshotNotify", "nightTemp", "ccControls", "ccMigRec", "wallpaperDir", "wallpaperFavs", "wallpaperCmd", "wallpaperVideo", "wpRestorePath", "uiSounds", "lockArtBackground",
         "lockClockStyle", "switcherStyle", "lockClockFont", "lockClockWeight", "lockClockMaterial", "lockClockIntensity", "lockClockTint", "lockClockDate", "autoContrast", "wallpaperAppearance", "wpPairLight", "wpPairDark",
         "notifDnd", "dnd", "nightOn", "keepAwake",
         "kbRepeatRate", "kbRepeatDelay", "mouseSens", "mouseNatural", "tpNatural", "tpTap", "tpDwt", "tpScroll"]
@@ -367,7 +362,6 @@ Scope {
         { id: "nightshift", label: I18n.tr("Night Shift"),   glyph: "nightshift", w: 1, h: 1 },
         { id: "keepawake",  label: I18n.tr("Keep Awake"),    glyph: "coffee",     w: 1, h: 1 },
         { id: "darkmode",   label: I18n.tr("Dark Mode"),     glyph: "contrast",   w: 1, h: 1 },
-        { id: "gaming",     label: I18n.tr("Game Mode"),     glyph: "gamepad",    w: 2, h: 1 },
         { id: "record",     label: I18n.tr("Screen Recording"), glyph: "record",  w: 2, h: 1 },
         { id: "nowplaying", label: I18n.tr("Now Playing"),   glyph: "note",       w: 2, h: 2 },
         { id: "display",    label: I18n.tr("Display"),       glyph: "sun",        w: 4, h: 1 },
@@ -1843,7 +1837,7 @@ Scope {
     readonly property string soundDir: Quickshell.env("HOME") + "/.local/share/sounds/macshell"
     property var soundLast: ({})
     function playSound(name, vol) {
-        if (!uiSounds || gaming) return;
+        if (!uiSounds) return;
         var now = Date.now(), last = soundLast[name] || 0;
         if (now - last < 90) return;                 // a burst of volume steps → one pop per step, not a buzz
         soundLast[name] = now;
@@ -3627,46 +3621,6 @@ Scope {
     onWallpaperVideoChanged: glassProxyEnsure()
     Timer { interval: 2500; running: true; onTriggered: root.glassProxyEnsure() }      // the saved settings are in by now
 
-    // ═════════════ GAME MODE ═════════════
-    readonly property string gamingScript: Quickshell.env("HOME") + "/.config/hypr-macshell/scripts/macshell-gaming.sh"
-    property bool gamingApplied: false
-    onGamingChanged: gamingApply.restart()
-    Timer {
-        id: gamingApply
-        interval: 150
-        onTriggered: {
-            if (!root.settingsReady || root.gaming === root.gamingApplied) return;
-            root.gamingApplied = root.gaming;
-            Quickshell.execDetached([root.gamingScript, root.gaming ? "on" : "off"]);
-            if (root.uiSounds) Quickshell.execDetached(["pw-play", "--volume=0.6", root.soundDir + "/tink.wav"]);
-        }
-    }
-    // a crash while Game Mode was on leaves Hyprland without blur/animations: put them back at start
-    Timer { interval: 1500; running: true; onTriggered: { if (!root.gaming) Quickshell.execDetached([root.gamingScript, "off"]); else gamingApply.restart(); } }
-    // Automatic: on while the focused window is a fullscreen game
-    readonly property var gameClassRe: /^(steam_app_\d+|gamescope|org\.vinegarhq\.sober|sober|robloxplayer.*|minecraft.*|com\.mojang.*|lutris|heroic|.*\.exe|osu!?|cs2|dota2|hl2_linux|factorio|terraria.*|stardew.*)$/i
-    Process {
-        id: gameProbe
-        command: ["hyprctl", "-j", "activewindow"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var w = {};
-                try { w = JSON.parse(text || "{}"); } catch (e) { w = {}; }
-                var cls = (w["class"] || w.initialClass || "");
-                root.gamingAutoActive = root.gamingAuto && (w.fullscreen > 0 || w.fullscreen === true) && root.gameClassRe.test(cls);
-            }
-        }
-    }
-    Timer { id: gameProbeDelay; interval: 250; onTriggered: if (!gameProbe.running) gameProbe.running = true }
-    Connections {
-        target: Hyprland
-        function onRawEvent(event) {
-            var n = event.name;
-            if (n === "fullscreen" || n === "activewindowv2" || n === "closewindow" || n === "workspacev2") gameProbeDelay.restart();
-        }
-    }
-    onGamingAutoChanged: { if (!gamingAuto) gamingAutoActive = false; else gameProbeDelay.restart(); }
-
     // ═════════════ SETTINGS PERSISTENCE ═════════════
     readonly property string settingsSig: settingKeys.map(function (k) { return String(root[k]); }).join("|")
     property bool settingsReady: false
@@ -3721,11 +3675,8 @@ Scope {
         printErrors: false
         onLoaded: {
             try { root.applySettings(JSON.parse(text()), root.settingKeys); } catch (err) { }
-            if (!root.ccMigGame) {
-                root.ccMigGame = true;
-                var cg = root.ccControls.slice();
-                if (cg.indexOf("gaming") < 0) { var ri = cg.indexOf("record"); cg.splice(ri >= 0 ? ri + 1 : cg.length, 0, "gaming"); root.ccControls = cg; }
-            }
+            // Game Mode is gone from this fork: drop its tile from a saved Control Center layout
+            if (root.ccControls.indexOf("gaming") >= 0) root.ccControls = root.ccControls.filter(function (c) { return c !== "gaming"; });
             if (!root.ccMigRec) {
                 root.ccMigRec = true;
                 var cl = root.ccControls.slice();
@@ -3740,7 +3691,7 @@ Scope {
 
     // ═════════════ LIQUID GLASS BACKEND (same pipeline as macdock) ═════════════
     property string glassState: "idle"       // idle → building → ready | failed
-    readonly property bool liquidActive: barStyle === "liquid" && glassState === "ready" && !gaming
+    readonly property bool liquidActive: barStyle === "liquid" && glassState === "ready"
     readonly property string glassShaderSrc: decodeURIComponent(Qt.resolvedUrl("liquidglass.frag").toString().replace("file://", ""))
     readonly property string glassShaderOut: configDir + "/liquidglass.frag.qsb"
     readonly property url glassShaderUrl: "file://" + glassShaderOut
@@ -3812,7 +3763,7 @@ Scope {
     Timer { id: wallpaperColorTimer; interval: 500; onTriggered: root.sampleWallpaperColor() }
     // wallpapers changed from outside the shell (another tool, a script): notice within half a minute.
     // Cheap: it only re-reads the wallpaper's path and re-samples when that path differs.
-    Timer { interval: 30000; repeat: true; running: root.barEnabled && !root.gaming; onTriggered: root.sampleWallpaperColor() }
+    Timer { interval: 30000; repeat: true; running: root.barEnabled; onTriggered: root.sampleWallpaperColor() }
     Process {
         id: awwwQueryProc
         // always exits 0 (even without awww installed) so the sampler below runs on the fallback wallpaper path
@@ -4227,7 +4178,7 @@ Scope {
     }
     onWallpaperAppearanceChanged: wpApplyAppearance()
     onDarkModeChanged: if (wallpaperAppearance === "auto") wpApplyAppearance()
-    Timer { interval: 60000; repeat: true; running: root.wpHasPair && root.wallpaperAppearance === "dynamic" && !root.gaming; onTriggered: root.wpApplyAppearance() }
+    Timer { interval: 60000; repeat: true; running: root.wpHasPair && root.wallpaperAppearance === "dynamic"; onTriggered: root.wpApplyAppearance() }
     // at start: scan the folder, then pick up a pair for the wallpaper already in use
     Timer { interval: 1500; running: true; onTriggered: root.wpRefresh() }
     onWpDirListChanged: {
@@ -4889,7 +4840,7 @@ Scope {
                             anchors.fill: parent
                             video: root.glassVideo
                             live: true
-                            paused: root.gaming || root.screenCovered[win.modelData.name] === true
+                            paused: root.screenCovered[win.modelData.name] === true
                         }
 
                         // the desktop widgets (they sit on the desktop layer, below every window), drawn from the same
@@ -7439,7 +7390,6 @@ Scope {
                         case "display": return cDisplay;
                         case "sound": return cSound;
                         case "record": return cRecord;
-                        case "gaming": return cGaming;
                         }
                         return null;
                     }
@@ -7551,31 +7501,6 @@ Scope {
                                 spacing: 1
                                 Text { width: parent.width; elide: Text.ElideRight; text: I18n.tr("Focus"); color: tl.fg; font.family: root.fontForWeight(font.weight, ccPal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
                                 MorphText { animateWidth: false; duration: 420; width: parent.width; elide: Text.ElideRight; text: root.dnd ? I18n.tr("On") : I18n.tr("Off"); color: tl.fg2; font.family: root.fontForWeight(font.weight, ccPal.fam); font.pixelSize: 12 }
-                            }
-                        }
-                    }
-                    Component {
-                        id: cGaming
-                        CCTile {
-                            id: tl
-                            clickable: true
-                            on: root.gaming
-                            onTint: "#30D158"
-                            onClicked: root.gamingMode = !root.gaming
-                            t: ccPal; gx: ccg
-                            CCBtn {
-                                plain: true
-                                t: ccPal; gx: ccg
-                                x: 12; anchors.verticalCenter: parent.verticalCenter
-                                kind: "gamepad"; on: root.gaming; onTint: "#30D158"
-                            }
-                            Column {
-                                x: 62; anchors.verticalCenter: parent.verticalCenter
-                                width: parent.width - 62 - 10
-                                spacing: 1
-                                Text { width: parent.width; elide: Text.ElideRight; text: I18n.tr("Game Mode"); color: tl.fg; font.family: root.fontForWeight(font.weight, ccPal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
-                                MorphText { animateWidth: false; duration: 420; width: parent.width; elide: Text.ElideRight; text: root.gamingAutoActive && !root.gamingMode ? I18n.tr("On (game detected)") : (root.gaming ? I18n.tr("On") : (root.gamingAuto ? I18n.tr("Auto") : I18n.tr("Off")))
-                                       color: tl.fg2; font.family: root.fontForWeight(font.weight, ccPal.fam); font.pixelSize: 12 }
                             }
                         }
                     }
@@ -8811,7 +8736,7 @@ Scope {
                     id: spotBackdrop
                     active: root.liquidActive          // stays loaded (warm) so the window opens on ready-made frames
                     sourceComponent: backdropComp
-                    onLoaded: { item.hostShown = Qt.binding(function () { return !root.gaming; });
+                    onLoaded: { item.hostShown = true;
                                 item.region = Qt.binding(function () { return Qt.rect(spot.x - 128, spot.y - 128, spot.width + 256, spot.height + 256); }); }
                 }
 
