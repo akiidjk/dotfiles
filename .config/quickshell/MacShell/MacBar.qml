@@ -285,8 +285,6 @@ Scope {
     property bool glassDebug: false
     property string wallpaperPath: ""
     property bool use24h: true
-    property string language: "auto"        // "auto" = the system language, or a code with a table in lang/
-    onLanguageChanged: Qt.uiLanguage = language === "auto" ? "" : language
     property bool showDate: true
     property bool showSeconds: false
     property bool showBatteryPercent: true
@@ -325,7 +323,7 @@ Scope {
     property var fileHits: []
 
     readonly property var settingKeys: ["barEnabled", "topBar", "accentFromWallpaper", "darkMode", "appearanceMode", "accent", "fontFamily", "barHeight", "glassOpacity",
-        "barStyle", "barGlass", "glassRim", "glassGrain", "glassLiquid", "glassBlur", "barBgOpacity", "glassRealtime", "liveWallGlass", "glassDebug", "wallpaperPath", "use24h", "language", "showDate",
+        "barStyle", "barGlass", "glassRim", "glassGrain", "glassLiquid", "glassBlur", "barBgOpacity", "glassRealtime", "liveWallGlass", "glassDebug", "wallpaperPath", "use24h", "showDate",
         "showSeconds", "showBatteryPercent", "showTray", "showSearch",
         "spotlightEnabled", "ccEnabled", "notificationsEnabled", "clockAppEnabled", "ccStyle", "barLogoMode", "barCustomLogoPath", "barWidgets", "weekStartsMonday", "terminal", "launcher",
         "filesCmd", "clipboardCmd", "appUsage", "clipHistory", "clipAutoPaste", "emojiRecent", "screenshotDir", "screenshotSave", "screenshotClipboard", "screenshotNotify", "nightTemp", "ccControls", "ccMigRec", "wallpaperDir", "wallpaperFavs", "wallpaperCmd", "wallpaperVideo", "wpRestorePath", "uiSounds", "gamingMode", "gamingAuto", "ccMigGame", "lockArtBackground",

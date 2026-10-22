@@ -642,7 +642,7 @@ Scope {
             { id: "bluetooth",  sec: 1, name: "Bluetooth",       wg: "bluetooth",  c1: "#3D9BFF", c2: "#0A6CFF", keys: "devices pair headphones mouse keyboard" },
             { id: "network",    sec: 1, name: "Network",         wg: "ethernet",   c1: "#3D9BFF", c2: "#0A6CFF", keys: "ethernet ip address vpn tailscale connection" },
             // 2 · System
-            { id: "general",    sec: 2, name: "General",         glyph: "behavior", c1: "#8E8E93", c2: "#636366", keys: "language shell enable disable dock menu bar panel show hide off on" },
+            { id: "general",    sec: 2, name: "General",         glyph: "behavior", c1: "#8E8E93", c2: "#636366", keys: "shell enable disable dock menu bar panel show hide off on" },
             { id: "appearance", sec: 2, name: "Appearance",      glyph: "appearance", c1: "#3A3A3C", c2: "#1C1C1E", keys: "theme dark light auto mode accent color glass liquid apple style translucency blur font spotlight top bar menus" },
             { id: "wallpaper",  sec: 2, name: "Wallpaper",       glyph: "wallpaper", c1: "#5AC8FA", c2: "#007AFF", keys: "wallpaper background picture image video animated live motion desktop dynamic" },
             { id: "displays",   sec: 2, name: "Displays",        wg: "sun",        c1: "#3D9BFF", c2: "#0A6CFF", keys: "brightness night shift monitor resolution refresh scale" },
@@ -1361,23 +1361,6 @@ Scope {
             id: paneGeneral
             Column {
                 spacing: 10
-
-                SCard {
-                    t: pal
-                    SRow {
-                        t: pal
-                        title: I18n.tr("Language")
-                        subtitle: I18n.tr("Automatic follows the system language")
-                        SSegmented {
-                            t: pal
-                            readonly property var codes: ["auto", "en", "ru"]
-                            model: ["Automatic", "English", "Русский"]
-                            segWidth: 96
-                            current: codes.indexOf(root.bar ? root.bar.language : "auto")
-                            onPicked: i => { if (root.bar) root.bar.language = codes[i]; }
-                        }
-                    }
-                }
 
                 SLabel { t: pal; header: true; text: I18n.tr("Shell") }
                 SCard {
