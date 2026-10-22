@@ -1398,6 +1398,18 @@ Scope {
                             onToggled: v => { if (root.bar) root.bar.barEnabled = v; }
                         }
                     }
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Top bar")
+                        subtitle: I18n.tr("The macOS menu bar, or the Dynamic Island (Super+H hides it, Super+N opens its hub)")
+                        SSegmented {
+                            t: pal
+                            model: ["Menu Bar", "Dynamic Island"]
+                            segWidth: 116
+                            current: (root.bar && root.bar.topBar === "island") ? 1 : 0
+                            onPicked: i => { if (root.bar) root.bar.topBar = (i === 1 ? "island" : "menubar"); }
+                        }
+                    }
                 }
                 SLabel {
                     t: pal
@@ -2064,7 +2076,7 @@ Scope {
                     SRow {
                         t: pal
                         title: I18n.tr("Accent color")
-                        subtitle: I18n.tr("Highlights in the Dock menu and this window")
+                        subtitle: I18n.tr("Highlights in the Dock menu and this window. The white-dot swatch follows the wallpaper (matugen)")
                         Row {
                             spacing: 6
                             Repeater {
@@ -2072,7 +2084,7 @@ Scope {
                                 delegate: Item {
                                     id: sw
                                     required property var modelData
-                                    readonly property bool sel: String(root.accent).toLowerCase() === modelData.c.toLowerCase()
+                                    readonly property bool sel: !(root.bar && root.bar.accentFromWallpaper) && String(root.accent).toLowerCase() === modelData.c.toLowerCase()
                                     width: 26; height: 26
                                     Rectangle {
                                         x: 4; y: 4
@@ -2091,8 +2103,34 @@ Scope {
                                     }
                                     MouseArea {
                                         anchors.fill: parent
-                                        onClicked: root.setLook("accent", sw.modelData.c)
+                                        onClicked: { if (root.bar) root.bar.accentFromWallpaper = false; root.setLook("accent", sw.modelData.c); }
                                     }
+                                }
+                            }
+                            // fork: "Wallpaper" = matugen's primary colour of the current wallpaper (~/.config/macshell/accent)
+                            Item {
+                                id: wsw
+                                readonly property bool sel: root.bar ? root.bar.accentFromWallpaper : false
+                                width: 26; height: 26
+                                Rectangle {
+                                    x: 4; y: 4
+                                    width: 18; height: 18; radius: 9
+                                    color: (root.bar && root.bar.matugenAccent !== "") ? root.bar.matugenAccent : "#8e8e93"
+                                    border.width: 1
+                                    border.color: Qt.rgba(0, 0, 0, 0.18)
+                                    Rectangle { anchors.centerIn: parent; width: 6; height: 6; radius: 3; color: "white"; opacity: 0.9 }
+                                }
+                                Rectangle {
+                                    x: 0; y: 0
+                                    visible: wsw.sel
+                                    width: 26; height: 26; radius: 13
+                                    color: "transparent"
+                                    border.width: 2
+                                    border.color: pal.text3
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: if (root.bar) root.bar.accentFromWallpaper = true
                                 }
                             }
                         }

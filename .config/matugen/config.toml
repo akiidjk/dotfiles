@@ -20,11 +20,10 @@ post_hook = 'hyprctl reload'
 input_path = './templates/btop-colors.conf'
 output_path = '~/.config/btop/themes/matugen.conf'
 
-# MacShell accent (used when Settings > Appearance > Accent is set to "Wallpaper"); hot-applied over IPC, no restart
+# MacShell accent (Settings > Appearance > Accent "Wallpaper" swatch); MacBar watches this file, no restart
 [templates.macshell]
 input_path = './templates/macshell-accent'
 output_path = '~/.config/macshell/accent'
-post_hook = 'qs -c MacShell ipc call look accent "$(cat ~/.config/macshell/accent)" >/dev/null 2>&1 || true'
 
 [templates.spicetify]
 input_path = './templates/spicetify-colors.conf'

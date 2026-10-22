@@ -90,13 +90,37 @@ Scope {
 
     // ───────────── CONFIG (all persisted to settings.json) ─────────────
     property bool barEnabled: true           // the menu bar strip itself
+    // ── akiidjk fork: top bar = the macOS menu bar or the Dynamic Island (Island.qml) ──
+    property string topBar: "menubar"        // "menubar" | "island"   (Settings → Menu Bar → Top bar, or `ipc call topbar set island`)
+    property bool topBarHidden: false        // Super+H: hide / show whichever top bar is active (not persisted)
+    readonly property bool menuBarShown: barEnabled && topBar === "menubar" && !topBarHidden
+    signal islandHubRequest()                // Super+N in island mode: the focused screen's island opens its hub
+    property bool keybindsOpen: false        // KeybindsPanel.qml (Super+K, Help → Hyprland Keybinds)
+    property bool wallPickerOpen: false      // WallPickerPanel.qml (Super+W)
+    readonly property QtObject islandPal: pal          // IslandStyle.qml reads the palette through this
+    readonly property alias notifHistory: notifHist    // the island hub lists MacShell's notification history
+    // Accent from the wallpaper: matugen writes the primary colour to ~/.config/macshell/accent (templates/macshell-accent);
+    // while "Wallpaper" is the chosen accent swatch, every new value is applied to the bar and the Dock.
+    property bool accentFromWallpaper: true
+    property string matugenAccent: ""
+    FileView {
+        path: Quickshell.env("HOME") + "/.config/macshell/accent"
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: { root.matugenAccent = text().trim(); root.applyWallpaperAccent(); }
+    }
+    function applyWallpaperAccent() {
+        if (!accentFromWallpaper || !/^#[0-9a-fA-F]{6}$/.test(matugenAccent)) return;
+        if (hub && hub.dock) hub.dock.setLook("accent", matugenAccent); else accent = matugenAccent;
+    }
+    onAccentFromWallpaperChanged: applyWallpaperAccent()
     // every part of the shell can be switched off on its own (the installer's feature picker writes these too)
-    property bool spotlightEnabled: true     // Spotlight (the magnifier / its keybind)
+    property bool spotlightEnabled: false    // Spotlight (the magnifier / its keybind) — off: vicinae is the launcher
     property bool ccEnabled: true            // Control Center
     property string ccStyle: "tiles"         // tiles = every control its own glass | macos = one frosted panel behind them
     property bool notificationsEnabled: true // banners + Notification Center (off = no D-Bus daemon at all, so mako/dunst can take over)
     property bool clockAppEnabled: true      // the Clock app (alarms and timers still ring while it is on)
-    readonly property bool barLayerNeeded: barEnabled || spotlightEnabled || ccEnabled || notificationsEnabled
+    readonly property bool barLayerNeeded: barEnabled || spotlightEnabled || ccEnabled || notificationsEnabled || topBar === "island"
     property bool darkMode: true             // the resolved look (true = dark); follows appearanceMode
     property string appearanceMode: "dark"   // light | dark | auto (auto = light by day, dark by night)
     readonly property bool panelDarkMode: darkMode   // Spotlight and the top bar menus follow the one Light / Dark / Auto setting
@@ -300,7 +324,7 @@ Scope {
     property bool fileSearchPending: false
     property var fileHits: []
 
-    readonly property var settingKeys: ["barEnabled", "darkMode", "appearanceMode", "accent", "fontFamily", "barHeight", "glassOpacity",
+    readonly property var settingKeys: ["barEnabled", "topBar", "accentFromWallpaper", "darkMode", "appearanceMode", "accent", "fontFamily", "barHeight", "glassOpacity",
         "barStyle", "barGlass", "glassRim", "glassGrain", "glassLiquid", "glassBlur", "barBgOpacity", "glassRealtime", "liveWallGlass", "glassDebug", "wallpaperPath", "use24h", "language", "showDate",
         "showSeconds", "showBatteryPercent", "showTray", "showSearch",
         "spotlightEnabled", "ccEnabled", "notificationsEnabled", "clockAppEnabled", "ccStyle", "barLogoMode", "barCustomLogoPath", "barWidgets", "weekStartsMonday", "terminal", "launcher",
@@ -2680,6 +2704,31 @@ Scope {
         function emoji(): void { root.spotOpen("emoji"); }
         function apps(): void { root.spotOpen("apps"); }
     }
+    // ── akiidjk fork ──   qs -c MacShell ipc call topbar set menubar|island | toggle
+    IpcHandler {
+        target: "topbar"
+        function set(mode: string): void { if (mode === "menubar" || mode === "island") root.topBar = mode; }
+        function toggle(): void { root.topBar = root.topBar === "island" ? "menubar" : "island"; }
+    }
+    // island toggle = show / hide the active top bar (Super+H); island hub = the island's hub, or the Control Center
+    // when the menu bar is the top bar (Super+N)
+    IpcHandler {
+        target: "island"
+        function toggle(): void { root.topBarHidden = !root.topBarHidden; }
+        function hub(): void { if (root.topBar === "island") { root.topBarHidden = false; root.islandHubRequest(); } else root.ccRequest(true); }
+    }
+    IpcHandler {
+        target: "keybinds"
+        function toggle(): void { root.wallPickerOpen = false; root.keybindsOpen = !root.keybindsOpen; }
+        function open(): void { root.keybindsOpen = true; }
+        function close(): void { root.keybindsOpen = false; }
+    }
+    IpcHandler {
+        target: "wallpicker"
+        function toggle(): void { root.keybindsOpen = false; root.wallPickerOpen = !root.wallPickerOpen; }
+        function open(): void { root.wallPickerOpen = true; }
+        function close(): void { root.wallPickerOpen = false; }
+    }
 
     // ═════════════ CLIPBOARD HISTORY + EMOJI (Spotlight panels) ═════════════
     // History comes from cliphist; its `wl-paste --watch` watchers are started here (unless you already run them), and every
@@ -2718,7 +2767,7 @@ Scope {
         if (clipHistory && barEnabled && settingsReady) clipProbe.running = true;
         else { clipWatchText.running = false; clipWatchImg.running = false; }
     }
-    onSettingsReadyChanged: { clipStart(); emojiEnsure(); }
+    onSettingsReadyChanged: { clipStart(); emojiEnsure(); applyWallpaperAccent(); }
     onClipHistoryChanged: clipStart()
     Process {
         id: clipProbe
@@ -3254,7 +3303,7 @@ Scope {
                 m.push(mi("Search\u2026", "", function () { root.search(); }));
                 if (has) m.push(mi(n + " Help", "", function () { root.helpFor(id, n); }));
                 m.push(msep());
-                m.push(mi("Hyprland Keybinds", "", function () { Quickshell.execDetached(["xdg-open", "https://github.com/0-ss/MacShell#hyprland-configuration-lua"]); }));
+                m.push(mi("Hyprland Keybinds", "", function () { root.keybindsOpen = true; }));
                 m.push(mi("Reload Hyprland Config", "", function () { Quickshell.execDetached(["hyprctl", "reload"]); }));
                 m.push(msep());
                 m.push(mi("Hyprland Wiki", "", function () { Quickshell.execDetached(["xdg-open", "https://wiki.hypr.land"]); }));
@@ -3643,11 +3692,11 @@ Scope {
         }
     }
     function resetSettings() {
-        barEnabled = true;
+        barEnabled = true; topBar = "menubar"; accentFromWallpaper = true;
         darkMode = true; appearanceMode = "dark"; accent = "#0a84ff"; fontFamily = "Open Runde"; glassOpacity = 0.42; glassBlur = 5; barBgOpacity = 0.10; glassRealtime = false; liveWallGlass = false;
         barStyle = "liquid"; use24h = true; showDate = true; showSeconds = false; showBatteryPercent = true;
         showTray = true; showSearch = true;
-        spotlightEnabled = true; ccEnabled = true; notificationsEnabled = true; clockAppEnabled = true; ccStyle = "tiles";
+        spotlightEnabled = false; ccEnabled = true; notificationsEnabled = true; clockAppEnabled = true; ccStyle = "tiles";
         barLogoMode = "arch"; barCustomLogoPath = "";
         barWidgets = ["appleMenu", "appMenus", "workspaces", "volume", "keyboard", "notifications", "wifi", "bluetooth", "privacy", "controlCenter", "clock"];
         ccControls = ccDefault.slice();
@@ -3828,6 +3877,7 @@ Scope {
     // window captures are admitted by the shared gate in shell.qml (hub.tlFor): 0.2 s after a window appears, one every 110 ms
 
     Component.onCompleted: {
+        IslandStyle.bar = root;
         syncAppKeys();
         Quickshell.execDetached(["mkdir", "-p", configDir]);
         wallpaperColorTimer.start();
@@ -3989,13 +4039,13 @@ Scope {
 
     // ═════════════ WALLPAPER PICKER (CTRL + ALT + W) ═════════════
     //   hl.bind("CTRL + ALT + W", hl.dsp.exec_cmd("qs -c macbar ipc call wallpapers toggle"))
-    property string wallpaperDir: ""          // "" = ~/Pictures/Wallpapers
+    property string wallpaperDir: ""          // "" = ~/.config/wallpapers (akiidjk fork)
     property var wallpaperFavs: []            // favourite image paths, shown first
     property string wallpaperVideo: ""        // animated wallpaper (video) playing right now, "" = a still picture
     property string wpRestorePath: ""         // the picture the picker set last: put back at every start (awww does not keep it after a reboot)
     property var wpThumbs: ({})               // video path → cached thumbnail
     property var wpPreviews: ({})             // video path → small looping animated WebP (no video player in the shell)
-    property string wallpaperCmd: ""          // "" = auto (awww / swww / hyprpaper); or your own command, {} = the image path
+    property string wallpaperCmd: "~/.config/hypr/scripts/wallpapers/apply.sh {}"   // akiidjk fork: matugen -> awww -> re-theme ("" = auto awww / swww / hyprpaper)
     property real wpBlur: 40                  // blur of the picker glass
     property bool wpOpen: false
     property string wpStatus: ""
@@ -4012,7 +4062,7 @@ Scope {
     }
     function wpResolveDir() {
         var d = (root.wallpaperDir || "").trim();
-        if (d === "") d = "~/Pictures/Wallpapers";
+        if (d === "") d = "~/.config/wallpapers";
         if (d.indexOf("~") === 0) d = Quickshell.env("HOME") + d.substring(1);
         while (d.length > 1 && d.charAt(d.length - 1) === "/") d = d.substring(0, d.length - 1);
         return d;
@@ -4222,8 +4272,9 @@ Scope {
         var p = wpRestorePath;
         if (p === "") return;
         var cmd = (wallpaperCmd || "").trim();
-        var script = cmd !== "" ? '[ -f "$1" ] || exit 0\n' + root.stopVideoScript + "\n" + cmd.split("{}").join('"$1"')
-                                : '[ -f "$1" ] || exit 0\nif command -v awww >/dev/null 2>&1 && awww query 2>/dev/null | grep -qF -- "$1"; then exit 0; fi\n' + root.awwwScript;
+        // fork: the custom command is skipped too when awww already shows the picture (no matugen re-theme at every start)
+        var script = cmd !== "" ? '[ -f "$1" ] || exit 0\nif command -v awww >/dev/null 2>&1 && awww query 2>/dev/null | grep -qF -- "$1"; then exit 0; fi\n' + root.stopVideoScript + "\n" + cmd.split("{}").join('"$1"')
+                                :'[ -f "$1" ] || exit 0\nif command -v awww >/dev/null 2>&1 && awww query 2>/dev/null | grep -qF -- "$1"; then exit 0; fi\n' + root.awwwScript;
         wpApplyProc.command = ["sh", "-c", script, "sh", p];
         wpApplyProc.running = true;
     }
@@ -4455,7 +4506,7 @@ Scope {
         PanelWindow {
             id: barBgWin
             screen: perScreen.modelData
-            visible: root.barBgOpacity > 0.001
+            visible: root.menuBarShown && root.barBgOpacity > 0.001
             anchors { left: true; right: true; top: true }
             implicitHeight: root.barHeight
             color: "transparent"
@@ -4484,7 +4535,7 @@ Scope {
             color: "transparent"
 
             exclusionMode: ExclusionMode.Normal
-            exclusiveZone: root.barEnabled ? root.barHeight : 0
+            exclusiveZone: root.menuBarShown ? root.barHeight : 0
 
             WlrLayershell.namespace: "macbar"
             WlrLayershell.layer: WlrLayer.Top
@@ -4989,14 +5040,14 @@ Scope {
                     id: maskItem
                     x: 0; y: 0
                     width: ui.width
-                    height: (ui.pop !== "" && ui.pop !== "spot") ? ui.height : root.barHeight
+                    height: (ui.pop !== "" && ui.pop !== "spot") ? ui.height : (root.menuBarShown ? root.barHeight : 0)
                 }
 
                 // Liquid Glass menu bar strip: the bar itself refracts the live backdrop (wallpaper + windows), like the popovers.
                 // Settings → Menu Bar → "Liquid Glass bar". Sits under every bar item.
                 LGlass {
                     id: barGlassStrip
-                    visible: root.barGlass && root.liquidActive
+                    visible: root.barGlass && root.liquidActive && root.menuBarShown
                     x: 0; y: 0
                     width: ui.width
                     height: root.barHeight
@@ -5095,7 +5146,7 @@ Scope {
                 // ═════════ the bar itself ═════════
                 Rectangle {
                     id: barBg
-                    visible: root.barEnabled
+                    visible: root.menuBarShown
                     z: 20
                     x: 0; y: 0
                     width: ui.width
@@ -8261,6 +8312,87 @@ Scope {
                         }
                     }
                 }
+            }
+        }
+
+        // ═════════ akiidjk fork: Dynamic Island, keybindings, wallpaper picker (own files, own layers) ═════════
+        // Each gets this screen's backdrop component and its Liquid Glass slab from here (LGlass lives in this file).
+        Island {
+            id: islandWin
+            screen: perScreen.modelData
+            bar: root
+            backdrop: backdropComp
+            focusedScreen: ui.toastScreen
+            LGlass {
+                anchors.fill: parent
+                backdrop: islandWin.backdropItem
+                shaderUrl: root.glassShaderUrl
+                liquid: root.liquidActive
+                dark: root.effDark
+                bx: islandWin.cardX; by: islandWin.cardY
+                cornerR: islandWin.cardRadius
+                tint: root.glassOpacity
+                thickness: 22
+                strength: 0.8 * root.glassLiquid
+                rim: root.glassRim
+                grain: root.glassGrain
+                blur: root.glassBlur
+                debug: root.glassDebug
+                onShaderError: root.glassState = "failed"
+                rimTint: 1
+                ringW: 1.2
+            }
+        }
+        KeybindsPanel {
+            id: kbWin
+            screen: perScreen.modelData
+            bar: root
+            backdrop: backdropComp
+            focusedScreen: ui.toastScreen
+            LGlass {
+                anchors.fill: parent
+                backdrop: kbWin.backdropItem
+                shaderUrl: root.glassShaderUrl
+                liquid: root.liquidActive
+                dark: root.effDark
+                bx: kbWin.panelX; by: kbWin.panelY
+                cornerR: kbWin.panelR
+                tint: root.glassOpacity
+                thickness: 22
+                strength: 0.75 * root.glassLiquid
+                rim: root.glassRim
+                grain: root.glassGrain
+                blur: root.wpBlur
+                debug: root.glassDebug
+                onShaderError: root.glassState = "failed"
+                rimTint: 1
+                ringW: 1.4
+            }
+        }
+        WallPickerPanel {
+            id: wpickWin
+            screen: perScreen.modelData
+            bar: root
+            backdrop: backdropComp
+            focusedScreen: ui.toastScreen
+            LGlass {
+                anchors.fill: parent
+                backdrop: wpickWin.backdropItem
+                shaderUrl: root.glassShaderUrl
+                liquid: root.liquidActive
+                dark: root.effDark
+                bx: wpickWin.panelX; by: wpickWin.panelY
+                cornerR: wpickWin.panelR
+                tint: root.glassOpacity
+                thickness: 22
+                strength: 0.75 * root.glassLiquid
+                rim: root.glassRim
+                grain: root.glassGrain
+                blur: root.wpBlur
+                debug: root.glassDebug
+                onShaderError: root.glassState = "failed"
+                rimTint: 1
+                ringW: 1.4
             }
         }
 
