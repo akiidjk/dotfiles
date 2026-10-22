@@ -16,22 +16,17 @@ input_path = './templates/hyprland-colors.conf'
 output_path = '~/.config/hypr/colors.lua'
 post_hook = 'hyprctl reload'
 
-[templates.mako]
-input_path = './templates/mako-colors.conf'
-output_path = '~/.config/mako/config'
-post_hook = 'pkill -SIGUSR1 mako'
-
 [templates.btop]
 input_path = './templates/btop-colors.conf'
 output_path = '~/.config/btop/themes/matugen.conf'
 
-[templates.quickshell]
-input_path = './templates/quickshell-colors'
-output_path = '~/.config/quickshell/colors.js'
-post_hook = 'nohup bash -c "sleep 0.2 && pkill quickshell && quickshell -d" >/dev/null 2>&1 &'
+# MacShell accent (used when Settings > Appearance > Accent is set to "Wallpaper"); hot-applied over IPC, no restart
+[templates.macshell]
+input_path = './templates/macshell-accent'
+output_path = '~/.config/macshell/accent'
+post_hook = 'qs -c MacShell ipc call look accent "$(cat ~/.config/macshell/accent)" >/dev/null 2>&1 || true'
 
 [templates.spicetify]
 input_path = './templates/spicetify-colors.conf'
 output_path = '~/.config/spicetify/Themes/text/color.ini'
 post_hook = 'spicetify config current_theme text color_scheme Matugen && spicetify apply || true'
-

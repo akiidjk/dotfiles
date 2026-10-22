@@ -96,6 +96,7 @@ require("windowrule")
 -- ### EXTENSIONS ###
 -- ##################
 require("vicinae")
+require("macshell")
 
 -- HyprMod managed settings
 require("hyprland-gui")

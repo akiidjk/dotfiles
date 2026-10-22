@@ -9,23 +9,18 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
     hl.exec_cmd("hypridle")
 
-    -- Notification
-    hl.exec_cmd("mako")
-    hl.exec_cmd("~/.config/mako/scripts/spotify-notify.sh")
+    -- Notifications are served by MacShell (see macshell.lua)
+    hl.exec_cmd("~/.config/hypr/scripts/spotify-notify.sh")
 
     -- For screen sharing
     hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
     hl.exec_cmd("systemctl --user import-environment")
     hl.exec_cmd("~/.config/hypr/scripts/screensharing.sh")
 
-    -- Bluetooth
-    hl.exec_cmd("blueman-applet") -- Make sure you have installed blueman
-    hl.exec_cmd("nm-applet")
+    -- Wi-Fi / Bluetooth live in the MacShell Control Center (no nm-applet / blueman-applet)
 
     -- set up the wallpaper
     hl.exec_cmd("awww-daemon & sleep 1 && ~/.config/hypr/scripts/init_wallpapers.sh")
-
-    hl.exec_cmd("quickshell")
 
     -- Start plugins
     hl.exec_cmd("hyprpm reload")

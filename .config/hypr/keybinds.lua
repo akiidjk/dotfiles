@@ -10,7 +10,7 @@ hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal), { description = "Open
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager), { description = "Open file manager" })
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser), { description = "Open browser" })
 hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd(editor), { description = "Open editor" })
-hl.bind("ALT + L", hl.dsp.exec_cmd("hyprlock --grace 5"), { description = "Lock screen" })
+hl.bind("ALT + L", hl.dsp.exec_cmd("loginctl lock-session"), { description = "Lock screen" })
 
 hl.bind(
     "SUPER + SHIFT + C",
@@ -50,19 +50,14 @@ hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }), { descript
 hl.bind(mainMod .. " + up", hl.dsp.focus({ direction = "up" }), { description = "Focus up" })
 hl.bind(mainMod .. " + down", hl.dsp.focus({ direction = "down" }), { description = "Focus down" })
 
--- Quickshell shortcut
-hl.bind(mainMod .. " + H", hl.dsp.global("quickshell:barToggle"), { description = "Toggle quickshell bar" })
-hl.bind(mainMod .. " + N", hl.dsp.global("quickshell:hubToggle"), { description = "Toggle quickshell hub" })
-hl.bind(mainMod .. " + W", hl.dsp.global("quickshell:wallPickerToggle"), { description = "Toggle wall picker" })
-hl.bind(mainMod .. " + K", hl.dsp.global("quickshell:keybindingsToggle"), { description = "Toggle keybindings" })
-hl.bind(mainMod .. " + L", hl.dsp.global("quickshell:changeBarLayout"), { description = "Change bar layout" })
+-- MacShell shortcuts (bar / island / pickers / lock) live in macshell.lua
 
 -- Switch workspaces with mainMod + [0-9]
 for i = 1, 10 do
     local key = i % 10
     hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = key }), { description = "Focus workspace " .. key })
     hl.bind(
-        mainMod .. " + SHIFT +" .. key,
+        mainMod .. " + SHIFT + " .. key,
         hl.dsp.window.move({ workspace = key }),
         { description = "Move to workspace " .. key }
     )
@@ -97,37 +92,7 @@ hl.bind(
     { description = "Resize window down" }
 )
 
--- Laptop multimedia keys for volume and LCD brightness
-hl.bind(
-    "XF86AudioRaiseVolume",
-    hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"),
-    { repeating = true, description = "Raise volume" }
-)
-hl.bind(
-    "XF86AudioLowerVolume",
-    hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),
-    { repeating = true, description = "Lower volume" }
-)
-hl.bind(
-    "XF86AudioMute",
-    hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),
-    { repeating = true, description = "Toggle mute" }
-)
-hl.bind(
-    "XF86AudioMicMute",
-    hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),
-    { repeating = true, description = "Toggle mic mute" }
-)
-hl.bind(
-    "XF86MonBrightnessUp",
-    hl.dsp.exec_cmd("brightnessctl s 30%+"),
-    { repeating = true, description = "Raise brightness" }
-)
-hl.bind(
-    "XF86MonBrightnessDown",
-    hl.dsp.exec_cmd("brightnessctl s 30%-"),
-    { repeating = true, description = "Lower brightness" }
-)
+-- Volume / brightness / media keys: MacShell hardware IPC (OSD), see macshell.lua
 
 -- Screenshot a window
 hl.bind(
