@@ -42,6 +42,7 @@ python3 "$HOME/.config/hypr-macshell/scripts/macshell-make-sounds.py" >/dev/null
 echo "==> switch the running session"
 pkill -x mako || true
 pkill -x quickshell || true                 # old island shell + the upstream MacShell started from the clone
+pkill -f '^qs -c MacShell$' || true         # a MacShell already running (autostart or an earlier deploy): restart, never a second one
 sleep 0.5
 hyprctl reload >/dev/null                   # loads macshell.lua: binds, layer rules, allow_session_lock_restore
 setsid -f qs -c MacShell >/dev/null 2>&1

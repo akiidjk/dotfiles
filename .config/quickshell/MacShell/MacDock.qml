@@ -3775,7 +3775,7 @@ Scope {
                     t: pal
                     Item {
                         width: parent.width
-                        height: 176
+                        height: 206
                         Image {
                             x: (parent.width - width) / 2
                             y: 16
@@ -3795,11 +3795,28 @@ Scope {
                             font.pixelSize: 21
                             font.weight: Font.DemiBold
                         }
+                        // fork badge: this is akiidjk's edition of MacShell
+                        Rectangle {
+                            y: 140
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: editionText.implicitWidth + 24; height: 24
+                            radius: 12
+                            color: pal.accent
+                            Text {
+                                id: editionText
+                                anchors.centerIn: parent
+                                text: "akiidjk edition"
+                                color: "white"
+                                font.family: root.fontForWeight(font.weight, pal.fam)
+                                font.pixelSize: 12
+                                font.weight: Font.DemiBold
+                            }
+                        }
                         Text {
-                            y: 138
+                            y: 174
                             width: parent.width
                             horizontalAlignment: Text.AlignHCenter
-                            text: I18n.tr("Version 0.3.5 \u2022 Hyprland \u2022 Quickshell")
+                            text: I18n.tr("Version 0.3.5-akiidjk (based on MacShell d4f8500) \u2022 Hyprland \u2022 Quickshell")
                             color: pal.text2
                             font.family: root.fontForWeight(font.weight, pal.fam)
                             font.pixelSize: 12
@@ -3871,6 +3888,8 @@ Scope {
                     t: pal
                     Repeater {
                         model: [
+                            { img: "assets/credits/akiidjk.jpg", name: "akiidjk", gh: "akiidjk", mine: true,
+                              role: "Fork author — Dynamic Island, keybind viewer, wallpaper picker, matugen theming, vicinae and MacLock integration" },
                             { img: "assets/credits/0-ss.jpg", name: "Rickky", gh: "0-ss",
                               role: "Owner — the menu bar, the Dock, the Liquid Glass the widgets and more... The one who actually knew what he was doing" },
                             { img: "assets/credits/vsoultann.png", name: "vSuol", gh: "vsoultann",
@@ -3879,8 +3898,18 @@ Scope {
                         delegate: Item {
                             id: cr
                             required property var modelData
-                            width: parent.width; height: 72
+                            readonly property bool mine: modelData.mine === true
+                            width: parent.width; height: mine ? 84 : 72
                             Rectangle { visible: cr.y > 0.5; x: 14; width: parent.width - 14; height: 1; color: pal.sep }
+                            // the fork author's row: tinted with the accent so it stands out
+                            Rectangle {
+                                visible: cr.mine
+                                anchors.fill: parent; anchors.margins: 4
+                                radius: 8
+                                color: Qt.rgba(pal.accent.r, pal.accent.g, pal.accent.b, 0.14)
+                                border.width: 1
+                                border.color: Qt.rgba(pal.accent.r, pal.accent.g, pal.accent.b, 0.45)
+                            }
                             Item {
                                 id: crPic
                                 x: 14; anchors.verticalCenter: parent.verticalCenter
@@ -3894,13 +3923,23 @@ Scope {
                                     layer.enabled: true
                                     layer.effect: MultiEffect { maskEnabled: true; maskSource: crMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
                                 }
-                                Rectangle { anchors.fill: parent; radius: width / 2; color: "transparent"; border.width: 1; border.color: pal.cardBorder }
+                                Rectangle { anchors.fill: parent; radius: width / 2; color: "transparent"; border.width: cr.mine ? 2 : 1; border.color: cr.mine ? pal.accent : pal.cardBorder }
                             }
                             Column {
                                 x: 70; anchors.verticalCenter: parent.verticalCenter
                                 width: parent.width - 70 - 90
                                 spacing: 2
-                                Text { text: cr.modelData.name; color: pal.text; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
+                                Row {
+                                    spacing: 8
+                                    Text { anchors.verticalCenter: parent.verticalCenter; text: cr.modelData.name; color: pal.text; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
+                                    Rectangle {
+                                        visible: cr.mine
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: mineBadge.implicitWidth + 14; height: 18; radius: 9
+                                        color: pal.accent
+                                        Text { id: mineBadge; anchors.centerIn: parent; text: "This version"; color: "white"; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 10; font.weight: Font.DemiBold }
+                                    }
+                                }
                                 Text { width: parent.width; text: I18n.tr(cr.modelData.role); wrapMode: Text.WordWrap; color: pal.text2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 11 }
                             }
                             Text {
@@ -3917,7 +3956,7 @@ Scope {
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
                     topPadding: 4
-                    text: I18n.tr("Designed by Apple in California.\nRebuilt on Linux by two people who could not afford the Mac.")
+                    text: I18n.tr("Designed by Apple in California.\nRebuilt on Linux by two people who could not afford the Mac.\nThis edition put together by akiidjk.")
                     color: pal.text3; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 11
                 }
 
