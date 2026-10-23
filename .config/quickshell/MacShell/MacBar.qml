@@ -583,6 +583,25 @@ Scope {
     // ═════════════ REUSABLE COMPONENTS ═════════════
     // (inline components don't see ids of this file, so everything arrives through properties / `t` = palette)
 
+    // Adwaita symbolic icon (adwaita-icon-theme), tinted. Pixel-grid artwork: crisper than the hand-drawn glyphs
+    // on scale-1 screens. Rasterized at the bar scale like Glyph, so it stays sharp at any Menu Bar size.
+    component SymIcon: Item {
+        id: si
+        property string name: ""        // path under /usr/share/icons/Adwaita/symbolic, e.g. "status/bluetooth-active-symbolic"
+        property color color: "white"
+        width: 16; height: 16
+        Image {
+            id: sii
+            anchors.fill: parent
+            source: si.name === "" ? "" : "file:///usr/share/icons/Adwaita/symbolic/" + si.name + ".svg"
+            sourceSize: Qt.size(Math.round(si.width * root.barWidgetScale), Math.round(si.height * root.barWidgetScale))
+            smooth: true
+            visible: false
+        }
+        // colorization drops the alpha of the colour: carry it as opacity (dimmed "off" states)
+        MultiEffect { source: sii; anchors.fill: sii; brightness: 1; colorization: 1; colorizationColor: Qt.rgba(si.color.r, si.color.g, si.color.b, 1); opacity: si.color.a }
+    }
+
     // Hand-drawn monochrome glyphs on an 18×18 grid (no icon theme needed)
     component Glyph: Item {
         id: gl
@@ -4724,7 +4743,7 @@ Scope {
                                 width: parent.width - 2; height: parent.height - 6; radius: 6
                                 color: ui.pop === "bt" ? bpal.hover : "transparent"
                             }
-                            Glyph { anchors.centerIn: parent; width: 15; height: 15; kind: "bluetooth"; color: root.btOn && root.btConnected > 0 ? bpal.fg : bpal.fg2 }
+                            SymIcon { anchors.centerIn: parent; name: root.btOn ? "status/bluetooth-active-symbolic" : "status/bluetooth-disabled-symbolic"; color: root.btOn && root.btConnected > 0 ? bpal.fg : bpal.fg2 }
                             MouseArea { anchors.fill: parent; onClicked: ui.openPop("bt", btBtn.mapToItem(ui, 0, 0).x) }
                         }
                         // volume (opens a popover with just the volume slider)
@@ -4737,7 +4756,7 @@ Scope {
                                 width: parent.width - 2; height: parent.height - 6; radius: 6
                                 color: ui.pop === "vol" ? bpal.hover : "transparent"
                             }
-                            Glyph { anchors.centerIn: parent; width: 16; height: 16; kind: "speaker"; level: root.volLevel; color: bpal.fg }
+                            SymIcon { anchors.centerIn: parent; name: "status/audio-volume-" + ["muted", "low", "medium", "high"][root.volLevel] + "-symbolic"; color: bpal.fg }
                             MouseArea {
                                 anchors.fill: parent
                                 onClicked: ui.openPop("vol", volBtn.mapToItem(ui, 0, 0).x + volBtn.width / 2)
@@ -4826,7 +4845,7 @@ Scope {
                                 width: parent.width - 2; height: parent.height - 6; radius: 6
                                 color: ui.pop === "notif" ? bpal.hover : "transparent"
                             }
-                            Glyph { anchors.centerIn: parent; width: 16; height: 16; kind: "bell"; color: root.notifDnd ? bpal.fg2 : bpal.fg }
+                            SymIcon { anchors.centerIn: parent; name: root.notifDnd ? "status/notifications-disabled-symbolic" : "legacy/preferences-system-notifications-symbolic"; color: root.notifDnd ? bpal.fg2 : bpal.fg }
                             Rectangle {
                                 visible: root.notifUnread > 0 && !root.notifDnd
                                 x: parent.width / 2 + 2; y: parent.height / 2 - 8
@@ -4845,7 +4864,13 @@ Scope {
                                 width: parent.width - 2; height: parent.height - 6; radius: 6
                                 color: ui.pop === "wifi" ? bpal.hover : "transparent"
                             }
-                            Glyph { anchors.centerIn: parent; width: 16; height: 16; kind: root.showEthernet ? "ethernet" : "wifi"; level: root.wifiOn ? (root.wifiLevel || 1) : 3; flag: !root.wifiOn && !root.showEthernet; color: (root.wifiOn || root.showEthernet) ? bpal.fg : bpal.fg2 }
+                            SymIcon {
+                                anchors.centerIn: parent
+                                name: root.showEthernet ? "devices/network-wired-symbolic"
+                                    : !root.wifiOn ? "status/network-wireless-disabled-symbolic"
+                                    : "status/network-wireless-signal-" + ["none", "weak", "good", "excellent"][root.wifiLevel] + "-symbolic"
+                                color: (root.wifiOn || root.showEthernet) ? bpal.fg : bpal.fg2
+                            }
                             MouseArea { anchors.fill: parent; onClicked: ui.openPop("wifi", wifiBtn.mapToItem(ui, 0, 0).x) }
                         }
                         // control center

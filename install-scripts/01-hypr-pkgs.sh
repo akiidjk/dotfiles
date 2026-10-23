@@ -40,6 +40,7 @@ macshell_package=(
   qt6-declarative
   qt6-wayland
   qt6-svg
+  adwaita-icon-theme       # menu bar status icons (Bluetooth, volume, notifications, Wi-Fi)
   qt6-shadertools          # qsb: compiles the Liquid Glass shader
   mpvpaper                 # video wallpapers
   ffmpeg                   # video wallpaper thumbnails
