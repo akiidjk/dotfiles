@@ -702,7 +702,7 @@ Scope {
                 poly([2.2, 7, 5.4, 7, 9.2, 3.6, 9.2, 14.4, 5.4, 11, 2.2, 11], true);
                 if (level <= 0) {
                     line(12, 6.8, 16, 11.2); line(16, 6.8, 12, 11.2);
-                } else {
+                } else if (level >= 1) {   // 0 < level < 1: bare speaker, no waves
                     for (i2 = 1; i2 <= Math.min(2, Math.ceil(level / 1.5)); i2++) {
                         ctx.beginPath(); ctx.arc(9.2, 9, 2.4 + i2 * 3.0, -0.62, 0.62); ctx.stroke();
                     }
@@ -4438,7 +4438,7 @@ Scope {
                 Item {
                     id: levelOsd
                     z: 1000
-                    width: 256; height: 67
+                    width: 300; height: 72
                     x: ui.width - width - 22
                     y: root.barHeight + 14
                     visible: ui.toastScreen && opacity > 0
@@ -4454,7 +4454,7 @@ Scope {
                         liquid: root.liquidActive
                         dark: root.effDark
                         bx: levelOsd.x; by: levelOsd.y
-                        cornerR: height / 2
+                        cornerR: 22
                         tint: root.glassOpacity
                         thickness: 22
                         strength: 0.8 * root.glassLiquid
@@ -4469,35 +4469,44 @@ Scope {
                     MenuBorder {
                         z: 2
                         anchors.fill: parent
-                        cornerR: height / 2
+                        cornerR: 22
                         dark: root.effDark
                         tint: root.menuBorderColor
                     }
+                    // macOS-style: device name on top, then quiet icon, continuous track, loud icon
+                    Text {
+                        x: 18; y: 13
+                        width: parent.width - 36
+                        elide: Text.ElideRight
+                        color: "white"
+                        font.family: root.fontForWeight(font.weight, root.fontFamily); font.pixelSize: 13; font.weight: Font.DemiBold
+                        text: root.osdKind === "brightness" ? I18n.tr("Display")
+                            : (root.sink ? root.audioSplit(root.sink.description || root.sink.name)[0] : I18n.tr("Sound"))
+                    }
                     Glyph {
-                        x: 20; anchors.verticalCenter: parent.verticalCenter
-                        width: 24; height: 24
+                        x: 16; y: 41
+                        width: 14; height: 14
                         kind: root.osdKind === "brightness" ? "sun" : "speaker"
-                        level: root.osdKind === "brightness" ? 3 : (root.osdValue < 0.34 ? 1 : (root.osdValue < 0.67 ? 2 : 3))
+                        level: root.osdKind === "brightness" ? 1 : 0.5
                         color: "white"
                     }
-                    // segmented level bar: bright segments are filled, the rest are dim
-                    Row {
-                        id: osdBar
-                        x: 62; anchors.verticalCenter: parent.verticalCenter
-                        readonly property int n: 22
-                        readonly property real segW: (levelOsd.width - 62 - 24 - (n - 1) * 3) / n
-                        spacing: 3
-                        Repeater {
-                            model: osdBar.n
-                            Rectangle {
-                                required property int index
-                                width: osdBar.segW; height: 4; radius: 2
-                                color: "white"
-                                // partial last segment fades proportionally
-                                opacity: Math.max(0.28, Math.min(1, root.osdValue * osdBar.n - index) * 0.95)
-                                Behavior on opacity { NumberAnimation { duration: 90 } }
-                            }
+                    Rectangle {
+                        x: 40; y: 46
+                        width: parent.width - 40 - 46; height: 4; radius: 2
+                        color: Qt.rgba(1, 1, 1, 0.28)
+                        Rectangle {
+                            width: Math.max(height, parent.width * root.osdValue); height: parent.height; radius: 2
+                            color: "white"
+                            visible: root.osdValue > 0
+                            Behavior on width { NumberAnimation { duration: 90 } }
                         }
+                    }
+                    Glyph {
+                        x: parent.width - 36; y: 38
+                        width: 20; height: 20
+                        kind: root.osdKind === "brightness" ? "sun" : "speaker"
+                        level: 3
+                        color: "white"
                     }
                 }
                 // ═════════ the bar itself ═════════
