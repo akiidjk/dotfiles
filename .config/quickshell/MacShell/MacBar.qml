@@ -107,7 +107,10 @@ Scope {
     readonly property bool barLayerNeeded: barEnabled || ccEnabled || notificationsEnabled || topBar === "island"
     property bool darkMode: true             // the resolved look (true = dark); follows appearanceMode
     property string appearanceMode: "dark"   // light | dark | auto (auto = light by day, dark by night)
-    readonly property bool panelDarkMode: darkMode   // the top bar menus follow the one Light / Dark / Auto setting
+    // Panels (top bar menus / popovers, Control Center, notifications): the glass tint, cards and borders always follow the
+    // Light / Dark setting (panelDarkMode); only the TEXT follows what is measured behind them (panelTextWhite, see "AUTO CONTRAST").
+    readonly property bool panelDarkMode: darkMode
+    readonly property bool panelTextWhite: (autoContrast && panelTone !== 0) ? (panelTone === -1) : darkMode
     property color accent: "#0A84FF"
     // The UI font is Open Runde (bundled in assets/fonts, loaded by shell.qml). Settings that still say Inter move over to it.
     property string fontFamily: "Open Runde"
@@ -161,65 +164,93 @@ Scope {
             + ", touchpad = { natural_scroll = " + b(tpNatural) + ", tap_to_click = " + b(tpTap) + ", disable_while_typing = " + b(tpDwt)
             + ", scroll_factor = " + tpScroll.toFixed(2) + " } } })"]);
     }
-    // measure brightness behind a screen rect (logical coords): one tiny grim grab, mean luminance
-    function measureTone(sx, sy, sw, sh) {
-        if (!autoContrast || toneProc.running) return;
-        // perceived brightness of the sRGB means (a "gray" conversion in ImageMagick is linear-light and reads mid-tones far too dark)
-        toneProc.command = ["sh", "-c", "grim -s 0.08 -g \"$1,$2 $3x$4\" - 2>/dev/null | magick - -format '%[fx:0.299*mean.r+0.587*mean.g+0.114*mean.b]' info: 2>/dev/null",
-                            "sh", String(Math.round(sx)), String(Math.round(sy)), String(Math.max(8, Math.round(sw))), String(Math.max(8, Math.round(sh)))];
-        toneProc.running = true;
+    // ═════════ AUTO CONTRAST ═════════ (ported from upstream MacShell 0.3.6)
+    // One measuring script (assets/tone.sh) grabs the real screen (wallpaper + every window) and reports brightness + spread.
+    //  • bar: the strip behind the bar → barTone (text / glyphs / glass of the bar and its buttons)
+    //  • panels: the area behind the open menu / Control Center → panelTone. While a panel is open the area AROUND it is
+    //    re-measured continuously (the panel itself is left out), so opening, closing, moving or switching apps behind it
+    //    flips its text between light and dark by itself.
+    // The choice is made by worst-case contrast (white text on the brightest part vs dark text on the darkest part, spread
+    // included), with hysteresis so it never flickers, and falls back to the system look when both read equally well.
+    readonly property string toneScript: decodeURIComponent(String(Qt.resolvedUrl("assets/tone.sh")).replace(/^file:\/\//, ""))
+    // cur: 1 = dark text now (bright backdrop), -1 = white text now, 0 = undecided; v/sd = brightness / spread 0..1
+    function pickTone(cur, v, sd, fresh) {
+        v = Math.max(0, Math.min(1, v)); sd = Math.max(0, Math.min(0.5, sd || 0));
+        var hi = Math.min(1, v + 0.6 * sd), lo = Math.max(0, v - 0.6 * sd);
+        var cw = 1.05 / (Math.pow(hi, 2.2) + 0.05);          // contrast of white text on the brightest part
+        var cd = (Math.pow(lo, 2.2) + 0.05) / 0.0623;         // contrast of dark text on the darkest part
+        if (!fresh && cur === 1) return cw > cd * 1.2 ? -1 : 1;
+        if (!fresh && cur === -1) return cd > cw * 1.2 ? 1 : -1;
+        if (Math.abs(cw - cd) < 0.08 * Math.max(cw, cd)) return darkMode ? -1 : 1;
+        return cd > cw ? 1 : -1;
+    }
+    property var tonePending: null
+    // measure a screen rect (logical coords, in a screen scr); inner (optional) = the panel's own rect, left out of the measurement.
+    function measureTone(sx, sy, sw, sh) { measureArea(null, Qt.rect(sx, sy, sw, sh), null, true); }
+    function measureArea(scr, rect, inner, fresh) {
+        if (!autoContrast) return;
+        var x = rect.x, y = rect.y, w = rect.width, h = rect.height;
+        if (scr) {                                           // clamp to the screen (grim refuses areas outside the outputs)
+            var x1 = Math.max(scr.x, x), y1 = Math.max(scr.y, y), x2 = Math.min(scr.x + scr.width, x + w), y2 = Math.min(scr.y + scr.height, y + h);
+            x = x1; y = y1; w = x2 - x1; h = y2 - y1;
+        }
+        if (w < 8 || h < 8) return;
+        var args = [Number(0.1), Math.round(x), Math.round(y), Math.round(w), Math.round(h)];
+        if (inner) args.push(Math.round(inner.x), Math.round(inner.y), Math.round(inner.width), Math.round(inner.height));
+        var req = { args: args, fresh: fresh === true };
+        if (panelToneProc.running) { tonePending = req; return; }
+        runPanelTone(req);
+    }
+    function runPanelTone(req) {
+        panelToneProc.fresh = req.fresh;
+        panelToneProc.command = ["sh", toneScript].concat(req.args.map(String));
+        panelToneProc.running = true;
+    }
+    // the area around a panel rect (what its glass shows), for measuring while the panel is open
+    function measureAround(scr, panelRect, fresh) {
+        var m = 160;
+        measureArea(scr, Qt.rect(panelRect.x - m, panelRect.y - m, panelRect.width + 2 * m, panelRect.height + 2 * m), panelRect, fresh);
     }
     Process {
-        id: toneProc
+        id: panelToneProc
+        property bool fresh: false
         stdout: StdioCollector {
             onStreamFinished: {
-                var v = parseFloat(text);
+                var p = text.trim().split(/\s+/);
+                var v = parseFloat(p[0]), sd = parseFloat(p[1]);
                 if (isNaN(v)) return;
-                // Only change anything when the normal text would NOT be readable. v is perceived (gamma) brightness of
-                // what's behind; turn it into relative luminance, put the panel's own tint over it, and test the WCAG
-                // contrast of the normal text colour. Below 3:1 → flip to the other style; otherwise keep the user's.
-                var L = Math.pow(Math.max(0, Math.min(1, v)), 2.2);
-                var tint = Math.min(0.6, root.glassOpacity * 0.55 + 0.05);
-                if (root.darkMode) {
-                    var effD = L * (1 - tint) + 0.004 * tint;                 // dark glass tint
-                    root.bgTone = (1.05 / (effD + 0.05)) < 3 ? 1 : 0;        // white text unreadable → dark text
-                } else {
-                    var effL = L * (1 - tint) + 1.0 * tint;                   // light glass tint
-                    root.bgTone = ((effL + 0.05) / 0.062) < 3 ? -1 : 0;       // dark text unreadable → white text
-                }
+                root.panelTone = root.pickTone(root.panelTone, v, isNaN(sd) ? 0 : sd, panelToneProc.fresh);
             }
         }
+        onRunningChanged: if (!running && root.tonePending) { var r = root.tonePending; root.tonePending = null; root.runPanelTone(r); }
     }
     // ── bar text colour: measure what is behind the bar strip (wallpaper + windows + the bar's own glass) ──
-    // Hysteresis around mid grey (the point where white and dark text read equally well), so the text never flickers.
     function measureBar() {
         if (!autoContrast || !barEnabled || barToneProc.running) return;
         var sc = Quickshell.screens && Quickshell.screens.length ? Quickshell.screens[0] : null;
         if (!sc) return;
-        barToneProc.command = ["sh", "-c", "grim -s 0.25 -g \"$1,$2 $3x$4\" - 2>/dev/null | magick - -format '%[fx:0.299*mean.r+0.587*mean.g+0.114*mean.b]' info: 2>/dev/null",
-                               "sh", String(Math.round(sc.x)), String(Math.round(sc.y)), String(Math.max(8, Math.round(sc.width))), String(Math.max(8, Math.round(barHeight)))];
+        barToneProc.command = ["sh", toneScript, "0.25", String(Math.round(sc.x)), String(Math.round(sc.y)), String(Math.max(8, Math.round(sc.width))), String(Math.max(8, Math.round(barHeight)))];
         barToneProc.running = true;
     }
     Timer { id: barToneT; interval: 350; onTriggered: root.measureBar() }          // debounce: after a resize / wallpaper / window change settles
-    Timer { interval: 2500; repeat: true; running: root.autoContrast && root.barEnabled; onTriggered: root.measureBar() }
+    Timer { interval: 1200; repeat: true; running: root.autoContrast && root.barEnabled; onTriggered: root.measureBar() }
     Connections {
         target: root
         function onBarHeightChanged() { barToneT.restart(); }
-        function onDarkModeChanged() { barToneT.restart(); }
+        function onDarkModeChanged() { root.panelTone = 0; barToneT.restart(); }
         function onBarEnabledChanged() { if (root.barEnabled) barToneT.restart(); }
         function onWallpaperAccentChanged() { barToneT.restart(); }
         function onGlassClientsChanged() { barToneT.restart(); }
-        function onAutoContrastChanged() { if (root.autoContrast) barToneT.restart(); else { root.barTone = 0; root.bgTone = 0; } }
+        function onAutoContrastChanged() { if (root.autoContrast) barToneT.restart(); else { root.barTone = 0; root.panelTone = 0; } }
     }
     Process {
         id: barToneProc
         stdout: StdioCollector {
             onStreamFinished: {
-                var v = parseFloat(text);
+                var p = text.trim().split(/\s+/);
+                var v = parseFloat(p[0]), sd = parseFloat(p[1]);
                 if (isNaN(v)) return;
-                if (v > 0.56) root.barTone = 1;
-                else if (v < 0.44) root.barTone = -1;
-                else if (root.barTone === 0) root.barTone = root.darkMode ? -1 : 1;
+                root.barTone = root.pickTone(root.barTone, v, isNaN(sd) ? 0 : sd, false);
             }
         }
     }
@@ -432,10 +463,9 @@ Scope {
     }
 
     // ═════════════ PALETTE ═════════════
-    // Auto contrast: what's behind an opening panel is measured (bgTone: 1 bright, -1 dark, 0 unknown) and the panel
-    // switches to dark text / light glass on bright backgrounds and the reverse on dark ones; colours cross-fade.
+    // Auto contrast: see "AUTO CONTRAST" above. panelTone: what is behind the open panel (1 bright, -1 dark, 0 not measured).
     property bool autoContrast: true
-    property int bgTone: 0
+    property int panelTone: 0
     // System look (Settings → Appearance: Light / Dark / Auto): every panel follows it, like a normal OS, the Control Center
     // included (ccDark / ccPal are now just aliases of it, no longer measured from what is behind the panel).
     readonly property bool effDark: darkMode
@@ -445,18 +475,18 @@ Scope {
     // ── Dynamic text colour (top bar, menus / popovers) ──
     // The bar is clear glass over the wallpaper and the windows, so its text follows what is measured BEHIND it (barTone) and flips
     // light/dark by itself. Menus keep their glass tint but flip their text when the measured backdrop would make the
-    // normal colour unreadable (bgTone). Colours cross-fade (ptk / btk: 1 = white text, 0 = dark text).
+    // normal colour unreadable (panelTone). Colours cross-fade (ptk / btk: 1 = white text, 0 = dark text).
     property int barTone: 0                   // measured behind the bar strip: 1 bright, -1 dark, 0 not measured yet
     readonly property bool barTextDark: barTone === 1 ? true : (barTone === -1 ? false : !darkMode)
     property real btk: barTextDark ? 0 : 1
     Behavior on btk { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
     function mixb(l, d) { return Qt.rgba(l.r + (d.r - l.r) * btk, l.g + (d.g - l.g) * btk, l.b + (d.b - l.b) * btk, l.a + (d.a - l.a) * btk); }
-    readonly property bool panelTextDark: darkMode ? (bgTone === 1) : (bgTone !== -1)
+    readonly property bool panelTextDark: !panelTextWhite
     property real ptk: panelTextDark ? 0 : 1
     Behavior on ptk { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
     function mixp(l, d) { return Qt.rgba(l.r + (d.r - l.r) * ptk, l.g + (d.g - l.g) * ptk, l.b + (d.b - l.b) * ptk, l.a + (d.a - l.a) * ptk); }
-    // Control Center keeps one fixed look (dark): switching the system between Light and Dark does not change its colours
-    readonly property bool ccDark: true
+    // Control Center: glass follows the Light / Dark setting, its text the measured backdrop (ccPal fg uses mixp)
+    readonly property bool ccDark: panelDarkMode
     property real ccDk: ccDark ? 1 : 0
     Behavior on ccDk { NumberAnimation { duration: 360; easing.type: Easing.OutCubic } }
     function ccMix(l, d) { return Qt.rgba(l.r + (d.r - l.r) * ccDk, l.g + (d.g - l.g) * ccDk, l.b + (d.b - l.b) * ccDk, l.a + (d.a - l.a) * ccDk); }
@@ -530,8 +560,8 @@ Scope {
         readonly property color tileBorder: dark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(1, 1, 1, 0.70)
         readonly property color btnOff: dark ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(0, 0, 0, 0.10)
         readonly property color btnHover: dark ? Qt.rgba(1, 1, 1, 0.30) : Qt.rgba(0, 0, 0, 0.16)
-        readonly property color hover: root.mixp(Qt.rgba(0, 0, 0, 0.09), Qt.rgba(1, 1, 1, 0.14))
-        readonly property color sep: root.mixp(Qt.rgba(0, 0, 0, 0.12), Qt.rgba(1, 1, 1, 0.14))
+        readonly property color hover: dark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.09)
+        readonly property color sep: dark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.12)
         readonly property color track: dark ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(0, 0, 0, 0.12)
         readonly property color content: dark ? "#1E1E1E" : "#F5F5F7"
         readonly property color card: dark ? "#2B2B2D" : "#FFFFFF"
@@ -550,9 +580,9 @@ Scope {
         readonly property color tileBorder: root.mixc(Qt.rgba(1, 1, 1, 0.70), Qt.rgba(1, 1, 1, 0.16))
         readonly property color btnOff: root.mixc(Qt.rgba(0, 0, 0, 0.10), Qt.rgba(1, 1, 1, 0.20))
         readonly property color btnHover: root.mixc(Qt.rgba(0, 0, 0, 0.16), Qt.rgba(1, 1, 1, 0.30))
-        readonly property color hover: root.mixp(Qt.rgba(0, 0, 0, 0.09), Qt.rgba(1, 1, 1, 0.14))
-        readonly property color sep: root.mixp(Qt.rgba(0, 0, 0, 0.12), Qt.rgba(1, 1, 1, 0.14))
-        readonly property color track: root.mixp(Qt.rgba(0, 0, 0, 0.12), Qt.rgba(1, 1, 1, 0.20))
+        readonly property color hover: root.mixc(Qt.rgba(0, 0, 0, 0.09), Qt.rgba(1, 1, 1, 0.14))
+        readonly property color sep: root.mixc(Qt.rgba(0, 0, 0, 0.12), Qt.rgba(1, 1, 1, 0.14))
+        readonly property color track: root.mixc(Qt.rgba(0, 0, 0, 0.12), Qt.rgba(1, 1, 1, 0.20))
         readonly property color content: dark ? "#1E1E1E" : "#F5F5F7"
         readonly property color card: dark ? "#2B2B2D" : "#FFFFFF"
         readonly property color cardBorder: root.mixc(Qt.rgba(0, 0, 0, 0.08), Qt.rgba(1, 1, 1, 0.07))
@@ -564,9 +594,9 @@ Scope {
         // the Control Center follows the selected UI font like everything else (Open Runde by default)
         readonly property string fam: root.fontFamily
         readonly property color accent: root.accent
-        readonly property color fg: root.ccMix(Qt.color("#1D1D1F"), Qt.color("#FFFFFF"))
-        readonly property color fg2: root.ccMix(Qt.rgba(0, 0, 0, 0.55), Qt.rgba(1, 1, 1, 0.62))
-        readonly property color fg3: root.ccMix(Qt.rgba(0, 0, 0, 0.32), Qt.rgba(1, 1, 1, 0.34))
+        readonly property color fg: root.mixp(Qt.color("#1D1D1F"), Qt.color("#FFFFFF"))
+        readonly property color fg2: root.mixp(Qt.rgba(0, 0, 0, 0.55), Qt.rgba(1, 1, 1, 0.62))
+        readonly property color fg3: root.mixp(Qt.rgba(0, 0, 0, 0.32), Qt.rgba(1, 1, 1, 0.34))
         readonly property color tile: root.ccMix(Qt.rgba(1, 1, 1, 0.42), Qt.rgba(1, 1, 1, 0.10))
         readonly property color tileBorder: root.ccMix(Qt.rgba(1, 1, 1, 0.70), Qt.rgba(1, 1, 1, 0.16))
         readonly property color btnOff: root.ccMix(Qt.rgba(0, 0, 0, 0.10), Qt.rgba(1, 1, 1, 0.20))
@@ -1673,7 +1703,7 @@ Scope {
         Rectangle { visible: r.y > 0.5; x: 14; width: parent.width - 14; height: 1; color: r.t.sep }
         Text {
             x: 14; anchors.verticalCenter: parent.verticalCenter
-            text: r.title; color: r.t.dark ? "#F5F5F7" : "#1D1D1F"
+            text: r.title; color: r.t.fg
             font.family: root.fontForWeight(font.weight, r.t.fam); font.pixelSize: 13
         }
         Item {
@@ -1753,7 +1783,7 @@ Scope {
                     width: sg.segWidth; height: sg.height - 4
                     Text {
                         anchors.centerIn: parent; text: I18n.tr(parent.modelData)
-                        color: sg.t.dark ? "#F5F5F7" : "#1D1D1F"
+                        color: sg.t.fg
                         font.family: root.fontForWeight(font.weight, sg.t.fam); font.pixelSize: 12
                     }
                     MouseArea { anchors.fill: parent; onClicked: sg.picked(parent.index) }
@@ -4198,6 +4228,18 @@ Scope {
                     function grab() { if (captureSource && typeof captureFrame === "function") { captureFrame(); takenAt = Date.now(); } }
                 }
                 property bool snapFresh: false
+                // Auto contrast, live: while a panel (menu, Control Center) is open on this screen, the area around it is
+                // re-measured, so opening / closing / switching apps behind it flips its text light <-> dark. Windows opening or
+                // closing trigger a measurement at once; otherwise it polls.
+                function measureLive() {
+                    if (!root.autoContrast || ui.pop === "" || !ui.toastScreen) return;
+                    var r = ui.glassRect;
+                    if (r.width <= 128) return;
+                    root.measureAround(win.modelData, Qt.rect(win.modelData.x + r.x + 64, win.modelData.y + r.y + 64, r.width - 128, r.height - 128), false);
+                }
+                Timer { interval: 700; repeat: true; running: root.autoContrast && ui.pop !== "" && ui.toastScreen; onTriggered: ui.measureLive() }
+                Timer { id: liveKick; interval: 180; onTriggered: ui.measureLive() }
+                Connections { target: root; function onGlassClientsChanged() { if (ui.pop !== "") liveKick.restart(); } }
                 // a moment after a popover starts opening (its rect is known), measure what's behind it
                 Timer {
                     id: toneT; interval: 20
@@ -4440,7 +4482,7 @@ Scope {
                     backdrop: ui.glassSrc
                     shaderUrl: root.glassShaderUrl
                     liquid: root.liquidActive
-                    dark: root.effDark
+                    dark: !root.barTextDark      // the clear bar glass tints with its measured text colour (upstream 0.3.6)
                     bx: 0; by: 0
                     cornerR: 0
                     tint: root.glassOpacity * 0.6
@@ -6755,14 +6797,44 @@ Scope {
                     onOpeningChanged: if (opening) openSeq++
                     onVisibleChanged: if (visible) { root.refreshWifi(); root.refreshBt(); root.refreshBrightness(); }
 
+                    // Resize refresh: when the menu bar is made smaller / bigger (or the panel itself changes size or position) the
+                    // Control Center's backdrop capture used to stay stuck on the old rectangle. Every such change now drops and
+                    // re-attaches the capture source for a moment (glassFlip) and forces every stage of the glass to re-render.
+                    property bool glassFlip: false
+                    // The panel is drawn scaled by barPopupScale around its top-right corner, but the glass shaders position every
+                    // slab in the panel's own UNSCALED coordinates. So the backdrop is described twice:
+                    //   capLocal  = the region in those unscaled coordinates (what the shaders map their pixels against)
+                    //   capScreen = where that same region really is on screen (what is captured): scaled about the top-right corner
+                    readonly property rect capLocal: Qt.rect(cc.x - 64, cc.y - 64, cc.width + 128, cc.height + 128)
+                    readonly property real capS: root.barPopupScale
+                    readonly property rect capScreen: Qt.rect((cc.x + cc.width) + (capLocal.x - (cc.x + cc.width)) * capS,
+                                                              cc.y + (capLocal.y - cc.y) * capS,
+                                                              capLocal.width * capS, capLocal.height * capS)
+                    Timer {
+                        id: ccRefresh
+                        interval: 40
+                        onTriggered: {
+                            if (!cc.glassFlip) { cc.glassFlip = true; ccRefresh.restart(); }
+                            else {
+                                cc.glassFlip = false;
+                                ccSrc.scheduleUpdate(); ccBlur.scheduleUpdate(); ccBlur2.scheduleUpdate();
+                            }
+                        }
+                    }
+                    function refreshGlass() { cc.glassFlip = false; ccRefresh.restart(); }
+                    Connections { target: root; function onBarHeightChanged() { cc.refreshGlass(); } function onBarPopupScaleChanged() { cc.refreshGlass(); } }
+                    onWidthChanged: refreshGlass()
+                    onHeightChanged: refreshGlass()
+                    onXChanged: refreshGlass()
+                    onYChanged: refreshGlass()
+
                     ShaderEffectSource {
                         id: ccSrc
-                        sourceItem: ui.glassSrc
+                        sourceItem: cc.glassFlip ? null : ui.glassSrc
                         hideSource: true
                         live: true
                         visible: false
-                        sourceRect: Qt.rect(cc.x - 64 * root.barPopupScale, cc.y - 64 * root.barPopupScale,
-                                            cc.width + 128 * root.barPopupScale, cc.height + 128 * root.barPopupScale)
+                        sourceRect: cc.capScreen
                     }
                     MultiEffect {
                         id: ccBlurFx
@@ -6802,7 +6874,7 @@ Scope {
                     GlassCtx {
                         id: ccg
                         src: (blur * blurMul) * 1.4 / 64.0 > 1.0 ? ccBlur2 : ccBlur
-                        srcRect: ccSrc.sourceRect
+                        srcRect: cc.capLocal
                         frame: ui
                         liquid: root.liquidActive
                         shaderUrl: root.glassShaderUrl
