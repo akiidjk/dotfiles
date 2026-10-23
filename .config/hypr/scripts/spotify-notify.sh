@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Spotify track-change notification (shown by MacShell's notification server, with the album art).
 
 ICON_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/spotify-art"
 mkdir -p "$ICON_DIR"
@@ -23,9 +24,14 @@ get_art_path() {
   printf '%s\n' "$file"
 }
 
-playerctl -p spotify metadata --format '{{artist}} - {{title}}' --follow |
-while read -r line; do
+last=""
+playerctl -p spotify metadata --format '{{title}}	{{artist}}' --follow |
+while IFS=$'\t' read -r title artist; do
+  # --follow repeats the same metadata (seek, play/pause): one notification per track
+  [ -z "$title" ] || [ "$title	$artist" = "$last" ] && continue
+  last="$title	$artist"
   icon_path="$(get_art_path)" || icon_path="spotify"
 
-  notify-send "Spotify" "$line" -i "$icon_path"
+  # -a Spotify: MacShell groups it under Spotify and keeps it silent (no system "glass" sound)
+  notify-send -a Spotify -i "$icon_path" "$title" "$artist"
 done
