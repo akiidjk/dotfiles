@@ -584,18 +584,27 @@ Scope {
     // (inline components don't see ids of this file, so everything arrives through properties / `t` = palette)
 
     // Hand-drawn monochrome glyphs on an 18×18 grid (no icon theme needed)
-    component Glyph: Canvas {
+    component Glyph: Item {
         id: gl
         property string kind: ""
         property color color: "white"
         property real level: 3          // speaker / sun intensity 0..3, wifi bars 0..3, battery 0..100
         property bool flag: false       // "disabled" slash for wifi / bluetooth
         width: 18; height: 18
+        onKindChanged: glc.requestPaint()
+        onColorChanged: glc.requestPaint()
+        onLevelChanged: glc.requestPaint()
+        onFlagChanged: glc.requestPaint()
+        // The bar, its menus and the Control Center are scaled by barWidgetScale; a Canvas under a scale transform is
+        // stretched, not redrawn, so a bigger bar blurs. Paint at the scaled size and map back: crisp at any bar size.
+        // ponytail: only knows the bar scale, a glyph under some other scale still stretches
+        readonly property real ss: root.barWidgetScale
+        Canvas {
+        id: glc
+        width: gl.width * gl.ss; height: gl.height * gl.ss
+        scale: 1 / gl.ss
+        transformOrigin: Item.TopLeft
         antialiasing: true
-        onKindChanged: requestPaint()
-        onColorChanged: requestPaint()
-        onLevelChanged: requestPaint()
-        onFlagChanged: requestPaint()
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
         onPaint: {
@@ -906,6 +915,7 @@ Scope {
                     ctx.beginPath(); ctx.arc(9, 14.4, 4.2, PI * 1.22, PI * 1.78, false); ctx.stroke();
                 }
             }
+        }
         }
     }
 
