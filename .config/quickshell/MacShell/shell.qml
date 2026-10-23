@@ -299,7 +299,7 @@ ShellRoot {
         }
 
         Timer {
-            interval: 4000        // was 15 s: a wallpaper change reaches the glass within a few seconds
+            interval: 30000       // fallback only: wallpapers set from the shell (wpApply) reach the glass at once
             repeat: true
             running: sharedHub.barWantsWallpaper || sharedHub.dockWantsWallpaper || sharedHub.widgetsWantWallpaper
             onTriggered: sharedHub.refreshWallpaper()

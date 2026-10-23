@@ -233,7 +233,8 @@ Scope {
         barToneProc.running = true;
     }
     Timer { id: barToneT; interval: 350; onTriggered: root.measureBar() }          // debounce: after a resize / wallpaper / window change settles
-    Timer { interval: 1200; repeat: true; running: root.autoContrast && root.barEnabled; onTriggered: root.measureBar() }
+    // event-driven (window / wallpaper / bar changes restart barToneT above); this is only a slow safety net
+    Timer { interval: 15000; repeat: true; running: root.autoContrast && root.menuBarShown; onTriggered: root.measureBar() }
     Connections {
         target: root
         function onBarHeightChanged() { barToneT.restart(); }
@@ -525,8 +526,15 @@ Scope {
         }
     }
     Timer {
-        interval: 3000; repeat: true; running: true; triggeredOnStart: true
+        interval: 60000; repeat: true; running: true; triggeredOnStart: true      // safety net: gsettingsMonitor below reacts at once
         onTriggered: if (!gsettingsSchemeProc.running) gsettingsSchemeProc.running = true
+    }
+    // one long-lived process that prints a line on every colour-scheme change, instead of a gsettings call every 3 s
+    Process {
+        id: gsettingsMonitor
+        running: true
+        command: ["gsettings", "monitor", "org.gnome.desktop.interface", "color-scheme"]
+        stdout: SplitParser { onRead: data => { if (!gsettingsSchemeProc.running) gsettingsSchemeProc.running = true; } }
     }
     QtObject {
         id: bpal
@@ -2287,7 +2295,8 @@ Scope {
         settleTimer.restart();
     }
     Timer { id: settleTimer; interval: 900; onTriggered: { root.refreshWifi(); root.refreshBt(); } }
-    Timer { interval: 6000; repeat: true; running: true; triggeredOnStart: true; onTriggered: { root.refreshWifi(); root.refreshBt(); } }
+    // no panel open: a slow check is enough (opening Wi-Fi / Bluetooth / the Control Center refreshes at once)
+    Timer { interval: root.popCount > 0 ? 6000 : 20000; repeat: true; running: true; triggeredOnStart: true; onTriggered: { root.refreshWifi(); root.refreshBt(); } }
 
     // brightness
     property real brightness: 0.5
@@ -2328,7 +2337,8 @@ Scope {
         brightApply.restart();
         showOsd("brightness", brightness);
     }
-    Timer { interval: 850; repeat: true; running: true; onTriggered: root.refreshBrightness() }
+    // brightness keys go through the shell (hardware IPC), so polling fast only matters while a slider is on screen
+    Timer { interval: root.popCount > 0 ? 850 : 10000; repeat: true; running: true; onTriggered: root.refreshBrightness() }
     // ═════════════ KEYBOARD LAYOUT ═════════════
     // Hyprland's event gives an immediate update; a small reconciliation poll handles dropped events and
     // keyboards whose active keymap changes without a usable activelayout payload.
@@ -4237,7 +4247,7 @@ Scope {
                     if (r.width <= 128) return;
                     root.measureAround(win.modelData, Qt.rect(win.modelData.x + r.x + 64, win.modelData.y + r.y + 64, r.width - 128, r.height - 128), false);
                 }
-                Timer { interval: 700; repeat: true; running: root.autoContrast && ui.pop !== "" && ui.toastScreen; onTriggered: ui.measureLive() }
+                // no polling: measured when the panel opens (toneT) and again whenever windows change behind it (liveKick)
                 Timer { id: liveKick; interval: 180; onTriggered: ui.measureLive() }
                 Connections { target: root; function onGlassClientsChanged() { if (ui.pop !== "") liveKick.restart(); } }
                 // a moment after a popover starts opening (its rect is known), measure what's behind it
@@ -4404,7 +4414,7 @@ Scope {
                                     // single captures: hidden backdrops stay warm once a second (their window goes live the moment it opens);
                                     // while recording only a backdrop that is actually on screen refreshes, slowly
                                     Timer {
-                                        interval: sv.hush ? 1500 : (bd.hostShown ? 250 : 1000); repeat: true
+                                        interval: sv.hush ? 1500 : (bd.hostShown ? 250 : 3000); repeat: true     // hidden: warm every 3 s (was 1 s)
                                         running: !root.captureHeld && !sv.live && sv.captureSource !== null
                                                  && (!sv.hush || (bd.hostShown && (ui.anyVisible || swWin.visible || wpWin.visible)))
                                         onTriggered: { if (typeof sv.captureFrame === "function") sv.captureFrame(); }
