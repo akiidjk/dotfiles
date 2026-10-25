@@ -83,7 +83,13 @@ PanelWindow {
                 // the engine's own clock moves in ~0.25 s steps: a read taken right at a line change looked "earlier",
                 // sent the line back, woke the timer again and bounced every 45 ms. Small differences are that step,
                 // not drift — keep the smooth clock and only follow seeks / real drift.
-                if (predicted < 0 || Math.abs(p - predicted) > 0.35) island.eng = { pos: p, at: t };
+                if (predicted < 0 || Math.abs(p - predicted) > 0.35) {
+                    // reads happen right at a line change, so a small step back (drift, not a seek) un-showed the
+                    // line just shown and brought it back a moment later — the flash. Hold the clock at that line's start.
+                    const i = island.lyricIdx, back = predicted - p;
+                    const pos = back > 0 && back < 2 && i >= 0 ? Math.max(p, island.lyrics[i].t - island.lyricLead + 0.001) : p;
+                    island.eng = { pos: pos, at: t };
+                }
             }
         }
     }
@@ -251,24 +257,37 @@ PanelWindow {
         }
         Behavior on scale { NumberAnimation { duration: 320; easing.type: Easing.OutBack; easing.overshoot: 1.4 } }
     }
-    // text that cross-fades when it changes (lyric lines, titles)
-    component FadeText: Text {
+    // text that cross-fades when it changes (lyric lines, titles): the old line fades out over the new one fading in
+    // (fading to nothing and back blinked like a flash at every line)
+    component FadeText: Item {
         id: ft
         property string value
-        color: IslandStyle.fg
-        font.family: IslandStyle.font(Font.Medium)
-        font.weight: Font.Medium
-        font.pixelSize: 12
-        elide: Text.ElideRight
-        Component.onCompleted: text = value
-        // a change during a swap never restarts it (restarting kept the old line on screen): it lands at the next one
-        onValueChanged: if (!swap.running) swap.start()
-        SequentialAnimation {
-            id: swap
-            onStopped: if (ft.text !== ft.value) swap.start()
-            NumberAnimation { target: ft; property: "opacity"; to: 0; duration: 70 }
-            PropertyAction { target: ft; property: "text"; value: ft.value }
-            NumberAnimation { target: ft; property: "opacity"; to: 1; duration: 140 }
+        implicitHeight: cur.implicitHeight
+        Component.onCompleted: cur.text = value
+        onValueChanged: { old.text = cur.text; cur.text = value; xfade.restart(); }
+        Text {
+            id: old
+            anchors.fill: parent
+            opacity: 0
+            color: IslandStyle.fg
+            font: cur.font
+            elide: Text.ElideRight
+            verticalAlignment: Text.AlignVCenter
+        }
+        Text {
+            id: cur
+            anchors.fill: parent
+            color: IslandStyle.fg
+            font.family: IslandStyle.font(Font.Medium)
+            font.weight: Font.Medium
+            font.pixelSize: 12
+            elide: Text.ElideRight
+            verticalAlignment: Text.AlignVCenter
+        }
+        ParallelAnimation {
+            id: xfade
+            NumberAnimation { target: old; property: "opacity"; from: 1; to: 0; duration: 200; easing.type: Easing.OutCubic }
+            NumberAnimation { target: cur; property: "opacity"; from: 0; to: 1; duration: 200; easing.type: Easing.InOutQuad }
         }
     }
     // privacy dots, at the right end of the small faces
