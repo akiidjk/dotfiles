@@ -1,5 +1,6 @@
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Widgets
 import QtQuick
 import QtQuick.Layouts
 import Qt.labs.folderlistmodel
@@ -54,7 +55,7 @@ PanelWindow {
         if (filtered.count === 0) return;
         var next = grid.currentIndex < 0 ? 0 : grid.currentIndex + delta;
         grid.currentIndex = Math.max(0, Math.min(filtered.count - 1, next));
-        grid.positionViewAtIndex(grid.currentIndex, GridView.Visible);
+        grid.positionViewAtIndex(grid.currentIndex, GridView.Contain);   // Visible counted a half-shown row as shown
     }
 
     FolderListModel {
@@ -98,7 +99,7 @@ PanelWindow {
             z: 2
             anchors.fill: parent
             cornerR: wp.panelR
-            dark: IslandStyle.dark
+            dark: IslandStyle.theme.dark
             tint: wp.bar ? wp.bar.menuBorderColor : "#8A9AB5"
         }
         MouseArea { anchors.fill: parent }     // clicks inside stay inside
@@ -115,7 +116,7 @@ PanelWindow {
                 spacing: 14
                 Text {
                     text: "Wallpapers"
-                    color: IslandStyle.fg
+                    color: IslandStyle.theme.fg
                     font.family: IslandStyle.font(Font.DemiBold)
                     font.weight: Font.DemiBold
                     font.pixelSize: 15
@@ -124,16 +125,16 @@ PanelWindow {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 32
                     radius: 10
-                    color: IslandStyle.tile
+                    color: IslandStyle.theme.tile
                     border.width: 1
-                    border.color: search.activeFocus ? IslandStyle.accent : IslandStyle.tileBorder
+                    border.color: search.activeFocus ? IslandStyle.accent : IslandStyle.theme.tileBorder
                     TextInput {
                         id: search
                         anchors.fill: parent
                         anchors.leftMargin: 12; anchors.rightMargin: 30
                         verticalAlignment: TextInput.AlignVCenter
                         clip: true
-                        color: IslandStyle.fg
+                        color: IslandStyle.theme.fg
                         selectionColor: IslandStyle.accent
                         font.family: IslandStyle.fam
                         font.pixelSize: 13
@@ -146,7 +147,7 @@ PanelWindow {
                             anchors.verticalCenter: parent.verticalCenter
                             visible: search.text === ""
                             text: "Search wallpapers…"
-                            color: IslandStyle.fg3
+                            color: IslandStyle.theme.fg3
                             font: search.font
                         }
                     }
@@ -155,14 +156,14 @@ PanelWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: search.text !== ""
                         text: "✕"
-                        color: clearMa.containsMouse ? IslandStyle.fg : IslandStyle.fg3
+                        color: clearMa.containsMouse ? IslandStyle.theme.fg : IslandStyle.theme.fg3
                         font.pixelSize: 12
                         MouseArea { id: clearMa; anchors.fill: parent; anchors.margins: -6; hoverEnabled: true; onClicked: { search.text = ""; search.forceActiveFocus(); } }
                     }
                 }
                 Text {
                     text: filtered.count + " / " + folder.count
-                    color: IslandStyle.fg3
+                    color: IslandStyle.theme.fg3
                     font.family: IslandStyle.fam
                     font.pixelSize: 11
                 }
@@ -171,7 +172,10 @@ PanelWindow {
             GridView {
                 id: grid
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                // whole rows only: a half-shown row is what made the scroll trail the selection by one row
+                Layout.preferredHeight: Math.max(1, Math.floor((parent.height - 44) / cellHeight)) * cellHeight
+                Layout.maximumHeight: Layout.preferredHeight
+                snapMode: GridView.SnapToRow
                 clip: true
                 focus: true
                 model: filtered
@@ -210,16 +214,15 @@ PanelWindow {
                         radius: 14
                         color: "transparent"
                         border.width: cell.selected ? 2.5 : (ma.containsMouse ? 1.5 : 0)
-                        border.color: cell.selected ? IslandStyle.accent : IslandStyle.tileBorder
+                        border.color: cell.selected ? IslandStyle.accent : IslandStyle.theme.tileBorder
                         scale: ma.pressed ? 0.97 : 1
                         Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack; easing.overshoot: 2 } }
 
-                        Rectangle {
+                        ClippingRectangle {          // a plain Rectangle's clip is square: the picture poked out of the corners
                             anchors.fill: parent
                             anchors.margins: 4
                             radius: 10
-                            clip: true
-                            color: IslandStyle.tile
+                            color: IslandStyle.theme.tile
 
                             Image {
                                 id: thumb
@@ -237,7 +240,7 @@ PanelWindow {
                                 anchors.centerIn: parent
                                 visible: thumb.status === Image.Error
                                 text: "Failed to load"
-                                color: IslandStyle.fg3
+                                color: IslandStyle.theme.fg3
                                 font.family: IslandStyle.fam
                                 font.pixelSize: 10
                             }
@@ -267,7 +270,7 @@ PanelWindow {
                     anchors.centerIn: parent
                     visible: filtered.count === 0
                     text: wp.searchText.length > 0 ? "No wallpapers found" : "No wallpapers in " + (wp.bar ? wp.bar.wpDirEff : "")
-                    color: IslandStyle.fg2
+                    color: IslandStyle.theme.fg2
                     font.family: IslandStyle.fam
                     font.pixelSize: 12
                 }
