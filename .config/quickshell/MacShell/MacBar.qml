@@ -635,7 +635,9 @@ Scope {
             id: sii
             anchors.fill: parent
             source: si.name === "" ? "" : "file:///usr/share/icons/Adwaita/symbolic/" + si.name + ".svg"
-            sourceSize: Qt.size(Math.round(si.width * root.barWidgetScale), Math.round(si.height * root.barWidgetScale))
+            // physical pixels: bar scale × output scale (HiDPI / fractional), rounded to whole pixels
+            readonly property real px: root.barWidgetScale * (Screen.devicePixelRatio || 1)
+            sourceSize: Qt.size(Math.round(si.width * px), Math.round(si.height * px))
             smooth: true
             visible: false
         }
@@ -6922,20 +6924,27 @@ Scope {
                     Timer {
                         id: ccRefresh
                         interval: 40
+                        // true only after a menu-bar size change (the capture really can get stuck then). Plain size / position changes of the
+                        // panel (opening the Wi-Fi or Bluetooth page, Edit Controls, a network list filling in) just refresh the capture in
+                        // place: detaching the source for a moment made the whole Control Center blink every time. (upstream 0.4.0)
+                        property bool flip: false
                         onTriggered: {
-                            if (!cc.glassFlip) { cc.glassFlip = true; ccRefresh.restart(); }
+                            if (!flip) { ccSrc.scheduleUpdate(); ccBlur.scheduleUpdate(); ccBlur2.scheduleUpdate(); }
+                            else if (!cc.glassFlip) { cc.glassFlip = true; ccRefresh.restart(); }
                             else {
+                                flip = false;
                                 cc.glassFlip = false;
                                 ccSrc.scheduleUpdate(); ccBlur.scheduleUpdate(); ccBlur2.scheduleUpdate();
                             }
                         }
                     }
-                    function refreshGlass() { cc.glassFlip = false; ccRefresh.restart(); }
+                    function refreshGlass() { cc.glassFlip = false; ccRefresh.flip = true; ccRefresh.restart(); }   // bar resized: full re-attach
+                    function softRefresh() { if (!ccRefresh.flip) ccRefresh.restart(); }                              // panel moved / resized: refresh in place
                     Connections { target: root; function onBarHeightChanged() { cc.refreshGlass(); } function onBarPopupScaleChanged() { cc.refreshGlass(); } }
-                    onWidthChanged: refreshGlass()
-                    onHeightChanged: refreshGlass()
-                    onXChanged: refreshGlass()
-                    onYChanged: refreshGlass()
+                    onWidthChanged: softRefresh()
+                    onHeightChanged: softRefresh()
+                    onXChanged: softRefresh()
+                    onYChanged: softRefresh()
 
                     ShaderEffectSource {
                         id: ccSrc
