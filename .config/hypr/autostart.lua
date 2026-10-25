@@ -20,7 +20,7 @@ hl.on("hyprland.start", function()
     -- Wi-Fi / Bluetooth live in the MacShell Control Center (no nm-applet / blueman-applet)
 
     -- set up the wallpaper
-    hl.exec_cmd("awww-daemon & sleep 1 && ~/.config/hypr/scripts/init_wallpapers.sh")
+    hl.exec_cmd("awww-daemon")  -- MacShell restores the last wallpaper itself
 
     -- Start plugins
     hl.exec_cmd("hyprpm reload")

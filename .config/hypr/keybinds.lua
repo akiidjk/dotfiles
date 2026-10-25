@@ -101,10 +101,5 @@ hl.bind(
     { description = "Screenshot region" }
 )
 
--- Night mode and ToggleMirror scripts
+-- ToggleMirror script (Night Shift lives in the MacShell Control Center)
 hl.bind("SUPER + M", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/toggleMirror.sh"), { description = "Toggle mirror" })
-hl.bind(
-    "SUPER + SHIFT + M",
-    hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/nightmode.sh"),
-    { description = "Toggle night mode" }
-)

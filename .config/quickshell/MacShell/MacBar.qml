@@ -2575,7 +2575,7 @@ Scope {
         var m = Math.floor(recSecs / 60), r = recSecs % 60;
         return m + ":" + (r < 10 ? "0" : "") + r;
     }
-    function pickColor() { sh("c=$(hyprpicker -a) && [ -n \"$c\" ] && notify-send -a macbar 'Color copied' \"$c\""); }
+    function pickColor() { sh("bash ~/.config/hypr/scripts/hyprPicker.sh"); }   // akiidjk: same picker as Super+Shift+C
 
     // focus / night shift / keep awake
     property bool dnd: false
@@ -2655,7 +2655,7 @@ Scope {
         return "";
     }
     function shot(region) {      // "" = whole screen, "sel" = pick an area (frozen-screen picker), otherwise "x,y WxH"
-        if (region === "sel") shotStart();
+        if (region === "sel") sh('grim -g "$(slurp)" - | swappy -f -');   // akiidjk: same as Super+Shift+S
         else shotFinish(region, "");
     }
     function shotWindow(aw) {

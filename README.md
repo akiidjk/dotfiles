@@ -309,7 +309,7 @@ The shell is a fork of [MacShell](https://github.com/0-ss/MacShell) (Quickshell,
 
 - **Top bar**: the macOS menu bar or my **Dynamic Island** (with its hub: media, sliders, Wi‑Fi/Bluetooth/DND, calendar, power, notifications). Switch in Settings → General → Top bar.
 - **Dock, Control Center, notifications, widgets, window switcher, screenshots** from MacShell.
-- **MacLock** lock screen (idle, suspend, lid close, `Super+L` / `Alt+L`).
+- **MacLock** lock screen (idle, suspend, lid close, `Alt+L`).
 - **Launcher**: vicinae only (MacShell's Spotlight search, with its clipboard / emoji panels, is removed).
 - **Keybind viewer** and **wallpaper picker** in MacShell's Liquid Glass style.
 - **Wallpapers + colors**: one apply path, `hypr/scripts/wallpapers/apply.sh` → matugen → awww → kitty / Hyprland / btop / spicetify colors + the MacShell accent (Settings → Appearance → Accent, white-dot swatch). No shell restart.
@@ -371,9 +371,9 @@ Simple run `SUPER + K` (or Help → Hyprland Keybinds in the menu bar). The shel
 | `SUPER + H` | Show / hide the top bar |
 | `SUPER + N` | Island hub (Control Center in menu-bar mode) |
 | `SUPER + ,` | MacShell Settings |
-| `SUPER + L` / `ALT + L` | Lock (MacLock) |
+| `ALT + L` | Lock (MacLock) |
 | `ALT + TAB` | Window switcher |
-| `PRINT` | Screenshot (MacShell), `SUPER + SHIFT + S` grim + swappy |
+| `SUPER + SHIFT + S` | Screenshot region (grim + slurp + swappy) |
 
 <img width="1919" height="1080" alt="swappy-20260913_172045" src="https://github.com/user-attachments/assets/a977171d-145e-4ce8-93eb-542fe580d716" />
 

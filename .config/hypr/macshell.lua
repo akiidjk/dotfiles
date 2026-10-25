@@ -13,12 +13,10 @@ local lock = "sh ~/.config/quickshell/MacLock/lock-via-ipc.sh"
 
 hl.bind("SUPER + comma",  hl.dsp.exec_cmd(qs .. "settings toggle"),    { description = "MacShell Settings" })
 hl.bind("ALT + TAB",      hl.dsp.exec_cmd(qs .. "switcher next"),      { description = "Window switcher" })
-hl.bind("PRINT",          hl.dsp.exec_cmd(qs .. "screenshot region"),  { description = "Screenshot (MacShell)" })
 hl.bind("SUPER + H",      hl.dsp.exec_cmd(qs .. "island toggle"),      { description = "Show / hide the top bar" })
 hl.bind("SUPER + N",      hl.dsp.exec_cmd(qs .. "island hub"),         { description = "Control Center" })
 hl.bind("SUPER + W",      hl.dsp.exec_cmd(qs .. "wallpicker toggle"),  { description = "Wallpaper picker" })
 hl.bind("SUPER + K",      hl.dsp.exec_cmd(qs .. "keybinds toggle"),    { description = "Keybindings" })
-hl.bind("SUPER + L",      hl.dsp.exec_cmd(lock),                       { description = "Lock screen" })
 hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd(lock), { locked = true })
 
 -- Hardware keys: MacShell handles them and shows its OSD; wpctl / brightnessctl / playerctl when the shell is down.
