@@ -113,3 +113,19 @@ export FZF_DEFAULT_OPTS="--ansi --preview-window 'right:60%' --preview 'bat --co
 
 # Path
 export XDG_CONFIG_HOME="$HOME/.config"
+
+# MacShell Dynamic Island: a command that ran 15 s or more reports back in the notch when it ends
+# (interactive programs are skipped: quitting vim is not news)
+autoload -Uz add-zsh-hook
+_island_t0=0
+_island_preexec() { _island_t0=$SECONDS; _island_cmd=$1 }
+_island_precmd() {
+    local st=$? d=$(( SECONDS - _island_t0 )) c=${${_island_cmd%% *}##*/}
+    (( _island_t0 > 0 && d >= 15 )) || { _island_t0=0; return }
+    _island_t0=0
+    case $c in vim|nvim|vi|nano|ssh|less|more|man|htop|btop|top|yazi|lazygit|tmux|zellij|fzf|watch|tail|journalctl) return ;; esac
+    local t; (( st == 0 )) && t="✓ $c" || t="✗ $c (exit $st)"
+    qs -c MacShell ipc call island notify "$t" "$(( d / 60 ))m $(( d % 60 ))s" "" &>/dev/null &!
+}
+add-zsh-hook preexec _island_preexec
+add-zsh-hook precmd _island_precmd

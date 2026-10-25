@@ -15,7 +15,7 @@ hl.bind("SUPER + comma",  hl.dsp.exec_cmd(qs .. "settings toggle"),    { descrip
 hl.bind("ALT + TAB",      hl.dsp.exec_cmd(qs .. "switcher next"),      { description = "Window switcher" })
 hl.bind("PRINT",          hl.dsp.exec_cmd(qs .. "screenshot region"),  { description = "Screenshot (MacShell)" })
 hl.bind("SUPER + H",      hl.dsp.exec_cmd(qs .. "island toggle"),      { description = "Show / hide the top bar" })
-hl.bind("SUPER + N",      hl.dsp.exec_cmd(qs .. "island hub"),         { description = "Island hub / Control Center" })
+hl.bind("SUPER + N",      hl.dsp.exec_cmd(qs .. "island hub"),         { description = "Control Center" })
 hl.bind("SUPER + W",      hl.dsp.exec_cmd(qs .. "wallpicker toggle"),  { description = "Wallpaper picker" })
 hl.bind("SUPER + K",      hl.dsp.exec_cmd(qs .. "keybinds toggle"),    { description = "Keybindings" })
 hl.bind("SUPER + L",      hl.dsp.exec_cmd(lock),                       { description = "Lock screen" })
@@ -48,7 +48,6 @@ end
 hl.layer_rule({ name = "mac-noanim", match = { namespace = "^mac" }, no_anim = true })
 hl.layer_rule({ name = "macdock",    match = { namespace = "^macdock$" },   blur = true, ignore_alpha = 0.2 })
 hl.layer_rule({ name = "macbarbg",   match = { namespace = "^macbarbg$" },  blur = true, ignore_alpha = 0.05 })
-hl.layer_rule({ name = "macisland",  match = { namespace = "^macisland$" }, blur = true, ignore_alpha = 0.05 })
 
 -- MacShell's own windows draw their own edge
 hl.window_rule({

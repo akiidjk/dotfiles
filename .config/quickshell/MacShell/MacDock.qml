@@ -1382,14 +1382,12 @@ Scope {
                     }
                     SRow {
                         t: pal
-                        title: I18n.tr("Top bar")
-                        subtitle: I18n.tr("The macOS menu bar, or the Dynamic Island (Super+H hides it, Super+N opens its hub)")
-                        SSegmented {
+                        title: I18n.tr("Dynamic Island")
+                        subtitle: I18n.tr("A notch in the centre of the menu bar, in place of the workspaces (Super+N opens its hub)")
+                        SSwitch {
                             t: pal
-                            model: ["Menu Bar", "Dynamic Island"]
-                            segWidth: 116
-                            current: (root.bar && root.bar.topBar === "island") ? 1 : 0
-                            onPicked: i => { if (root.bar) root.bar.topBar = (i === 1 ? "island" : "menubar"); }
+                            checked: root.bar ? root.bar.islandEnabled : true
+                            onToggled: v => { if (root.bar) root.bar.islandEnabled = v; }
                         }
                     }
                 }
@@ -4148,7 +4146,8 @@ Scope {
     Process {
         id: trashWatch
         running: root.showTrash && root.trashReady && !root.trashPoll
-        command: ["inotifywait", "-m", "-q", "-e", "create", "-e", "delete", "-e", "moved_to", "-e", "moved_from", root.trashDir]
+        // setpriv --pdeathsig: dies with the shell (before, every restart left one behind)
+        command: ["setpriv", "--pdeathsig", "KILL", "inotifywait", "-m", "-q", "-e", "create", "-e", "delete", "-e", "moved_to", "-e", "moved_from", root.trashDir]
         stdout: SplitParser { onRead: data => trashDebounce.restart() }
     }
     // Empty Trash: KDE's ktrash when it exists (it also cleans trashes on other drives and keeps Dolphin's trash icon in sync),

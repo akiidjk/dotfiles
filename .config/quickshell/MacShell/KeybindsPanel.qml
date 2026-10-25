@@ -114,7 +114,7 @@ PanelWindow {
             z: 2
             anchors.fill: parent
             cornerR: kb.panelR
-            dark: IslandStyle.dark
+            dark: IslandStyle.theme.dark
             tint: kb.bar ? kb.bar.menuBorderColor : "#8A9AB5"
         }
         MouseArea { anchors.fill: parent }     // clicks inside stay inside
@@ -132,7 +132,7 @@ PanelWindow {
                 Layout.fillWidth: true
                 Text {
                     text: "Keybindings"
-                    color: IslandStyle.fg
+                    color: IslandStyle.theme.fg
                     font.family: IslandStyle.font(Font.DemiBold)
                     font.weight: Font.DemiBold
                     font.pixelSize: 15
@@ -140,7 +140,7 @@ PanelWindow {
                 Item { Layout.fillWidth: true }
                 Text {
                     text: bindModel.count + " binds"
-                    color: IslandStyle.fg3
+                    color: IslandStyle.theme.fg3
                     font.family: IslandStyle.fam
                     font.pixelSize: 11
                 }
@@ -151,16 +151,16 @@ PanelWindow {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 32
                 radius: 10
-                color: IslandStyle.tile
+                color: IslandStyle.theme.tile
                 border.width: 1
-                border.color: search.activeFocus ? IslandStyle.accent : IslandStyle.tileBorder
+                border.color: search.activeFocus ? IslandStyle.accent : IslandStyle.theme.tileBorder
                 TextInput {
                     id: search
                     anchors.fill: parent
                     anchors.leftMargin: 12; anchors.rightMargin: 30
                     verticalAlignment: TextInput.AlignVCenter
                     clip: true
-                    color: IslandStyle.fg
+                    color: IslandStyle.theme.fg
                     selectionColor: IslandStyle.accent
                     font.family: IslandStyle.fam
                     font.pixelSize: 13
@@ -172,7 +172,7 @@ PanelWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: search.text === ""
                         text: "Search key or command…"
-                        color: IslandStyle.fg3
+                        color: IslandStyle.theme.fg3
                         font: search.font
                     }
                 }
@@ -181,7 +181,7 @@ PanelWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: search.text !== ""
                     text: "✕"
-                    color: clearMa.containsMouse ? IslandStyle.fg : IslandStyle.fg3
+                    color: clearMa.containsMouse ? IslandStyle.theme.fg : IslandStyle.theme.fg3
                     font.pixelSize: 12
                     MouseArea { id: clearMa; anchors.fill: parent; anchors.margins: -6; hoverEnabled: true; onClicked: search.text = "" }
                 }
@@ -204,7 +204,7 @@ PanelWindow {
                     width: list.width
                     height: 40
                     radius: 10
-                    color: rowMa.containsMouse ? IslandStyle.hover : IslandStyle.tile
+                    color: rowMa.containsMouse ? IslandStyle.theme.hover : IslandStyle.theme.tile
                     Behavior on color { ColorAnimation { duration: IslandStyle.aFast } }
                     MouseArea { id: rowMa; anchors.fill: parent; hoverEnabled: true }
 
@@ -221,7 +221,7 @@ PanelWindow {
                         Text {
                             Layout.maximumWidth: list.width * 0.55
                             text: row.text
-                            color: IslandStyle.fg
+                            color: IslandStyle.theme.fg
                             elide: Text.ElideRight
                             horizontalAlignment: Text.AlignRight
                             font.family: IslandStyle.fam
@@ -240,14 +240,14 @@ PanelWindow {
         implicitHeight: 24
         implicitWidth: Math.max(24, capText.implicitWidth + 14)
         radius: 6
-        color: isMod ? IslandStyle.btnOff : IslandStyle.alpha(IslandStyle.accent, 0.22)
+        color: isMod ? IslandStyle.theme.btnOff : IslandStyle.alpha(IslandStyle.accent, 0.22)
         border.width: 1
-        border.color: IslandStyle.tileBorder
+        border.color: IslandStyle.theme.tileBorder
         Text {
             id: capText
             anchors.centerIn: parent
             text: parent.label
-            color: IslandStyle.fg
+            color: IslandStyle.theme.fg
             font.family: IslandStyle.font(Font.DemiBold)
             font.weight: Font.DemiBold
             font.pixelSize: 12

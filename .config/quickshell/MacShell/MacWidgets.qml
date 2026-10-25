@@ -357,6 +357,8 @@ Scope {
 
     // ───────────── lyrics (LRCLIB synced first; Genius plain-text fallback) ─────────────
     property bool lyricsWanted: false
+    property bool islandLyrics: false          // the Dynamic Island shows the line being sung (Island.qml)
+    readonly property bool lyricsNeeded: lyricsWanted || islandLyrics
     property var lyricsLines: []               // [{ t: seconds (-1 = not synced), text }]
     property bool lyricsSynced: false
     property string lyricsState: "idle"        // idle | loading | ok | none
@@ -369,13 +371,13 @@ Scope {
                                                   + Math.round(player.lengthSupported ? player.length : 0)) : ""
     onTrackKeyChanged: {
         lyricsLines = []; lyricsSynced = false; lyricsState = "idle";
-        if (lyricsWanted) lyricsSoon.restart();
+        if (lyricsNeeded) lyricsSoon.restart();
     }
-    onLyricsWantedChanged: if (lyricsWanted && lyricsState === "idle") lyricsSoon.restart()
+    onLyricsNeededChanged: if (lyricsNeeded && lyricsState === "idle") lyricsSoon.restart()
     Timer { id: lyricsSoon; interval: 500; onTriggered: root.fetchLyrics() }
 
     function fetchLyrics() {
-        if (!lyricsWanted || !player || player.trackTitle === "") return;
+        if (!lyricsNeeded || !player || player.trackTitle === "") return;
         if (lrcProc.running) return;                      // finished handler re-checks the key
         lyricsReqKey = trackKey;
         lrcTitle = player.trackTitle; lrcArtist = player.trackArtist; lrcAlbum = player.trackAlbum;

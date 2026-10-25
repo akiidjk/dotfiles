@@ -75,15 +75,18 @@ Scope {
 
     // ───────────── CONFIG (all persisted to settings.json) ─────────────
     property bool barEnabled: true           // the menu bar strip itself
-    // ── akiidjk fork: top bar = the macOS menu bar or the Dynamic Island (Island.qml) ──
-    property string topBar: "menubar"        // "menubar" | "island"   (Settings → Menu Bar → Top bar, or `ipc call topbar set island`)
-    property bool topBarHidden: false        // Super+H: hide / show whichever top bar is active (not persisted)
-    readonly property bool menuBarShown: barEnabled && topBar === "menubar" && !topBarHidden
-    signal islandHubRequest()                // Super+N in island mode: the focused screen's island opens its hub
+    // ── akiidjk fork: the Dynamic Island (Island.qml) is a notch in the centre of the menu bar, in place of the workspaces ──
+    property bool islandEnabled: true        // Settings → Menu Bar → Dynamic Island, or `ipc call island setEnabled false`
+    property bool topBarHidden: false        // Super+H: hide / show the menu bar (and its island; not persisted)
+    readonly property bool menuBarShown: barEnabled && !topBarHidden
+    readonly property bool islandShown: menuBarShown && islandEnabled
+    // a passing activity for the island (every screen): { icon (Nerd Font glyph), image, title, sub, value 0..1, color, ms }
+    signal islandAlert(var a)
+    // shows `a` in the island and returns true; false while the island is off, so the caller falls back to its own UI
+    function islandSay(a) { if (!islandShown || !osdReady) return false; islandAlert(a); return true; }
     property bool keybindsOpen: false        // KeybindsPanel.qml (Super+K, Help → Hyprland Keybinds)
     property bool wallPickerOpen: false      // WallPickerPanel.qml (Super+W)
     readonly property QtObject islandPal: pal          // IslandStyle.qml reads the palette through this
-    readonly property alias notifHistory: notifHist    // the island hub lists MacShell's notification history
     // Accent from the wallpaper: matugen writes the primary colour to ~/.config/macshell/accent (templates/macshell-accent);
     // while "Wallpaper" is the chosen accent swatch, every new value is applied to the bar and the Dock.
     property bool accentFromWallpaper: true
@@ -104,7 +107,7 @@ Scope {
     property string ccStyle: "tiles"         // tiles = every control its own glass | macos = one frosted panel behind them
     property bool notificationsEnabled: true // banners + Notification Center (off = no D-Bus daemon at all, so mako/dunst can take over)
     property bool clockAppEnabled: true      // the Clock app (alarms and timers still ring while it is on)
-    readonly property bool barLayerNeeded: barEnabled || ccEnabled || notificationsEnabled || topBar === "island"
+    readonly property bool barLayerNeeded: barEnabled || ccEnabled || notificationsEnabled
     property bool darkMode: true             // the resolved look (true = dark); follows appearanceMode
     property string appearanceMode: "dark"   // light | dark | auto (auto = light by day, dark by night)
     // Panels (top bar menus / popovers, Control Center, notifications): the glass tint, cards and borders always follow the
@@ -320,7 +323,7 @@ Scope {
     property string kbMain: ""                // name of the main keyboard (Hyprland)
     property string recordFile: ""
 
-    readonly property var settingKeys: ["barEnabled", "topBar", "accentFromWallpaper", "darkMode", "appearanceMode", "accent", "fontFamily", "barHeight", "glassOpacity",
+    readonly property var settingKeys: ["barEnabled", "islandEnabled", "accentFromWallpaper", "darkMode", "appearanceMode", "accent", "fontFamily", "barHeight", "glassOpacity",
         "barStyle", "barGlass", "glassRim", "glassGrain", "glassLiquid", "glassBlur", "barBgOpacity", "glassRealtime", "liveWallGlass", "glassDebug", "wallpaperPath", "use24h", "showDate",
         "showSeconds", "showBatteryPercent", "showTray",
         "ccEnabled", "notificationsEnabled", "clockAppEnabled", "ccStyle", "barLogoMode", "barCustomLogoPath", "barWidgets", "weekStartsMonday", "terminal", "launcher",
@@ -533,7 +536,7 @@ Scope {
     Process {
         id: gsettingsMonitor
         running: true
-        command: ["gsettings", "monitor", "org.gnome.desktop.interface", "color-scheme"]
+        command: ["setpriv", "--pdeathsig", "KILL", "gsettings", "monitor", "org.gnome.desktop.interface", "color-scheme"]   // dies with the shell
         stdout: SplitParser { onRead: data => { if (!gsettingsSchemeProc.running) gsettingsSchemeProc.running = true; } }
     }
     QtObject {
@@ -1881,7 +1884,6 @@ Scope {
         soundLast[name] = now;
         Quickshell.execDetached(["pw-play", "--volume=" + (vol === undefined ? 0.8 : vol), soundDir + "/" + name + ".wav"]);
     }
-    onChargingChanged: if (charging && osdReady) playSound("charge")
     function showOsd(kind, value) {
         if (!osdReady) return;
         if (Date.now() < (kind === "brightness" ? osdQuietBrightUntil : osdQuietVolUntil)) return;
@@ -2467,7 +2469,7 @@ Scope {
     // using the microphone / a camera / a screen-share and vanish as soon as it stops. No polling, no pw-dump.
     PwObjectTracker { objects: Pipewire.linkGroups.values }
     function computePrivacy() {
-        var mic = [], cam = [], share = [], L = Pipewire.linkGroups.values;
+        var mic = [], cam = v4lCam.slice(), share = [], L = Pipewire.linkGroups.values;
         function add(list, name) { if (list.indexOf(name) < 0) list.push(name); }
         for (var i = 0; i < L.length; i++) {
             var g = L[i];
@@ -2705,18 +2707,115 @@ Scope {
         function brightnessUp(): void { root.hwBrightness(0.05); }
         function brightnessDown(): void { root.hwBrightness(-0.05); }
     }
-    // ── akiidjk fork ──   qs -c MacShell ipc call topbar set menubar|island | toggle
-    IpcHandler {
-        target: "topbar"
-        function set(mode: string): void { if (mode === "menubar" || mode === "island") root.topBar = mode; }
-        function toggle(): void { root.topBar = root.topBar === "island" ? "menubar" : "island"; }
-    }
-    // island toggle = show / hide the active top bar (Super+H); island hub = the island's hub, or the Control Center
-    // when the menu bar is the top bar (Super+N)
+    // ── akiidjk fork ──   island toggle = show / hide the menu bar (Super+H); island hub = the island's hub, or the
+    // Control Center when the island is off (Super+N); island setEnabled true|false = the Settings switch
     IpcHandler {
         target: "island"
         function toggle(): void { root.topBarHidden = !root.topBarHidden; }
-        function hub(): void { if (root.topBar === "island") { root.topBarHidden = false; root.islandHubRequest(); } else root.ccRequest(true); }
+        function hub(): void { root.topBarHidden = false; root.ccRequest(true); }
+        function setEnabled(on: bool): void { root.islandEnabled = on; }
+        // a script's own activity, e.g. the zsh hook for long commands:  island notify "✓ make" "2m 13s" ""
+        function notify(title: string, sub: string, icon: string): void {
+            if (!root.islandSay({ icon: icon || "\u{f120}", title: title, sub: sub, ms: 4000 }))
+                Quickshell.execDetached(["notify-send", "-a", "macbar", title, sub]);
+        }
+    }
+
+    // the island shows the synced lyric line being sung: the widgets' LRCLIB fetch runs for it too
+    Binding {
+        when: root.hub !== null && root.hub.widgets !== undefined && root.hub.widgets !== null
+        target: root.hub ? root.hub.widgets : null
+        property: "islandLyrics"
+        value: root.islandShown && root.player !== null
+    }
+
+    // ── island activities: system events the notch shows as they happen (all go through islandSay) ──
+    onChargingChanged: {
+        if (charging && osdReady) playSound("charge");
+        if (hasBattery) islandSay({ icon: charging ? "\u{f0e7}" : "\u{f240}", color: charging ? "#30D158" : "",
+                                    title: charging ? I18n.tr("Charging") : I18n.tr("On Battery"), sub: batPct + "%", value: batPct / 100 });
+    }
+    onBatPctChanged: if (hasBattery && !charging && (batPct === 20 || batPct === 10 || batPct === 5))
+        islandSay({ icon: "\u{f243}", color: "#FF453A", title: I18n.tr("Low Battery"), sub: batPct + "%", value: batPct / 100, ms: 5000 })
+    property int btSeen: 0
+    onBtConnectedChanged: {
+        // the name is set right after the count: read it once the update is done
+        if (btConnected > btSeen) Qt.callLater(function () {
+            root.islandSay({ icon: "\u{f293}", color: "#0A84FF", title: root.btConnectedName || "Bluetooth", sub: I18n.tr("Connected") });
+        });
+        btSeen = btConnected;
+    }
+    onWifiSsidChanged: islandSay(wifiSsid !== "" ? { icon: "\u{f1eb}", title: wifiSsid, sub: I18n.tr("Wi-Fi connected") }
+                                                 : { icon: "\u{f1eb}", color: "#FF9F0A", title: "Wi-Fi", sub: I18n.tr("Disconnected") })
+    onKeyboardLayoutChanged: islandSay({ icon: "\u{f11c}", title: kbLayouts[kbIndex] ? kbLayouts[kbIndex].name : keyboardLayout,
+                                         sub: I18n.tr("Input source") + " · " + keyboardLayout })
+    readonly property int privMic: privacy.mic.length
+    readonly property int privCam: privacy.cam.length
+    onPrivMicChanged: if (privMic > 0) islandSay({ icon: "\u{f130}", color: "#FF9F0A", title: privacy.mic.join(", "), sub: I18n.tr("Using the microphone") })
+    onPrivCamChanged: if (privCam > 0) islandSay({ icon: "\u{f03d}", color: "#30D158", title: privacy.cam.join(", "), sub: I18n.tr("Using the camera") })
+    // apps that open the webcam straight through V4L2 (OBS, most video tools) never show up in PipeWire's graph:
+    // inotify reports the /dev/video* nodes being opened / closed, and fuser says who holds them.
+    // Something on this system opens and closes the nodes a couple of times a second (a device scan, too brief to catch):
+    // so events only keep a count of open handles, and fuser runs only once that count has settled into a different
+    // state (held <-> free). PipeWire itself is left out: the app behind it is found through the links above.
+    // Long-lived watchers get setpriv --pdeathsig: they die with the shell instead of piling up at every restart.
+    property var v4lCam: []
+    property int v4lOpen: 0
+    Process {
+        running: true
+        command: ["sh", "-c", "ls /dev/video* >/dev/null 2>&1 || exit 0; "
+            + "exec setpriv --pdeathsig KILL inotifywait -mq -e open,close --format %e /dev/video*"]
+        stdout: SplitParser {
+            onRead: e => {
+                root.v4lOpen = Math.max(0, root.v4lOpen + (e.indexOf("OPEN") === 0 ? 1 : -1));
+                if (!v4lSettle.running) v4lSettle.start();
+            }
+        }
+    }
+    Timer { id: v4lSettle; interval: 700; onTriggered: if ((root.v4lOpen > 0) !== (root.v4lCam.length > 0)) v4lCheck.running = true }
+    Process {
+        id: v4lCheck
+        running: true                                   // once at start: a camera may already be in use
+        command: ["sh", "-c", "r=''; for p in $(fuser /dev/video* 2>/dev/null); do c=$(cat /proc/$p/comm 2>/dev/null); "
+            + "case \"$c\" in ''|pipewire|wireplumber) continue;; esac; case \",$r,\" in *\",$c,\"*) ;; *) r=\"${r:+$r,}$c\";; esac; done; echo \"$r\""]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const l = text.trim(), v = l === "" ? [] : l.split(",");
+                if (v.join() !== root.v4lCam.join()) root.v4lCam = v;
+                if (v.length === 0) root.v4lOpen = 0;  // resync the count (handles closed before we started)
+            }
+        }
+    }
+
+    // clipboard: one line per change — S = a password manager's secret (never shown), I = image, T<text>.
+    // wl-paste --watch reports what is already there when it starts (the bar shown again): that first line is not news.
+    property bool clipPrimed: false
+    Process {
+        running: root.islandShown
+        onRunningChanged: root.clipPrimed = false
+        command: ["setpriv", "--pdeathsig", "KILL", "wl-paste", "--watch", "sh", "-c",
+            "t=$(wl-paste -l 2>/dev/null); case \"$t\" in *x-kde-passwordManagerHint*) echo S;; *image/*) echo I;; "
+            + "*) printf 'T%s\\n' \"$(wl-paste -n 2>/dev/null | head -c 120 | tr '\\n\\t' '  ')\";; esac"]
+        stdout: SplitParser {
+            onRead: l => {
+                if (!root.clipPrimed) { root.clipPrimed = true; return; }
+                if (l === "I") root.islandSay({ icon: "\u{f03e}", title: I18n.tr("Image copied") });
+                else if (l.length > 1 && l[0] === "T") root.islandSay({ icon: "\u{f0c5}", title: I18n.tr("Copied"), sub: l.substring(1).trim() });
+            }
+        }
+    }
+    // finished downloads in ~/Downloads: browsers write name.part / name.crdownload and rename it into place when done
+    // ponytail: renames only, so a plain `curl -O` / `wget` there is not announced (it writes the file in place)
+    Process {
+        running: root.islandShown
+        command: ["setpriv", "--pdeathsig", "KILL", "inotifywait", "-mq", "-e", "moved_to", "--format", "%f",
+                  Quickshell.env("HOME") + "/Downloads"]
+        stdout: SplitParser {
+            onRead: f => {
+                if (/^\.|\.(part|crdownload|tmp|download)$/i.test(f)) return;
+                root.islandSay({ icon: "\u{f019}", color: "#0A84FF", title: I18n.tr("Download complete"), sub: f, ms: 3500 });
+            }
+        }
     }
     IpcHandler {
         target: "keybinds"
@@ -3230,7 +3329,7 @@ Scope {
         }
     }
     function resetSettings() {
-        barEnabled = true; topBar = "menubar"; accentFromWallpaper = true;
+        barEnabled = true; islandEnabled = true; accentFromWallpaper = true;
         darkMode = true; appearanceMode = "dark"; accent = "#0a84ff"; fontFamily = "Open Runde"; glassOpacity = 0.42; glassBlur = 5; barBgOpacity = 0.10; glassRealtime = false; liveWallGlass = false;
         barStyle = "liquid"; use24h = true; showDate = true; showSeconds = false; showBatteryPercent = true;
         showTray = true;
@@ -4684,10 +4783,10 @@ Scope {
                         }
                     }
 
-                    // ── centre: workspaces (minimal, text only) ──
+                    // ── centre: workspaces (minimal, text only), or the Dynamic Island (Island.qml, its own layer) ──
                     Row {
                         id: wsRow
-                        visible: root.barWidgetEnabled("workspaces")
+                        visible: root.barWidgetEnabled("workspaces") && !root.islandEnabled   // the island takes the centre
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.verticalCenter: parent.verticalCenter
                         height: 28
@@ -7766,32 +7865,11 @@ Scope {
         }
 
         // ═════════ akiidjk fork: Dynamic Island, keybindings, wallpaper picker (own files, own layers) ═════════
-        // Each gets this screen's backdrop component and its Liquid Glass slab from here (LGlass lives in this file).
+        // The panels get this screen's backdrop component and their Liquid Glass slab from here (LGlass lives in this
+        // file); the island is a plain black notch.
         Island {
-            id: islandWin
             screen: perScreen.modelData
             bar: root
-            backdrop: backdropComp
-            focusedScreen: ui.toastScreen
-            LGlass {
-                anchors.fill: parent
-                backdrop: islandWin.backdropItem
-                shaderUrl: root.glassShaderUrl
-                liquid: root.liquidActive
-                dark: root.effDark
-                bx: islandWin.cardX; by: islandWin.cardY
-                cornerR: islandWin.cardRadius
-                tint: root.glassOpacity
-                thickness: 22
-                strength: 0.8 * root.glassLiquid
-                rim: root.glassRim
-                grain: root.glassGrain
-                blur: root.glassBlur
-                debug: root.glassDebug
-                onShaderError: root.glassState = "failed"
-                rimTint: 1
-                ringW: 1.2
-            }
         }
         KeybindsPanel {
             id: kbWin

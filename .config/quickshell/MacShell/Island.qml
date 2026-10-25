@@ -1,43 +1,46 @@
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Quickshell.Widgets
 import Quickshell.Services.Mpris
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Shapes
 
-// Dynamic Island: the alternative top bar (Settings → Menu Bar → Top bar). A centre pill holds workspaces + clock
-// (and now-playing when something plays); hovering expands it into the full bar with tray, volume, date and transport
-// controls; clicking (or Super+N) opens the hub.
-//
-// Created per screen by MacBar.qml. The Liquid Glass slab is handed in by MacBar as a child (it lands in `glass`,
-// behind the card) together with the backdrop component, so this file never refers to MacBar's own types.
+// Dynamic Island: a black notch hanging from the centre of the menu bar, in place of the workspaces
+// (Settings → Menu Bar → Dynamic Island). What it shows, most important first:
+//   hover        the player (or the date when nothing is loaded)
+//   alert        a passing activity: volume / brightness, notifications, battery, Bluetooth, Wi-Fi, microphone / camera,
+//                input source, clipboard, downloads, workspace switches, `ipc call island notify` (MacBar.islandSay)
+//   live         a running screen recording, Clock timer or stopwatch
+//   compact      now playing: art, title (or the synced lyric line being sung), sound bars
+//   idle         an empty notch
+// Privacy dots sit at its right end. Created per screen by MacBar.qml, on its own layer.
 PanelWindow {
     id: island
 
     property var bar: null
-    property Component backdrop: null          // MacBar's backdropComp (wallpaper + windows behind the glass)
-    property bool focusedScreen: true          // this screen gets keyboard-less requests (hub toggle)
-    default property alias glass: glassHost.data
-    readonly property Item backdropItem: bdLoader.item
 
-    readonly property int topMargin: 8
-    readonly property int maxW: 860
-    readonly property int maxH: 54
-    readonly property int collapsedH: 36
-    readonly property int hubMaxH: 780   // window must be tall enough for the open hub + notifs
+    readonly property int collapsedH: (bar ? bar.barHeight : 28) + 5   // hangs a little below the bar: room under the text
+    readonly property int ear: 8               // concave fillet joining the notch to the screen edge
 
-    visible: bar !== null && bar.topBar === "island" && !bar.topBarHidden
+    visible: bar !== null && bar.islandShown
 
-    anchors { top: true; left: true; right: true }
-    implicitHeight: hubMaxH + topMargin * 2 + 24   // fixed — surface never resizes
-    exclusiveZone: collapsedH + topMargin
+    // fixed (the player is the tallest face, the compact lyric line the widest + bump + ears) — surface never resizes.
+    // Only as wide as the notch can get: every frame redraws the whole surface, a full-width one cost 4x more.
+    anchors.top: true
+    implicitWidth: 500
+    implicitHeight: 220
+    exclusionMode: ExclusionMode.Ignore
     color: "transparent"
     WlrLayershell.namespace: "macisland"
     WlrLayershell.layer: WlrLayer.Top
     mask: Region { item: hitArea }
 
-    // Hyprland monitor for this island's screen — Workspaces shows this monitor's desktops
     readonly property var hyprMonitor: screen ? Hyprland.monitorFor(screen) : null
+    readonly property var clock: bar && bar.hub ? bar.hub.clock : null
+    readonly property var widgets: bar && bar.hub ? bar.hub.widgets : null
 
     // ── player ────────────────────────────────────────────
     readonly property var player: {
@@ -47,128 +50,256 @@ PanelWindow {
     readonly property bool hasTrack: player != null && (player.trackTitle ?? "") !== ""
     readonly property bool playing: player != null && player.isPlaying
 
+    // synced lyrics come from the widgets' LRCLIB fetch (MacBar asks for them while the island is on)
+    readonly property var lyrics: widgets && widgets.lyricsSynced && widgets.player === player ? widgets.lyricsLines : []
+    // one line on its own has to be read while it is sung: show it this many seconds early (tuning knob)
+    property real lyricLead: 0.4
+    readonly property real lyricPos: {
+        if (lyrics.length === 0 || !player) return 0;
+        // max(): a fresh read lands before nowMs catches up — never count time backwards (or a stale gap forwards)
+        if (eng.at > 0) return eng.pos + (playing ? Math.max(0, nowMs - eng.at) / 1000 : 0) + lyricLead;
+        return (player.position ?? 0) + lyricLead;
+    }
+
+    // Spotifast publishes its MPRIS Position in ~1 s steps, never signals it, and Quickshell only re-reads it on
+    // play / pause / track change: the lyrics ran a line behind. Its own CLI answers with the audio engine's position
+    // in ms (~6 ms a call), so for Spotifast the lines run off that: re-read whenever the position is asked for
+    // (each line's wake-up below), on seeks, play / pause and new lyrics — about once per line.
+    readonly property bool spotifast: (player?.dbusName ?? "").endsWith(".spotifast")
+    // the last engine read, set in one go (two separate properties made the position jump for a moment in between);
+    // at = Date.now() of the read, 0 = none yet (use MPRIS)
+    property var eng: ({ pos: 0, at: 0 })
+    property real nowMs: Date.now()
+    function engineSync() { if (spotifast && lyrics.length > 0) engineProc.running = true; }
+    Process {
+        id: engineProc
+        command: ["spotifast", "now-playing", "--raw"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const ms = parseInt(text.split("\t")[4]), t = Date.now();
+                if (isNaN(ms)) { island.eng = { pos: 0, at: 0 }; return; }
+                const e = island.eng, p = ms / 1000;
+                const predicted = e.at > 0 ? e.pos + (island.playing ? (t - e.at) / 1000 : 0) : -1;
+                // the engine's own clock moves in ~0.25 s steps: a read taken right at a line change looked "earlier",
+                // sent the line back, woke the timer again and bounced every 45 ms. Small differences are that step,
+                // not drift — keep the smooth clock and only follow seeks / real drift.
+                if (predicted < 0 || Math.abs(p - predicted) > 0.35) island.eng = { pos: p, at: t };
+            }
+        }
+    }
+    onLyricsChanged: { eng = { pos: 0, at: 0 }; engineSync(); }
+    onPlayingChanged: {
+        nowMs = Date.now();
+        if (playing && eng.at > 0) eng = { pos: eng.pos, at: nowMs };   // resumed: the pause is not playing time
+        engineSync();
+    }
+    onSpotifastChanged: { eng = { pos: 0, at: 0 }; engineSync(); }
+    Connections {
+        target: island.player
+        ignoreUnknownSignals: true
+        function onPositionChanged() { island.engineSync(); }
+    }
+    readonly property int lyricIdx: {
+        const L = lyrics, p = lyricPos;
+        let lo = 0, hi = L.length - 1, r = -1;
+        while (lo <= hi) {
+            const mid = (lo + hi) >> 1;
+            if (L[mid].t <= p) { r = mid; lo = mid + 1; } else hi = mid - 1;
+        }
+        return r;
+    }
+    readonly property string lyricLine: playing && lyricIdx >= 0 ? lyrics[lyricIdx].text : ""
+    // MPRIS does not announce the position (only seeks): instead of polling, wake up when the next line is due,
+    // read the position there, and aim again — one wake-up per line
+    Timer {
+        repeat: true
+        running: island.visible && island.playing && island.lyrics.length > 0
+        interval: {
+            const n = island.lyrics[island.lyricIdx + 1];
+            return n ? Math.max(40, Math.round((n.t - island.lyricPos) * 1000) + 15) : 5000;
+        }
+        onTriggered: { island.nowMs = Date.now(); island.player?.positionChanged(); }
+    }
+
+    // a new track: show the compact notch for a while and give it a little bump
     property bool autoShow: false
+    property int bump: 0
     Timer { id: autoShowTimer; interval: 3000; onTriggered: island.autoShow = false }
+    Timer { id: bumpTimer; interval: 160; onTriggered: island.bump = 0 }
+    function kick() { bump = 18; bumpTimer.restart(); }
     Connections {
         target: island.player
         ignoreUnknownSignals: true
         function onTrackTitleChanged() {
-            if (island.playing) {
-                island.autoShow = true;
-                autoShowTimer.restart();
+            if (!island.playing) return;
+            island.autoShow = true;
+            autoShowTimer.restart();
+            island.kick();
+        }
+    }
+
+    // ── alert: a passing activity ────────────────────────
+    property var act: null
+    Timer { id: actTimer; onTriggered: island.act = null }
+    function say(a) {
+        const fresh = act === null || act.title !== a.title;
+        act = a;
+        actTimer.interval = a.ms || 2500;
+        actTimer.restart();
+        if (fresh) kick();
+    }
+    Connections {
+        target: island.bar
+        function onIslandAlert(a) { island.say(a); }
+    }
+    // workspaces left the bar for the island: say which one this screen switched to
+    Connections {
+        target: island.hyprMonitor
+        ignoreUnknownSignals: true
+        function onActiveWorkspaceChanged() {
+            const ws = island.hyprMonitor.activeWorkspace;
+            if (ws && ws.id > 0 && island.bar && island.bar.osdReady)
+                island.say({ icon: "\u{f009}", title: "Workspace " + ws.name, ms: 900 });
+        }
+    }
+
+    // ── live: recording > timer > stopwatch ──────────────
+    readonly property string live: bar && bar.recording ? "rec"
+                                 : clock && clock.timerActive ? "timer"
+                                 : clock && clock.sw.running ? "sw" : ""
+    property int tick: 0
+    Timer { interval: 500; repeat: true; running: island.visible && island.live !== ""; onTriggered: island.tick++ }
+    readonly property string liveTime: {
+        tick;
+        if (live === "rec") return bar.recTime();
+        if (live === "timer") return clock.fmtDur(clock.timer.state === "running" ? Math.max(0, clock.timer.endAt - Date.now()) : clock.timer.left);
+        if (live === "sw") return clock.fmtSw(clock.sw.acc + Date.now() - clock.sw.startAt).split(",")[0];
+        return "";
+    }
+
+    // ── hover ────────────────────────────────────────────
+    Timer { id: lingerTimer; interval: 300 }
+    readonly property bool hovered: cardHover.hovered || lingerTimer.running
+
+    readonly property bool media: hasTrack && (playing || autoShow)
+    readonly property var dots: bar ? bar.privacyDots : []
+    readonly property string mode: hovered ? (hasTrack ? "player" : "peek")
+                                 : act !== null ? "alert"
+                                 : live !== "" ? "live"
+                                 : media ? "compact" : "idle"
+    readonly property bool actTall: act !== null && ((act.sub ?? "") !== "" || act.value !== undefined)
+
+    readonly property int cardW: (mode === "player" ? 420 : mode === "alert" ? (actTall ? 380 : 260)
+                                 : mode === "peek" ? 260 : mode === "live" ? 280
+                                 : mode === "compact" ? (lyricLine !== "" ? 440 : 330) : 200) + bump
+    readonly property int cardH: mode === "player" ? Math.ceil(playerView.implicitHeight + 30)
+                               : mode === "alert" ? (actTall ? 60 : collapsedH + 10)
+                               : mode === "peek" ? collapsedH + 14 : collapsedH
+    readonly property int cardR: mode === "player" ? 28 : mode === "alert" || mode === "peek" ? 20 : Math.round(collapsedH / 2.4)
+
+    SystemClock { id: dateClock; precision: SystemClock.Minutes }
+
+    // input mask follows the card only
+    Item {
+        id: hitArea
+        x: card.x; y: 0
+        width: card.width
+        height: card.height
+    }
+
+    // ── the notch: black body, flat top, rounded bottom, concave ears into the screen edge ──
+    Rectangle {
+        x: card.x; y: 0
+        width: card.width; height: card.height
+        color: "black"
+        bottomLeftRadius: card.radius
+        bottomRightRadius: card.radius
+    }
+    Repeater {
+        model: 2
+        Shape {
+            required property int index
+            x: index === 0 ? card.x - island.ear : card.x + card.width
+            y: 0
+            width: island.ear; height: island.ear
+            preferredRendererType: Shape.CurveRenderer
+            transform: Scale { xScale: index === 0 ? 1 : -1; origin.x: island.ear / 2 }
+            ShapePath {
+                fillColor: "black"
+                strokeColor: "transparent"
+                startX: 0; startY: 0
+                PathLine { x: island.ear; y: 0 }
+                PathLine { x: island.ear; y: island.ear }
+                PathArc { x: 0; y: 0; radiusX: island.ear; radiusY: island.ear; direction: PathArc.Counterclockwise }
             }
         }
     }
 
-    // ── expand: hover (transient bar) or click / Super+N (open the hub) ────
-    Timer { id: lingerTimer; interval: 350 }
-    property bool hubOpen: false
-    onHubOpenChanged: if (hubOpen && bar) bar.notifUnread = 0
-    onVisibleChanged: if (!visible) hubOpen = false
-    Connections {
-        target: island.bar
-        function onIslandHubRequest() { if (island.focusedScreen && island.visible) island.hubOpen = !island.hubOpen; }
+    // one face of the island: grows in once the notch has started to open, snaps out when it closes
+    component Face: Item {
+        property bool shown: false
+        opacity: shown ? 1 : 0
+        scale: shown ? 1 : 0.92
+        visible: opacity > 0.01
+        enabled: shown
+        transformOrigin: Item.Top
+        Behavior on opacity {
+            SequentialAnimation {
+                PauseAnimation { duration: shown ? 90 : 0 }
+                NumberAnimation { duration: shown ? 220 : 90; easing.type: Easing.OutCubic }
+            }
+        }
+        Behavior on scale { NumberAnimation { duration: 320; easing.type: Easing.OutBack; easing.overshoot: 1.4 } }
     }
-    // cardHover (a HoverHandler) reports hover over the whole card regardless of which child MouseArea has the pointer
-    readonly property bool hovered: cardHover.hovered || edgeHover.containsMouse || lingerTimer.running
-
-    HyprlandFocusGrab {
-        id: grab
-        windows: [island]
-        active: island.hubOpen
-        property bool settled: false
-        onActiveChanged: { settled = false; if (active) settleTimer.restart(); }
-        onCleared: if (grab.settled) island.hubOpen = false
-    }
-    Timer { id: settleTimer; interval: 250; onTriggered: grab.settled = true }
-
-    readonly property bool media: playing || autoShow
-    readonly property string mode: hubOpen ? "hub" : (hovered ? "full" : (media && hasTrack ? "compact" : "bar"))
-
-    readonly property int cardW: mode === "hub" ? 468 : mode === "full" ? maxW : mode === "compact" ? 520 : 300
-    readonly property int cardH: mode === "hub" ? Math.min(hubMaxH, Math.ceil(hubView.implicitHeight + 28)) : mode === "full" ? maxH : collapsedH
-    readonly property int cardR: mode === "hub" ? 28 : mode === "full" ? 24 : 18
-    // the card's live geometry (animated) — the glass slab handed in by MacBar follows these
-    readonly property real cardX: card.x
-    readonly property real cardY: card.y
-    readonly property real cardWidth: card.width
-    readonly property real cardHeight: card.height
-    readonly property real cardRadius: card.radius
-
-    SystemClock { id: dateClock; precision: SystemClock.Minutes }
-
-    Timer {
-        interval: 1000
-        repeat: true
-        running: island.mode === "full" && island.playing
-        onTriggered: island.player?.positionChanged()
-    }
-
-    // the wallpaper + windows behind the glass (kept warm while the island is shown)
-    Loader {
-        id: bdLoader
-        active: island.bar !== null && island.bar.liquidActive && island.backdrop !== null
-        sourceComponent: island.backdrop
-        onLoaded: {
-            item.hostShown = Qt.binding(function () { return island.visible; });
-            item.region = Qt.binding(function () { return Qt.rect(card.x - 96, 0, card.width + 192, card.y + card.height + 96); });
+    // text that cross-fades when it changes (lyric lines, titles)
+    component FadeText: Text {
+        id: ft
+        property string value
+        color: IslandStyle.fg
+        font.family: IslandStyle.font(Font.Medium)
+        font.weight: Font.Medium
+        font.pixelSize: 12
+        elide: Text.ElideRight
+        Component.onCompleted: text = value
+        // a change during a swap never restarts it (restarting kept the old line on screen): it lands at the next one
+        onValueChanged: if (!swap.running) swap.start()
+        SequentialAnimation {
+            id: swap
+            onStopped: if (ft.text !== ft.value) swap.start()
+            NumberAnimation { target: ft; property: "opacity"; to: 0; duration: 70 }
+            PropertyAction { target: ft; property: "text"; value: ft.value }
+            NumberAnimation { target: ft; property: "opacity"; to: 1; duration: 140 }
         }
     }
-
-    // fixed hit target -> input mask follows the card only
-    Item {
-        id: hitArea
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        width: island.cardW
-        height: island.cardH + island.topMargin
-    }
-
-    // top-edge hover zone (overlaps the card's top so there's no dead gap)
-    MouseArea {
-        id: edgeHover
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        width: 520
-        height: island.topMargin + 8
-        hoverEnabled: true
-        onEntered: lingerTimer.stop()
-        onExited: lingerTimer.restart()
-    }
-
-    // Liquid Glass slab (from MacBar) — same geometry as the card, not clipped so its rim / shadow stay intact
-    Item {
-        id: glassHost
-        x: card.x; y: card.y
-        width: card.width; height: card.height
-    }
-    MenuBorder {
-        z: 2
-        x: card.x; y: card.y
-        width: card.width; height: card.height
-        cornerR: card.radius
-        dark: IslandStyle.dark
-        tint: island.bar ? island.bar.menuBorderColor : "#8A9AB5"
+    // privacy dots, at the right end of the small faces
+    component Tail: Row {
+        spacing: 5
+        Repeater {
+            model: island.dots
+            Rectangle { required property var modelData; anchors.verticalCenter: parent.verticalCenter; width: 6; height: 6; radius: 3; color: modelData }
+        }
     }
 
     Item {
         id: card
         z: 3
         x: Math.round((island.width - width) / 2)
-        y: island.topMargin
+        y: 0
         width: island.cardW
         height: island.cardH
         property real radius: island.cardR
         clip: true
 
-        Behavior on width { NumberAnimation { duration: IslandStyle.aMed; easing.type: Easing.OutBack; easing.overshoot: 0.9 } }
-        Behavior on height { NumberAnimation { duration: IslandStyle.aMed; easing.type: Easing.OutCubic } }
+        // springs: the notch overshoots a touch when it opens, like the phone
+        Behavior on width { SpringAnimation { spring: 4.5; damping: 0.34; epsilon: 0.3 } }
+        Behavior on height { SpringAnimation { spring: 4.5; damping: 0.42; epsilon: 0.3 } }
         Behavior on radius { NumberAnimation { duration: IslandStyle.aMed; easing.type: Easing.OutCubic } }
 
+        // a click dismisses the activity on show
         MouseArea {
             anchors.fill: parent
             acceptedButtons: Qt.LeftButton
-            onClicked: island.hubOpen = !island.hubOpen
+            onClicked: island.act = null
         }
 
         // whole-card hover that child MouseAreas can't steal (blocking:false = passes through)
@@ -177,244 +308,205 @@ PanelWindow {
             onHoveredChanged: hovered ? lingerTimer.stop() : lingerTimer.restart()
         }
 
-        // ═══════════ collapsed row — minimal: clock (+ now-playing) ═══════════
-        RowLayout {
-            id: barView
-            readonly property bool compact: island.mode === "compact"
+        // ═══════════ idle / compact: art + title or lyric line + sound bars ═══════════
+        Face {
+            shown: island.mode === "idle" || island.mode === "compact"
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.leftMargin: barView.compact ? 12 : 10
-            anchors.rightMargin: barView.compact ? 12 : 10
             height: island.collapsedH
-            spacing: 9
-            opacity: (island.mode === "bar" || barView.compact) ? 1 : 0
-            visible: opacity > 0.01
-            Behavior on opacity { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
 
-            IslandWorkspaces { monitor: island.hyprMonitor; Layout.alignment: Qt.AlignVCenter }
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                spacing: 8
 
-            Rectangle { Layout.alignment: Qt.AlignVCenter; implicitWidth: 1; implicitHeight: 16; color: IslandStyle.sep }
-
-            Item { Layout.fillWidth: true; visible: island.mode === "bar" }
-
-            IslandArt {
-                size: 20
-                radius: 6
-                url: island.player?.trackArtUrl ?? ""
-                Layout.alignment: Qt.AlignVCenter
-                visible: barView.compact
-            }
-            Text {
-                Layout.fillWidth: true
-                visible: barView.compact
-                text: island.player?.trackTitle ?? ""
-                color: IslandStyle.fg
-                font.family: IslandStyle.font(Font.Medium)
-                font.weight: Font.Medium
-                font.pixelSize: 12
-                elide: Text.ElideRight
-            }
-
-            // animated sound bars — grow up from a fixed baseline
-            Row {
-                Layout.alignment: Qt.AlignVCenter
-                Layout.rightMargin: 2
-                spacing: 2
-                visible: barView.compact
-                Repeater {
-                    model: 4
-                    Item {
-                        id: eqCell
-                        required property int index
-                        width: 3
-                        height: 14
-                        Rectangle {
-                            id: eqBar
-                            readonly property int half: 380 + eqCell.index * 110
-                            width: parent.width
-                            radius: 1.5
-                            color: IslandStyle.accent
-                            anchors.bottom: parent.bottom
-                            height: 3
-                            SequentialAnimation on height {
-                                running: island.playing
-                                loops: Animation.Infinite
-                                NumberAnimation { to: 13; duration: eqBar.half; easing.type: Easing.InOutSine }
-                                NumberAnimation { to: 3; duration: eqBar.half; easing.type: Easing.InOutSine }
-                            }
-                        }
-                    }
+                IslandArt {
+                    size: Math.round(island.collapsedH * 0.62)
+                    radius: 5
+                    url: island.player?.trackArtUrl ?? ""
+                    Layout.alignment: Qt.AlignVCenter
+                    visible: island.media
                 }
-            }
-
-            Rectangle { Layout.alignment: Qt.AlignVCenter; visible: barView.compact; implicitWidth: 1; implicitHeight: 14; color: IslandStyle.sep }
-
-            IslandClock { Layout.alignment: Qt.AlignVCenter }
-
-            Item { Layout.fillWidth: true; visible: island.mode === "bar" }
-
-            // unread-notification badge — only in compact (now-playing) mode, only while unread > 0
-            Row {
-                Layout.alignment: Qt.AlignVCenter
-                spacing: 4
-                readonly property int unread: island.bar ? island.bar.notifUnread : 0
-                visible: island.mode === "compact" && unread > 0
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "\u{f0f3}"
-                    font.family: IslandStyle.iconFont
-                    font.pixelSize: 13
-                    color: IslandStyle.accent
+                FadeText {
+                    Layout.fillWidth: true
+                    visible: island.media
+                    value: island.lyricLine !== "" ? island.lyricLine : (island.player?.trackTitle ?? "")
                 }
-                Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    implicitWidth: Math.max(14, badgeText.implicitWidth + 6)
-                    implicitHeight: 14
-                    radius: 7
-                    color: IslandStyle.accent
-                    Text {
-                        id: badgeText
-                        anchors.centerIn: parent
-                        text: parent.parent.unread
-                        color: IslandStyle.accentFg
-                        font.family: IslandStyle.font(Font.DemiBold)
-                        font.weight: Font.DemiBold
-                        font.pixelSize: 9
-                    }
-                }
+                Item { Layout.fillWidth: true; visible: !island.media }
+                IslandEq { running: island.playing; Layout.alignment: Qt.AlignVCenter; visible: island.media }
+                Tail { Layout.alignment: Qt.AlignVCenter }
             }
         }
 
-        // ═══════════════════ full row ═══════════════════════
-        RowLayout {
-            id: fullView
+        // ═══════════ live: recording / timer / stopwatch ═══════════
+        Face {
+            shown: island.mode === "live"
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            height: island.collapsedH
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 14
+                anchors.rightMargin: 14
+                spacing: 8
+
+                Rectangle {
+                    Layout.alignment: Qt.AlignVCenter
+                    visible: island.live === "rec"
+                    implicitWidth: 9; implicitHeight: 9; radius: 4.5
+                    color: "#FF453A"
+                    SequentialAnimation on opacity {          // the REC dot breathes
+                        running: island.mode === "live" && island.live === "rec"   // only while on screen
+                        loops: Animation.Infinite
+                        NumberAnimation { to: 0.35; duration: 700; easing.type: Easing.InOutSine }
+                        NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
+                    }
+                }
+                Text {
+                    Layout.alignment: Qt.AlignVCenter
+                    visible: island.live !== "rec"
+                    text: island.live === "timer" ? "\u{f254}" : "\u{f017}"
+                    color: "#FF9F0A"
+                    font.family: IslandStyle.iconFont
+                    font.pixelSize: 13
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: island.live === "rec" ? "Recording" : island.live === "timer" ? (island.clock?.timer.label || "Timer") : "Stopwatch"
+                    color: IslandStyle.fg2
+                    font.family: IslandStyle.fam
+                    font.pixelSize: 12
+                    elide: Text.ElideRight
+                }
+                Text {
+                    Layout.alignment: Qt.AlignVCenter
+                    text: island.liveTime
+                    color: island.live === "rec" ? "#FF453A" : "#FF9F0A"
+                    font.family: IslandStyle.font(Font.DemiBold)
+                    font.weight: Font.DemiBold
+                    font.pixelSize: 13
+                    font.features: { "tnum": 1 }
+                }
+                Tail { Layout.alignment: Qt.AlignVCenter }
+            }
+        }
+
+        // ═══════════ alert: icon or picture, title, subtitle or level ═══════════
+        Face {
+            shown: island.mode === "alert"
             anchors.fill: parent
             anchors.leftMargin: 14
-            anchors.rightMargin: 14
-            spacing: 12
-            opacity: island.mode === "full" ? 1 : 0
-            visible: opacity > 0.01
-            enabled: island.mode === "full"
-            Behavior on opacity { NumberAnimation { duration: IslandStyle.aMed; easing.type: Easing.OutQuad } }
+            anchors.rightMargin: 16
 
-            IslandWorkspaces { monitor: island.hyprMonitor; Layout.alignment: Qt.AlignVCenter }
+            RowLayout {
+                anchors.fill: parent
+                spacing: 11
 
-            Rectangle { Layout.alignment: Qt.AlignVCenter; implicitWidth: 1; implicitHeight: 22; color: IslandStyle.sep }
-
-            // centre: media, or the date when nothing is playing
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-
-                RowLayout {
-                    anchors.fill: parent
-                    spacing: 12
-                    visible: island.hasTrack
-
-                    IslandArt {
-                        size: 34
-                        radius: 10
-                        url: island.player?.trackArtUrl ?? ""
-                        Layout.alignment: Qt.AlignVCenter
+                Item {
+                    id: lead
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: island.actTall ? 34 : 20
+                    implicitHeight: implicitWidth
+                    readonly property string img: {
+                        const s = island.act?.image ?? "";
+                        return s !== "" && s[0] === "/" ? "file://" + s : s;
                     }
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 1
-                        Text {
-                            Layout.fillWidth: true
-                            text: island.player?.trackTitle ?? ""
-                            color: IslandStyle.fg
-                            font.family: IslandStyle.font(Font.DemiBold)
-                            font.weight: Font.DemiBold
-                            font.pixelSize: 12
-                            elide: Text.ElideRight
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: island.player?.trackArtist ?? ""
-                            color: IslandStyle.fg2
-                            font.family: IslandStyle.fam
-                            font.pixelSize: 10
-                            elide: Text.ElideRight
+                    ClippingRectangle {
+                        anchors.fill: parent
+                        radius: 9
+                        color: "transparent"
+                        visible: pic.status === Image.Ready
+                        Image {
+                            id: pic
+                            anchors.fill: parent
+                            source: lead.img
+                            fillMode: Image.PreserveAspectCrop
+                            sourceSize: Qt.size(68, 68)
+                            asynchronous: true
                         }
                     }
-                    Row {
-                        Layout.alignment: Qt.AlignVCenter
-                        spacing: 14
-                        IslandPlayerBtn {
-                            kind: "prev"; size: 14
-                            enabled: island.player?.canGoPrevious ?? false
-                            onActivated: island.player.previous()
-                        }
-                        IslandPlayerBtn {
-                            kind: island.playing ? "pause" : "play"; size: 16
-                            onActivated: island.player?.togglePlaying()
-                        }
-                        IslandPlayerBtn {
-                            kind: "next"; size: 14
-                            enabled: island.player?.canGoNext ?? false
-                            onActivated: island.player.next()
-                        }
+                    Text {
+                        anchors.centerIn: parent
+                        visible: pic.status !== Image.Ready
+                        text: island.act?.icon ?? ""
+                        color: island.act?.color || IslandStyle.fg
+                        font.family: IslandStyle.iconFont
+                        font.pixelSize: island.actTall ? 20 : 15
                     }
                 }
 
                 ColumnLayout {
-                    anchors.centerIn: parent
-                    spacing: 0
-                    visible: !island.hasTrack
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: 4
                     Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: Qt.formatDateTime(dateClock.date, "dddd")
+                        Layout.fillWidth: true
+                        text: island.act?.title ?? ""
                         color: IslandStyle.fg
                         font.family: IslandStyle.font(Font.DemiBold)
                         font.weight: Font.DemiBold
-                        font.pixelSize: 12
+                        font.pixelSize: 13
+                        elide: Text.ElideRight
+                        textFormat: Text.PlainText
                     }
                     Text {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: Qt.formatDateTime(dateClock.date, "d MMMM")
+                        Layout.fillWidth: true
+                        visible: (island.act?.sub ?? "") !== ""
+                        text: island.act?.sub ?? ""
                         color: IslandStyle.fg2
                         font.family: IslandStyle.fam
-                        font.pixelSize: 10
+                        font.pixelSize: 11
+                        elide: Text.ElideRight
+                        maximumLineCount: 1
+                        textFormat: Text.PlainText
+                    }
+                    Rectangle {
+                        Layout.fillWidth: true
+                        visible: island.act?.value !== undefined
+                        implicitHeight: 5
+                        radius: 2.5
+                        color: IslandStyle.track
+                        Rectangle {
+                            height: parent.height
+                            radius: parent.radius
+                            width: parent.width * (island.act?.value ?? 0)
+                            color: island.act?.color || IslandStyle.fg
+                            Behavior on width { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                        }
                     }
                 }
             }
-
-            Rectangle { Layout.alignment: Qt.AlignVCenter; implicitWidth: 1; implicitHeight: 22; color: IslandStyle.sep }
-
-            IslandStatus { Layout.alignment: Qt.AlignVCenter }
-            IslandClock { Layout.alignment: Qt.AlignVCenter }
-            IslandBattery { Layout.alignment: Qt.AlignVCenter }
         }
 
-        // ═══════════════════ hub (vertical) ═════════════════
-        ColumnLayout {
-            id: hubView
+        // ═══════════ peek (hover, nothing loaded): the date ═══════════
+        Face {
+            shown: island.mode === "peek"
+            anchors.fill: parent
+            Text {
+                anchors.centerIn: parent
+                text: Qt.formatDateTime(dateClock.date, "dddd d MMMM")
+                color: IslandStyle.fg
+                font.family: IslandStyle.font(Font.DemiBold)
+                font.weight: Font.DemiBold
+                font.pixelSize: 13
+            }
+        }
+
+        // ═══════════ player (hover with a track) ═══════════
+        Face {
+            shown: island.mode === "player"
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.margins: 16
-            spacing: 12
-            opacity: island.mode === "hub" ? 1 : 0
-            visible: opacity > 0.01
-            enabled: island.mode === "hub"
-            Behavior on opacity { NumberAnimation { duration: IslandStyle.aMed; easing.type: Easing.OutQuad } }
-
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 12
-                IslandWorkspaces { monitor: island.hyprMonitor; Layout.alignment: Qt.AlignVCenter }
-                Item { Layout.fillWidth: true }
-                IslandClock { Layout.alignment: Qt.AlignVCenter }
-                IslandBattery { Layout.alignment: Qt.AlignVCenter }
-            }
-
-            Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: IslandStyle.sep }
-
-            IslandMedia { Layout.fillWidth: true }
-
-            IslandHub { Layout.fillWidth: true }
+            anchors.leftMargin: 20
+            anchors.rightMargin: 20
+            anchors.topMargin: 14
+            height: playerView.implicitHeight
+            IslandMedia { id: playerView; anchors.fill: parent }
         }
     }
 }
