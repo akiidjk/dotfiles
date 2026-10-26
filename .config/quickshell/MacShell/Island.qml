@@ -12,7 +12,7 @@ import QtQuick.Shapes
 // (Settings → Menu Bar → Dynamic Island). What it shows, most important first:
 //   hover        the player (or the date when nothing is loaded)
 //   alert        a passing activity: volume / brightness, notifications, battery, Bluetooth, Wi-Fi, microphone / camera,
-//                input source, clipboard, downloads, workspace switches, `ipc call island notify` (MacBar.islandSay)
+//                input source, downloads, workspace switches, `ipc call island notify` (MacBar.islandSay)
 //   live         a running screen recording, Clock timer or stopwatch
 //   compact      now playing: art, title (or the synced lyric line being sung), sound bars
 //   idle         an empty notch

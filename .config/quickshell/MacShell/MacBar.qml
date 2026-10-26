@@ -2789,23 +2789,6 @@ Scope {
         }
     }
 
-    // clipboard: one line per change — S = a password manager's secret (never shown), I = image, T<text>.
-    // wl-paste --watch reports what is already there when it starts (the bar shown again): that first line is not news.
-    property bool clipPrimed: false
-    Process {
-        running: root.islandShown
-        onRunningChanged: root.clipPrimed = false
-        command: ["setpriv", "--pdeathsig", "KILL", "wl-paste", "--watch", "sh", "-c",
-            "t=$(wl-paste -l 2>/dev/null); case \"$t\" in *x-kde-passwordManagerHint*) echo S;; *image/*) echo I;; "
-            + "*) printf 'T%s\\n' \"$(wl-paste -n 2>/dev/null | head -c 120 | tr '\\n\\t' '  ')\";; esac"]
-        stdout: SplitParser {
-            onRead: l => {
-                if (!root.clipPrimed) { root.clipPrimed = true; return; }
-                if (l === "I") root.islandSay({ icon: "\u{f03e}", title: I18n.tr("Image copied") });
-                else if (l.length > 1 && l[0] === "T") root.islandSay({ icon: "\u{f0c5}", title: I18n.tr("Copied"), sub: l.substring(1).trim() });
-            }
-        }
-    }
     // finished downloads in ~/Downloads: browsers write name.part / name.crdownload and rename it into place when done
     // ponytail: renames only, so a plain `curl -O` / `wget` there is not announced (it writes the file in place)
     Process {
