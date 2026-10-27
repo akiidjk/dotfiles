@@ -4124,9 +4124,12 @@ Scope {
         PanelWindow {
             id: barBgWin
             screen: perScreen.modelData
-            visible: root.menuBarShown && root.barBgOpacity > 0.001
+            // Always mapped: Hyprland stacks same-level layers by map time, so a blur layer mapped only once the fill turned on
+            // landed ABOVE the bar and blurred its icons and text. With the fill off it shrinks to 1 px, fully transparent.
+            visible: true
+            readonly property bool fillOn: root.menuBarShown && root.barBgOpacity > 0.001
             anchors { left: true; right: true; top: true }
-            implicitHeight: root.barHeight
+            implicitHeight: fillOn ? root.barHeight : 1
             color: "transparent"
             exclusionMode: ExclusionMode.Ignore
             mask: Region { }
@@ -4139,7 +4142,7 @@ Scope {
 
             Rectangle {
                 anchors.fill: parent
-                color: root.darkMode ? Qt.rgba(0.10, 0.10, 0.11, root.barBgOpacity) : Qt.rgba(1, 1, 1, root.barBgOpacity)
+                color: !barBgWin.fillOn ? "transparent" : (root.darkMode ? Qt.rgba(0.10, 0.10, 0.11, root.barBgOpacity) : Qt.rgba(1, 1, 1, root.barBgOpacity))
             }
         }
 
@@ -4167,6 +4170,9 @@ Scope {
 
                 property string pop: ""          // "", apple, app, file, edit, view, window, help, cc, cal
                 property real menuX: 0
+                // anchors only the dropdown / tray menus write, so another popover overwriting menuX can't move a menu still fading out
+                property real menuDropX: 0
+                property real trayX: 0
                 property var menuModel: []
                 property string armed: ""
                 property int calYear: 2026
@@ -4196,7 +4202,7 @@ Scope {
                     if (pop === "tray" && trayItem === item) { pop = ""; return; }
                     trayStack = [];
                     trayItem = item;
-                    menuX = x;
+                    menuX = x; trayX = x;
                     pop = "tray";
                 }
 
@@ -4268,6 +4274,7 @@ Scope {
                 function openPop(name, x) {
                     if (pop === name) { pop = ""; return; }
                     menuX = x;
+                    if (["apple", "app", "file", "edit", "view", "window", "help"].indexOf(name) >= 0) menuDropX = x;
                     if (["apple", "app", "file", "edit", "view", "window", "help"].indexOf(name) >= 0) root.refreshActive();
                     if (["apple", "app", "file", "edit", "view", "window", "help"].indexOf(name) >= 0) menuModel = root.menuModelFor(name);
                     if (name === "cal") { var d = new Date(); calYear = d.getFullYear(); calMonth = d.getMonth(); }
@@ -4275,7 +4282,7 @@ Scope {
                 }
                 function hoverPop(name, x) {
                     if (!isMenu || name === pop) return;
-                    menuX = x;
+                    menuX = x; menuDropX = x;
                     menuModel = root.menuModelFor(name);
                     pop = name;
                 }
@@ -5077,6 +5084,11 @@ Scope {
                 Item {
                     id: volPop
                     z: 10
+                    // anchor X latched while open: ui.menuX is shared and gets overwritten (e.g. 0 by the Control Center)
+                    // while this one is still folding away, which flung its closing animation to the top-left corner
+                    property real mx: 0
+                    readonly property bool latchOn: ui.pop === "vol"
+                    onLatchOnChanged: if (latchOn) mx = ui.menuX
                     // same morph as the Wi-Fi popover, growing out of the speaker icon (menuX is the icon's centre here)
     readonly property real ps: root.barPopupScale
                     readonly property real fullW: 330
@@ -5084,9 +5096,9 @@ Scope {
                     // the rectangle it grows from (the bar icon, in screen px) and the one it grows into
                     readonly property real srcW: 26
                     readonly property real srcH: 22
-                    readonly property real srcX: ui.menuX - 13
+                    readonly property real srcX: volPop.mx - 13
                     readonly property real srcY: Math.max(0, (root.barHeight - srcH) / 2)
-                    readonly property real dstX: Math.max(6, Math.min(ui.width - fullW * ps - 8, ui.menuX - fullW * ps / 2))
+                    readonly property real dstX: Math.max(6, Math.min(ui.width - fullW * ps - 8, volPop.mx - fullW * ps / 2))
                     readonly property real dstY: root.barHeight + 6
 
                     readonly property bool opening: ui.pop === "vol"
@@ -5265,9 +5277,14 @@ Scope {
                 Item {
                     id: kbPop
                     z: 10
+                    // anchor X latched while open: ui.menuX is shared and gets overwritten (e.g. 0 by the Control Center)
+                    // while this one is still folding away, which flung its closing animation to the top-left corner
+                    property real mx: 0
+                    readonly property bool latchOn: ui.pop === "kb"
+                    onLatchOnChanged: if (latchOn) mx = ui.menuX
                     width: 250
                     height: kbCol.height + 16
-                    x: Math.max(6, Math.min(ui.width - width * root.barPopupScale - 8, ui.menuX - width / 2))
+                    x: Math.max(6, Math.min(ui.width - width * root.barPopupScale - 8, kbPop.mx - width / 2))
                     y: root.barHeight + 6
                     opacity: ui.pop === "kb" ? 1 : 0
                     visible: opacity > 0
@@ -5500,6 +5517,11 @@ Scope {
                 Item {
                     id: notifPop
                     z: 10
+                    // anchor X latched while open: ui.menuX is shared and gets overwritten (e.g. 0 by the Control Center)
+                    // while this one is still folding away, which flung its closing animation to the top-left corner
+                    property real mx: 0
+                    readonly property bool latchOn: ui.pop === "notif"
+                    onLatchOnChanged: if (latchOn) mx = ui.menuX
                     // same morph as the Wi-Fi popover: one glass shape grows out of the bell. When popups merge in it appears
                     // at once instead (its cards are the popups) and only the chrome builds in around them.
                     // while clearing the height tracks the collapsing list frame by frame (never shorter than the empty state),
@@ -5510,7 +5532,7 @@ Scope {
                     readonly property real fullW: 380
                     readonly property real srcW: 26
                     readonly property real srcH: 22
-                    readonly property real srcX: Math.max(0, Math.min(ui.width - srcW, ui.menuX + 1))
+                    readonly property real srcX: Math.max(0, Math.min(ui.width - srcW, notifPop.mx + 1))
                     readonly property real srcY: Math.max(0, (root.barHeight - srcH) / 2)
                     readonly property real dstX: Math.max(6, ui.width - fullW * ps - 8)
                     readonly property real dstY: root.barHeight + 6
@@ -5774,7 +5796,7 @@ Scope {
                     z: 10
                     width: 260
                     height: menuCol.height + 14
-                    x: Math.max(6, Math.min(ui.width - width * root.barPopupScale - 6, ui.menuX - 4))
+                    x: Math.max(6, Math.min(ui.width - width * root.barPopupScale - 6, ui.menuDropX - 4))
                     y: root.barHeight + 3
                     opacity: ui.isMenu ? 1 : 0
                     visible: opacity > 0
@@ -5920,7 +5942,7 @@ Scope {
                     }
                     width: 260
                     height: Math.min(trayCol.height + 14, root.popRoom - 20)
-                    x: Math.max(6, Math.min(ui.width - width * root.barPopupScale - 6, ui.menuX - 4))
+                    x: Math.max(6, Math.min(ui.width - width * root.barPopupScale - 6, ui.trayX - 4))
                     y: root.barHeight + 3
                     opacity: shown ? 1 : 0
                     visible: opacity > 0
@@ -6354,20 +6376,25 @@ Scope {
                 Item {
                     id: wifiPop
                     z: 10
+                    // anchor X latched while open: ui.menuX is shared and gets overwritten (e.g. 0 by the Control Center)
+                    // while this one is still folding away, which flung its closing animation to the top-left corner
+                    property real mx: 0
+                    readonly property bool latchOn: ui.pop === "wifi"
+                    onLatchOnChanged: if (latchOn) mx = ui.menuX
                     // ── morph: the popover is ONE glass shape that grows out of the Wi-Fi icon (or the Control Center tile)
                     // into the full menu, while the whole thing starts out of focus and sharpens as it opens. Closing folds it
                     // back into the icon and blurs it out again.
                     readonly property real ps: root.barPopupScale
                     readonly property real fullW: 320
                     readonly property real fullH: (wifiLoad.item ? wifiLoad.item.height : 120) + 24
-                    readonly property bool fromCC: ui.menuX >= ui.width - 1
+                    readonly property bool fromCC: wifiPop.mx >= ui.width - 1
                     // the rectangle it grows from (in screen px)
                     readonly property real srcW: fromCC ? 44 : 26
                     readonly property real srcH: fromCC ? 30 : 22
-                    readonly property real srcX: fromCC ? ui.width - 64 : ui.menuX + 1
+                    readonly property real srcX: fromCC ? ui.width - 64 : wifiPop.mx + 1
                     readonly property real srcY: fromCC ? root.barHeight + 36 : Math.max(0, (root.barHeight - 22) / 2)
                     // the rectangle it grows into
-                    readonly property real dstX: Math.max(6, Math.min(ui.width - fullW * ps - 8, ui.menuX + 14 - fullW * ps / 2))
+                    readonly property real dstX: Math.max(6, Math.min(ui.width - fullW * ps - 8, wifiPop.mx + 14 - fullW * ps / 2))
                     readonly property real dstY: root.barHeight + 6
 
                     readonly property bool opening: ui.pop === "wifi"
@@ -6658,6 +6685,11 @@ Scope {
                 Item {
                     id: btPop
                     z: 10
+                    // anchor X latched while open: ui.menuX is shared and gets overwritten (e.g. 0 by the Control Center)
+                    // while this one is still folding away, which flung its closing animation to the top-left corner
+                    property real mx: 0
+                    readonly property bool latchOn: ui.pop === "bt"
+                    onLatchOnChanged: if (latchOn) mx = ui.menuX
                     // same morph as the Wi-Fi popover: one glass shape grows out of the bluetooth icon, blurred, and sharpens
                     // as it opens; closing folds it back into the icon.
     readonly property real ps: root.barPopupScale
@@ -6666,9 +6698,9 @@ Scope {
                     // the rectangle it grows from (the bar icon, in screen px) and the one it grows into
                     readonly property real srcW: 26
                     readonly property real srcH: 22
-                    readonly property real srcX: ui.menuX + 1
+                    readonly property real srcX: btPop.mx + 1
                     readonly property real srcY: Math.max(0, (root.barHeight - srcH) / 2)
-                    readonly property real dstX: Math.max(6, Math.min(ui.width - fullW * ps - 8, ui.menuX + 14 - fullW * ps / 2))
+                    readonly property real dstX: Math.max(6, Math.min(ui.width - fullW * ps - 8, btPop.mx + 14 - fullW * ps / 2))
                     readonly property real dstY: root.barHeight + 6
 
                     readonly property bool opening: ui.pop === "bt"

@@ -116,15 +116,9 @@ void main()
         return;
     }
 
-    // ── what lives OUTSIDE the glass: soft two-layer shadow + a ~1 px dark line hugging the edge ──
-    float sAmb   = 1.0 - smoothstep(-8.0, 24.0, roundBox(q - vec2(0.0, 8.0), hs, r));   // wide, low
-    float sCon   = 1.0 - smoothstep(-1.0,  6.0, roundBox(q - vec2(0.0, 2.0), hs, r));   // tight, near the edge
-    float shadow = shadowAmt * (0.20 * sAmb * sAmb + 0.16 * sCon);
-    float outl   = smoothstep(-0.5, 0.5, sd) * (1.0 - smoothstep(0.7, 1.7, sd));
-    float outA   = outl * mix(0.02, 0.05, dark);
-    float oa     = 1.0 - (1.0 - clamp(shadow, 0.0, 1.0)) * (1.0 - outA);
+    // ── outside the glass: nothing at all (no shadow, no dark outline) ──
     if (cov <= 0.0) {
-        fragColor = vec4(0.0, 0.0, 0.0, oa) * qt_Opacity;
+        fragColor = vec4(0.0);
         return;
     }
 
@@ -157,6 +151,7 @@ void main()
     // ── colour: vibrancy, then an ADAPTIVE tint ──
     float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
     col = mix(vec3(l), col, saturation);
+    vec3 behind = col;                                            // the colour right behind this pixel, kept for the border below
     float lw    = smoothstep(0.30, 0.80, l);
     float adapt = mix(0.78, 1.28, mix(1.0 - lw, lw, dark));       // more tint where the backdrop would fight the icons
     vec3 tintC  = mix(vec3(1.0), vec3(0.09, 0.09, 0.10), dark);
@@ -166,25 +161,21 @@ void main()
     // ── depth: soft light from above, faint absorption toward the edge (clear glass, not smoked) ──
     float ty = clamp((q.y + hs.y) / glassSize.y, 0.0, 1.0);
     col += (1.0 - ty) * mix(0.040, 0.034, dark);
-    col *= 1.0 - 0.045 * exp(-t / (bz * 0.45));
 
-    // ── edge light, from the top-left ──
-    vec3 rimTintC = clamp(mix(edgeTint.rgb, vec3(1.0), 0.45), 0.0, 1.0);
-    vec3 rimCol   = mix(vec3(0.96, 0.98, 1.0), rimTintC, 0.35 * clamp(edgeTint.a, 0.0, 1.0));
-
-    vec2  L      = normalize(vec2(-0.55, -0.83));
-    float facing = dot(g, L);
-    float spec   = pow(max(facing, 0.0), 1.6) + 0.55 * pow(max(-facing, 0.0), 2.2);
-    float crisp  = 1.0 - smoothstep(0.55, 1.55, t);                // the ~1 px line itself
-    float pool   = exp(-t / 3.2);                                  // light pooling just inside it
-    float edgeHi = crisp * (0.26 + 0.74 * spec) * 0.80 + pool * (0.05 + 0.10 * spec);
-    edgeHi *= rim * 1.1 * mix(0.85, 1.0, dark);
-    col += edgeHi * rimCol;
-
-    // meniscus: a very faint, wide second highlight inside the rim (kept soft so it never reads as an inner outline)
-    float mx  = (t - bz * 0.5) / (bz * 0.35 + 1.0);
-    float men = exp(-mx * mx);
-    col += men * 0.03 * (0.35 + spec) * rim * rimCol;
+    // ── edge light, measured from the real macOS Dock ──
+    // a thin bright line along the top (+18%) and bottom (+30%) that fades out around the corners, only a whisper on the straight
+    // sides (+2.5%), and a short glow just inside the top / bottom edge. All of it scales from the glass's own colour (which is the
+    // blurred wallpaper behind the Dock), so the border takes the colour of what is behind it. The dark hairline on the sides is
+    // drawn by the QML Canvas around the Dock (the shader draws nothing outside the glass).
+    vec3 rimCol = clamp(col * 1.2, 0.0, 1.0);
+    float rs    = clamp(rim * 11.111111, 0.0, 3.0);                 // 1.0 at the default glass rim (0.45 * 0.20)
+    float aY    = pow(abs(g.y), 1.5);                               // 0 on the sides, 1 on the top / bottom
+    float wT    = smoothstep(-0.3, 0.3, -g.y);                      // 1 on the top, 0 on the bottom
+    float lineA = 0.025 + aY * mix(0.275, 0.155, wT);
+    float poolA = aY * mix(0.10, 0.055, wT);
+    float kk    = (t - 0.7) / 0.55;
+    float fE    = (lineA * exp(-(kk * kk)) + poolA * exp(-t / mix(3.0, 4.5, wT))) * rs;
+    col = col * (1.0 + fE) + vec3(fE * 0.10);
 
     // fine triangular-distribution grain, same on every channel so it reads as texture, not colour noise
     float gn = hash12(gl_FragCoord.xy) + hash12(gl_FragCoord.xy * 1.7 + 17.0) - 1.0;
@@ -193,7 +184,5 @@ void main()
     col = clamp(col, 0.0, 1.0);
 
     // premultiplied: the glass over its own outer line / shadow (they only differ from zero in the 1 px anti-aliased band)
-    vec4 glassPM = vec4(col * cov, cov);
-    vec4 outPM   = vec4(0.0, 0.0, 0.0, oa);
-    fragColor = (glassPM + outPM * (1.0 - cov)) * qt_Opacity;
+    fragColor = vec4(col * cov, cov) * qt_Opacity;
 }
