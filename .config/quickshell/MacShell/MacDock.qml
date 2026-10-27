@@ -22,6 +22,7 @@
 
 import QtQuick
 import QtQuick.Effects
+import QtQuick.Shapes
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Hyprland
@@ -2085,6 +2086,182 @@ Scope {
                                     anchors.fill: parent
                                     onClicked: if (root.bar) root.bar.accentFromWallpaper = true
                                 }
+                            }
+                            // Custom: rainbow swatch (macOS "multicolor" look) that opens the color wheel below
+                            Item {
+                                id: csw
+                                readonly property bool sel: !(root.bar && root.bar.accentFromWallpaper)
+                                    && !root.accentChoices.some(function (c) { return c.c.toLowerCase() === String(root.accent).toLowerCase(); })
+                                width: 26; height: 26
+                                Shape {
+                                    x: 4; y: 4; width: 18; height: 18
+                                    preferredRendererType: Shape.CurveRenderer
+                                    ShapePath {
+                                        strokeWidth: 0; strokeColor: "transparent"
+                                        fillGradient: ConicalGradient {
+                                            centerX: 9; centerY: 9; angle: 0
+                                            GradientStop { position: 0.0; color: "#ff3b30" }
+                                            GradientStop { position: 0.17; color: "#ffcc00" }
+                                            GradientStop { position: 0.33; color: "#34c759" }
+                                            GradientStop { position: 0.5; color: "#00c7be" }
+                                            GradientStop { position: 0.67; color: "#007aff" }
+                                            GradientStop { position: 0.83; color: "#af52de" }
+                                            GradientStop { position: 1.0; color: "#ff3b30" }
+                                        }
+                                        PathAngleArc { centerX: 9; centerY: 9; radiusX: 9; radiusY: 9; startAngle: 0; sweepAngle: 360 }
+                                    }
+                                }
+                                Rectangle {
+                                    x: 0; y: 0
+                                    visible: csw.sel || accentWheel.open
+                                    width: 26; height: 26; radius: 13
+                                    color: "transparent"
+                                    border.width: 2
+                                    border.color: pal.text3
+                                }
+                                MouseArea { anchors.fill: parent; onClicked: accentWheel.toggle() }
+                            }
+                        }
+                    }
+                    // ── custom accent: macOS color wheel (hue = angle, saturation = distance from the centre) + brightness ──
+                    Item {
+                        id: accentWheel
+                        width: parent.width
+                        property bool open: false
+                        height: open ? 236 : 0
+                        clip: true
+                        Behavior on height { NumberAnimation { duration: 260; easing.type: Easing.OutQuint } }
+                        property real h: 0
+                        property real s: 0
+                        property real v: 1
+                        readonly property color picked: Qt.hsva(h, s, v, 1)
+                        function hex(c) {
+                            function p(x) { var t = Math.round(x * 255).toString(16); return t.length < 2 ? "0" + t : t; }
+                            return "#" + p(c.r) + p(c.g) + p(c.b);
+                        }
+                        function toggle() {
+                            if (!open) {
+                                var c = Qt.color(root.accent);
+                                h = c.hsvHue < 0 ? 0 : c.hsvHue; s = c.hsvSaturation; v = c.hsvValue;
+                            }
+                            open = !open;
+                        }
+                        function commit() {
+                            if (root.bar) root.bar.accentFromWallpaper = false;
+                            root.setLook("accent", hex(picked));
+                        }
+
+                        Item {
+                            id: wheel
+                            x: 20; y: 12
+                            width: 200; height: 200
+                            readonly property real r: width / 2
+                            Shape {
+                                anchors.fill: parent
+                                preferredRendererType: Shape.CurveRenderer
+                                // hue around the circle, counter-clockwise from 3 o'clock (red)
+                                ShapePath {
+                                    strokeWidth: 0; strokeColor: "transparent"
+                                    fillGradient: ConicalGradient {
+                                        centerX: wheel.r; centerY: wheel.r; angle: 0
+                                        GradientStop { position: 0.0; color: Qt.hsva(0.0, 1, 1, 1) }
+                                        GradientStop { position: 1 / 6; color: Qt.hsva(1 / 6, 1, 1, 1) }
+                                        GradientStop { position: 2 / 6; color: Qt.hsva(2 / 6, 1, 1, 1) }
+                                        GradientStop { position: 3 / 6; color: Qt.hsva(3 / 6, 1, 1, 1) }
+                                        GradientStop { position: 4 / 6; color: Qt.hsva(4 / 6, 1, 1, 1) }
+                                        GradientStop { position: 5 / 6; color: Qt.hsva(5 / 6, 1, 1, 1) }
+                                        GradientStop { position: 1.0; color: Qt.hsva(0.0, 1, 1, 1) }
+                                    }
+                                    PathAngleArc { centerX: wheel.r; centerY: wheel.r; radiusX: wheel.r; radiusY: wheel.r; startAngle: 0; sweepAngle: 360 }
+                                }
+                                // saturation: white in the centre fading out to the rim
+                                ShapePath {
+                                    strokeWidth: 0; strokeColor: "transparent"
+                                    fillGradient: RadialGradient {
+                                        centerX: wheel.r; centerY: wheel.r; centerRadius: wheel.r
+                                        focalX: wheel.r; focalY: wheel.r; focalRadius: 0
+                                        GradientStop { position: 0.0; color: "white" }
+                                        GradientStop { position: 1.0; color: Qt.rgba(1, 1, 1, 0) }
+                                    }
+                                    PathAngleArc { centerX: wheel.r; centerY: wheel.r; radiusX: wheel.r; radiusY: wheel.r; startAngle: 0; sweepAngle: 360 }
+                                }
+                                // brightness: the whole wheel darkens with the slider
+                                ShapePath {
+                                    strokeWidth: 1; strokeColor: Qt.rgba(0, 0, 0, 0.18)
+                                    fillColor: Qt.rgba(0, 0, 0, 1 - accentWheel.v)
+                                    PathAngleArc { centerX: wheel.r; centerY: wheel.r; radiusX: wheel.r; radiusY: wheel.r; startAngle: 0; sweepAngle: 360 }
+                                }
+                            }
+                            // the picked point
+                            Rectangle {
+                                readonly property real a: accentWheel.h * 2 * Math.PI
+                                x: wheel.r + Math.cos(a) * accentWheel.s * wheel.r - width / 2
+                                y: wheel.r - Math.sin(a) * accentWheel.s * wheel.r - height / 2
+                                width: 16; height: 16; radius: 8
+                                color: accentWheel.picked
+                                border.width: 2; border.color: "white"
+                                Rectangle { anchors.fill: parent; anchors.margins: -1; radius: width / 2; color: "transparent"; border.width: 1; border.color: Qt.rgba(0, 0, 0, 0.35) }
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                preventStealing: true
+                                function pick(mx, my) {
+                                    var dx = mx - wheel.r, dy = wheel.r - my;
+                                    var a = Math.atan2(dy, dx);
+                                    accentWheel.h = (a < 0 ? a + 2 * Math.PI : a) / (2 * Math.PI);
+                                    accentWheel.s = Math.min(1, Math.sqrt(dx * dx + dy * dy) / wheel.r);
+                                }
+                                onPressed: mouse => pick(mouse.x, mouse.y)
+                                onPositionChanged: mouse => { if (pressed) pick(mouse.x, mouse.y); }
+                                onReleased: accentWheel.commit()
+                            }
+                        }
+
+                        Column {
+                            anchors.left: wheel.right; anchors.leftMargin: 24
+                            anchors.right: parent.right; anchors.rightMargin: 20
+                            anchors.verticalCenter: wheel.verticalCenter
+                            spacing: 14
+                            Row {
+                                spacing: 10
+                                Rectangle {
+                                    width: 44; height: 44; radius: 10
+                                    color: accentWheel.picked
+                                    border.width: 1; border.color: Qt.rgba(0, 0, 0, 0.18)
+                                }
+                                // hex: type a colour, Enter applies it
+                                Rectangle {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 96; height: 28; radius: 7
+                                    color: pal.ctrl
+                                    border.width: hexIn.activeFocus ? 2 : 0; border.color: pal.accent
+                                    TextInput {
+                                        id: hexIn
+                                        anchors.fill: parent; anchors.leftMargin: 10; anchors.rightMargin: 10
+                                        verticalAlignment: TextInput.AlignVCenter
+                                        color: pal.text
+                                        font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13
+                                        selectByMouse: true
+                                        maximumLength: 7
+                                        validator: RegularExpressionValidator { regularExpression: /#?[0-9a-fA-F]{0,6}/ }
+                                        // follows the wheel, except while you are typing in it
+                                        Binding on text { when: !hexIn.activeFocus; value: accentWheel.hex(accentWheel.picked).toUpperCase() }
+                                        onAccepted: {
+                                            var t = text.charAt(0) === "#" ? text : "#" + text;
+                                            if (!/^#[0-9a-fA-F]{6}$/.test(t)) return;
+                                            var c = Qt.color(t);
+                                            accentWheel.h = c.hsvHue < 0 ? 0 : c.hsvHue; accentWheel.s = c.hsvSaturation; accentWheel.v = c.hsvValue;
+                                            accentWheel.commit();
+                                            focus = false;
+                                        }
+                                    }
+                                }
+                            }
+                            SSlider {
+                                t: pal; width: parent.width; from: 0; to: 1
+                                leftLabel: I18n.tr("Dark"); rightLabel: I18n.tr("Bright")
+                                value: accentWheel.v
+                                onMoved: v => { accentWheel.v = v; accentWheel.commit(); }
                             }
                         }
                     }
