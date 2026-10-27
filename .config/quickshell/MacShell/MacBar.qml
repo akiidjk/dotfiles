@@ -259,6 +259,10 @@ Scope {
         }
     }
     property bool lockArtBackground: true     // lock screen: blurred album art as the background while the cover is enlarged
+    // login screen (SDDM "maclock" theme, built by hypr-macshell/scripts/maclock-sddm.sh): fixed background + controls
+    property string loginBackground: ""       // "" = the wallpaper at the time the theme is applied
+    property bool loginShowPower: true
+    property bool loginShowSessions: true
     // lock screen clock (Settings → Lock Screen → Clock); MacLock reads these when it starts
     property string lockClockStyle: "glass"   // preset last picked: glass | classic | serif | liquid | thin | custom
     property string lockClockFont: "rounded"   // rounded | serif | inter
@@ -328,7 +332,7 @@ Scope {
         "showSeconds", "showBatteryPercent", "showTray",
         "ccEnabled", "notificationsEnabled", "clockAppEnabled", "ccStyle", "barLogoMode", "barCustomLogoPath", "barWidgets", "weekStartsMonday", "terminal", "launcher",
         "filesCmd", "screenshotDir", "screenshotSave", "screenshotClipboard", "screenshotNotify", "nightTemp", "ccControls", "ccMigRec", "wallpaperDir", "wallpaperFavs", "wallpaperCmd", "wallpaperVideo", "wpRestorePath", "uiSounds", "lockArtBackground",
-        "lockClockStyle", "switcherStyle", "lockClockFont", "lockClockWeight", "lockClockMaterial", "lockClockIntensity", "lockClockTint", "lockClockDate", "autoContrast", "wallpaperAppearance", "wpPairLight", "wpPairDark",
+        "lockClockStyle", "switcherStyle", "lockClockFont", "lockClockWeight", "lockClockMaterial", "lockClockIntensity", "lockClockTint", "lockClockDate", "loginBackground", "loginShowPower", "loginShowSessions", "autoContrast", "wallpaperAppearance", "wpPairLight", "wpPairDark",
         "notifDnd", "dnd", "nightOn", "keepAwake",
         "kbRepeatRate", "kbRepeatDelay", "mouseSens", "mouseNatural", "tpNatural", "tpTap", "tpDwt", "tpScroll"]
     // Optional bar widgets; the tray uses its existing showTray setting.

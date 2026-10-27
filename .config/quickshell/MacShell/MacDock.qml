@@ -3266,6 +3266,74 @@ Scope {
                     }
                     SButton { t: pal; text: I18n.tr("Lock Screen Now"); onClicked: { prefsWindow.visible = false; Quickshell.execDetached(["sh", "-c", "pgrep -f -- \"-c [M]acLock\" >/dev/null 2>&1 || qs -c MacLock"]); } }
                 }
+
+                // ── Login Screen (SDDM) ──
+                // The lock screen as the login screen: maclock-sddm.sh builds the theme from the settings above + these, with a fixed
+                // copy of the background (the greeter can't read your home). Installing it needs root: the polkit prompt opens.
+                SLabel { t: pal; text: I18n.tr("Login Screen"); font.weight: Font.DemiBold; topPadding: 6 }
+                SCard {
+                    id: loginCard
+                    t: pal
+                    readonly property string script: Quickshell.env("HOME") + "/.config/hypr-macshell/scripts/maclock-sddm.sh"
+                    readonly property string bg: root.bar ? (root.bar.loginBackground !== "" ? root.bar.loginBackground : root.bar.wallpaperPath) : ""
+                    property string current: ""
+                    property string status: ""
+                    Component.onCompleted: curProc.running = true
+                    Process { id: curProc; command: ["sh", loginCard.script, "current"]
+                              stdout: StdioCollector { onStreamFinished: loginCard.current = text.trim() } }
+                    Process {
+                        id: applyProc
+                        command: ["sh", loginCard.script, "apply"]
+                        onExited: code => { loginCard.status = code === 0 ? I18n.tr("Installed") : I18n.tr("Not installed (cancelled or failed)"); curProc.running = true; }
+                    }
+                    Process { id: useProc; onExited: curProc.running = true }
+                    SRow {
+                        t: pal; title: I18n.tr("Background")
+                        subtitle: root.bar && root.bar.loginBackground !== "" ? root.bar.loginBackground.replace(/^.*\//, "") : I18n.tr("Current wallpaper, copied when you apply")
+                        Row {
+                            spacing: 8
+                            Rectangle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 64; height: 40; radius: 6; clip: true; color: pal.ctrl
+                                Image { anchors.fill: parent; source: loginCard.bg !== "" ? "file://" + loginCard.bg : ""; fillMode: Image.PreserveAspectCrop; sourceSize: Qt.size(128, 80); asynchronous: true }
+                            }
+                            SButton { anchors.verticalCenter: parent.verticalCenter; t: pal; text: I18n.tr("Use Current Wallpaper"); onClicked: if (root.bar) root.bar.loginBackground = root.bar.wallpaperPath }
+                        }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("Sleep, Restart and Shut Down buttons")
+                        SSwitch { t: pal; checked: root.bar ? root.bar.loginShowPower : true; onToggled: v => { if (root.bar) root.bar.loginShowPower = v; } }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("Session picker")
+                        subtitle: I18n.tr("Bottom left, click to switch between installed sessions")
+                        SSwitch { t: pal; checked: root.bar ? root.bar.loginShowSessions : true; onToggled: v => { if (root.bar) root.bar.loginShowSessions = v; } }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("In use")
+                        subtitle: loginCard.status !== "" ? loginCard.status : I18n.tr("Clock and 24-hour setting come from the Lock Screen settings above")
+                        Row {
+                            spacing: 8
+                            Text { anchors.verticalCenter: parent.verticalCenter; text: loginCard.current || "—"; color: pal.text2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13 }
+                            SButton {
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: loginCard.current === "maclock"
+                                t: pal; text: I18n.tr("Use pixel")
+                                onClicked: { useProc.command = ["sh", loginCard.script, "use", "pixel"]; useProc.running = true; }
+                            }
+                        }
+                    }
+                }
+                Row {
+                    spacing: 8
+                    // the greeter in test mode for 15 s (no real login)
+                    // settings are saved 400 ms after a change: write them now so the script reads what's on screen
+                    SButton { t: pal; text: I18n.tr("Preview"); onClicked: { if (root.bar) root.bar.saveSettings(); Quickshell.execDetached(["sh", loginCard.script, "preview"]); } }
+                    SButton {
+                        t: pal; text: applyProc.running ? I18n.tr("Waiting for password…") : I18n.tr("Apply to Login Screen")
+                        onClicked: if (!applyProc.running) { if (root.bar) root.bar.saveSettings(); loginCard.status = ""; applyProc.running = true; }
+                    }
+                }
             }
         }
 
@@ -4012,6 +4080,7 @@ Scope {
         if (bar) {
             bar.resetSettings();
             bar.uiSounds = true; bar.lockArtBackground = true;
+            bar.loginBackground = ""; bar.loginShowPower = true; bar.loginShowSessions = true;
             bar.applyLockClockPreset("glass");
             bar.wallpaperAppearance = "auto"; bar.notifDnd = false; bar.nightOn = false; bar.keepAwake = false;
             bar.kbRepeatRate = 35; bar.kbRepeatDelay = 250; bar.mouseSens = 0; bar.mouseNatural = false;
