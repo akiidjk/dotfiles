@@ -100,6 +100,11 @@ hl.bind(
     hl.dsp.exec_cmd('grim -g "$(slurp)" - | swappy -f -'),
     { description = "Screenshot region" }
 )
+hl.bind(
+    "SUPER + SHIFT + T",
+    hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/screen-text.sh"),
+    { description = "Copy text / QR code from screen" }
+)
 
 -- ToggleMirror script (Night Shift lives in the MacShell Control Center)
 hl.bind("SUPER + M", hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/toggleMirror.sh"), { description = "Toggle mirror" })

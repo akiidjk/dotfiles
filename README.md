@@ -69,7 +69,8 @@ sudo pacman -S nautilus yazi
 
 # Desktop shell: MacShell + MacLock (Quickshell)
 sudo pacman -S quickshell qt6-declarative qt6-wayland qt6-svg qt6-shadertools \
-  ffmpeg zenity inotify-tools power-profiles-daemon wf-recorder wtype python-numpy papirus-icon-theme
+  ffmpeg zenity inotify-tools power-profiles-daemon wf-recorder wtype python-numpy papirus-icon-theme \
+  tesseract tesseract-data-eng zbar pacman-contrib
 sudo systemctl enable --now power-profiles-daemon bluetooth
 
 # Text editor
