@@ -5,6 +5,7 @@
 hl.on("hyprland.start", function()
     hl.exec_cmd("wl-paste --type text --watch cliphist store")  -- Stores only text data
     hl.exec_cmd("wl-paste --type image --watch cliphist store") -- Stores only image data
+    hl.exec_cmd("wl-paste --type text --watch python3 -I ~/.config/hypr/scripts/clean-url.py") -- strips tracking from copied links
     hl.exec_cmd("wl-clip-persist --clipboard regular")
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
     hl.exec_cmd("hypridle")
