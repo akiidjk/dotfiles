@@ -365,7 +365,7 @@ Scope {
     property string kbMain: ""                // name of the main keyboard (Hyprland)
     property string recordFile: ""
 
-    readonly property var settingKeys: ["barEnabled", "islandEnabled", "islandStyle", "islandOffset", "islandHeight", "islandWidth", "islandScale", "islandRadius", "islandSpring", "islandBounce", "islandIdle", "islandHoverExpand", "islandAutoShowMs", "islandAlertMs", "islandLyrics", "islandLyricLead", "islandOutline", "islandShadow", "islandAlerts", "islandClaudeLimits",
+    readonly property var settingKeys: ["barEnabled", "islandEnabled", "islandStyle", "islandOffset", "islandHeight", "islandWidth", "islandScale", "islandRadius", "islandSpring", "islandBounce", "islandIdle", "islandHoverExpand", "islandAutoShowMs", "islandAlertMs", "islandLyrics", "islandLyricLead", "islandOutline", "islandShadow", "islandAlerts", "islandClaudeLimits", "statsShow", "alertsEnabled", "alertTemp", "alertRam", "alertDisk",
         "accentFromWallpaper", "darkMode", "appearanceMode", "accent", "fontFamily", "barHeight", "glassOpacity",
         "barStyle", "barGlass", "glassRim", "glassGrain", "glassLiquid", "glassBlur", "barBgOpacity", "glassRealtime", "liveWallGlass", "glassDebug", "wallpaperPath", "use24h", "showDate",
         "showSeconds", "showBatteryPercent", "showTray",
@@ -2850,6 +2850,131 @@ Scope {
             }
         }
     }
+    // ── akiidjk fork: menu bar tools: Ports, Updates, Stats + system alerts ──
+    // Ports: TCP listeners (ss), read only while the popover is open. Root-owned sockets show no pid: no kill for those.
+    property var ports: []                    // [{ port, addr, proc, pid }]
+    function refreshPorts() { portsProc.running = true; }
+    Process {
+        id: portsProc
+        command: ["ss", "-Hltnp"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var out = [], seen = {};
+                text.split("\n").forEach(function (l) {
+                    var f = l.trim().split(/\s+/);
+                    if (f.length < 5) return;
+                    var local = f[3], i = local.lastIndexOf(":");
+                    var port = parseInt(local.slice(i + 1)), addr = local.slice(0, i).replace(/%.*$/, "").replace(/^\[|\]$/g, "");
+                    var m = /\(\("([^"]+)",pid=(\d+)/.exec(l);
+                    var key = port + "/" + (m ? m[2] : "sys");
+                    if (isNaN(port) || seen[key]) return;   // IPv4 + IPv6 (or 127.0.0.53 + .54) of one service: one row
+                    seen[key] = true;
+                    out.push({ port: port, addr: addr, proc: m ? m[1] : "", pid: m ? parseInt(m[2]) : 0 });
+                });
+                out.sort(function (a, b) { return (b.pid > 0) - (a.pid > 0) || a.port - b.port; });
+                root.ports = out;
+            }
+        }
+    }
+    function killPort(pid) {
+        Quickshell.execDetached(["kill", String(pid)]);
+        portsRefresh.restart();
+    }
+    Timer { id: portsRefresh; interval: 500; onTriggered: root.refreshPorts() }
+
+    // Updates: pacman (checkupdates, no root) + AUR (yay -Qua). 2 min after start, then hourly; the widget only shows
+    // when there is something to install.
+    property var updates: []                  // ["name old -> new", ...]
+    property bool updatesChecking: false
+    function checkUpdates() { if (!updProc.running) { updatesChecking = true; updProc.running = true; } }
+    Process {
+        id: updProc
+        command: ["sh", "-c", "checkupdates 2>/dev/null; command -v yay >/dev/null && yay -Qua 2>/dev/null; true"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var l = text.split("\n").filter(function (s) { return /\S+ \S+ -> \S+/.test(s); });
+                if (l.length > root.updates.length && l.length > 0)
+                    root.islandSay({ kind: "updates", icon: "\u{f01b}", color: "#0A84FF", title: I18n.tr("%1 updates available").arg(l.length),
+                                     sub: l.slice(0, 3).map(function (s) { return s.split(" ")[0]; }).join(", ") + (l.length > 3 ? "…" : ""), ms: 4000 });
+                root.updates = l;
+                root.updatesChecking = false;
+            }
+        }
+    }
+    Timer { interval: 120000; running: root.barWidgetEnabled("updates"); onTriggered: root.checkUpdates() }
+    Timer { interval: 3600000; repeat: true; running: root.barWidgetEnabled("updates"); onTriggered: root.checkUpdates() }
+    function runUpdates() {
+        Quickshell.execDetached(["sh", "-c", "\"$1\" -e sh -c 'yay; printf \"\\nDone. Press Enter to close.\"; read _'; qs -c MacShell ipc call bar checkUpdates",
+                                 "sh", root.terminal || "kitty"]);
+    }
+
+    // Stats + alerts: one sampler. Every 3 s while the Stats widget is in the bar, every 30 s otherwise (alerts only).
+    property var statsShow: ["cpu", "ram", "temp"]       // what the Stats widget shows
+    property bool alertsEnabled: true
+    property int alertTemp: 90               // °C, held for a minute
+    property int alertRam: 92                // %, held for a minute
+    property int alertDisk: 10               // % free left on / or /home
+    property real cpuPct: 0
+    property real ramPct: 0
+    property real cpuTemp: 0
+    property var cpuPrev: null
+    property var alertAt: ({})               // kind → when it last fired (15 min cooldown)
+    property real tempHighSince: 0
+    property real ramHighSince: 0
+    readonly property bool statsShown: barEnabled && barWidgetEnabled("stats")
+    Process {
+        id: statsProc
+        command: ["sh", "-c", "head -1 /proc/stat; grep -E '^(MemTotal|MemAvailable):' /proc/meminfo; "
+            + "for h in /sys/class/hwmon/hwmon*; do case $(cat $h/name 2>/dev/null) in k10temp|coretemp|zenpower) echo temp $(cat $h/temp1_input); break;; esac; done; "
+            + "df -P / /home 2>/dev/null | tail -n +2"]
+        stdout: StdioCollector { onStreamFinished: root.readStats(text) }
+    }
+    Timer {
+        interval: root.statsShown ? 3000 : 30000
+        repeat: true
+        triggeredOnStart: true
+        running: root.statsShown || root.alertsEnabled
+        onTriggered: statsProc.running = true
+    }
+    function readStats(t) {
+        var memT = 0, memA = 0, disks = [];
+        t.split("\n").forEach(function (l) {
+            var f = l.trim().split(/\s+/);
+            if (f[0] === "cpu") {
+                var n = f.slice(1).map(Number), idle = n[3] + (n[4] || 0), tot = n.reduce(function (a, b) { return a + b; }, 0);
+                if (root.cpuPrev && tot > root.cpuPrev.tot) root.cpuPct = 100 * (1 - (idle - root.cpuPrev.idle) / (tot - root.cpuPrev.tot));
+                root.cpuPrev = { idle: idle, tot: tot };
+            } else if (f[0] === "MemTotal:") memT = Number(f[1]);
+            else if (f[0] === "MemAvailable:") memA = Number(f[1]);
+            else if (f[0] === "temp") root.cpuTemp = Number(f[1]) / 1000;
+            else if (f.length >= 6 && /%$/.test(f[4])) disks.push({ mount: f[5], free: 100 - parseInt(f[4]) });
+        });
+        if (memT > 0) root.ramPct = 100 * (1 - memA / memT);
+        if (!alertsEnabled) return;
+        var now = Date.now();
+        tempHighSince = cpuTemp >= alertTemp ? (tempHighSince || now) : 0;
+        ramHighSince = ramPct >= alertRam ? (ramHighSince || now) : 0;
+        if (tempHighSince && now - tempHighSince >= 60000)
+            sysAlert("temp", "\u{f2c7}", I18n.tr("CPU is running hot"), Math.round(cpuTemp) + " °C for over a minute");
+        if (ramHighSince && now - ramHighSince >= 60000)
+            sysAlert("ram", "\u{f2db}", I18n.tr("Memory almost full"), Math.round(ramPct) + "% in use");
+        disks.forEach(function (d) {
+            if (d.free < alertDisk) sysAlert("disk" + d.mount, "\u{f0a0}", I18n.tr("Disk almost full"), d.mount + " · " + d.free + "% free");
+        });
+    }
+    function sysAlert(key, icon, title, sub) {
+        var now = Date.now();
+        if (now - (alertAt[key] || 0) < 15 * 60000) return;
+        var a = alertAt; a[key] = now; alertAt = a;
+        if (!islandSay({ kind: "alerts", icon: icon, color: "#FF453A", title: title, sub: sub, ms: 6000 }))
+            Quickshell.execDetached(["notify-send", "-a", "macbar", "-u", "critical", title, sub]);
+    }
+    IpcHandler {
+        target: "bar"
+        function checkUpdates(): void { root.checkUpdates(); }
+        // a menu bar widget on / off, like its Settings → Menu Bar switch:  bar setWidget stats true
+        function setWidget(id: string, on: bool): void { root.setBarWidget(id, on); }
+    }
     IpcHandler {
         target: "keybinds"
         function toggle(): void { root.wallPickerOpen = false; root.keybindsOpen = !root.keybindsOpen; }
@@ -4941,6 +5066,63 @@ Scope {
                             SymIcon { anchors.centerIn: parent; name: root.btOn ? "status/bluetooth-active-symbolic" : "status/bluetooth-disabled-symbolic"; color: root.btOn && root.btConnected > 0 ? bpal.fg : bpal.fg2 }
                             MouseArea { anchors.fill: parent; onClicked: ui.openPop("bt", btBtn.mapToItem(ui, 0, 0).x) }
                         }
+                        // ── akiidjk fork: Stats (CPU / RAM / temperature), Updates (only when there are some), Ports ──
+                        Item {
+                            visible: root.barWidgetEnabled("stats")
+                            width: visible ? statsText.implicitWidth + 14 : 0; height: 28
+                            Text {
+                                id: statsText
+                                anchors.centerIn: parent
+                                text: {
+                                    var p = [];
+                                    if (root.statsShow.indexOf("cpu") >= 0) p.push("CPU " + Math.round(root.cpuPct) + "%");
+                                    if (root.statsShow.indexOf("ram") >= 0) p.push("RAM " + Math.round(root.ramPct) + "%");
+                                    if (root.statsShow.indexOf("temp") >= 0 && root.cpuTemp > 0) p.push(Math.round(root.cpuTemp) + "°");
+                                    return p.join("  ");
+                                }
+                                color: root.cpuTemp >= root.alertTemp ? "#FF453A" : bpal.fg
+                                font.family: root.fontForWeight(font.weight, bpal.fam); font.pixelSize: 12; font.weight: Font.Medium
+                                font.features: { "tnum": 1 }
+                            }
+                        }
+                        Item {
+                            id: updBtn
+                            visible: root.barWidgetEnabled("updates") && root.updates.length > 0
+                            width: visible ? updRow.implicitWidth + 12 : 0; height: 28
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: parent.width - 2; height: parent.height - 6; radius: 6
+                                color: ui.pop === "updates" ? bpal.hover : "transparent"
+                            }
+                            Row {
+                                id: updRow
+                                anchors.centerIn: parent
+                                spacing: 3
+                                SymIcon { anchors.verticalCenter: parent.verticalCenter; name: "status/software-update-available-symbolic"; color: bpal.fg }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: root.updates.length
+                                    color: bpal.fg
+                                    font.family: root.fontForWeight(font.weight, bpal.fam); font.pixelSize: 12; font.weight: Font.DemiBold
+                                }
+                            }
+                            MouseArea { anchors.fill: parent; onClicked: ui.openPop("updates", updBtn.mapToItem(ui, 0, 0).x + updBtn.width / 2) }
+                        }
+                        Item {
+                            id: portsBtn
+                            visible: root.barWidgetEnabled("ports")
+                            width: visible ? 26 : 0; height: 28
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: parent.width - 2; height: parent.height - 6; radius: 6
+                                color: ui.pop === "ports" ? bpal.hover : "transparent"
+                            }
+                            SymIcon { anchors.centerIn: parent; name: "places/network-server-symbolic"; color: bpal.fg }
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: { root.refreshPorts(); ui.openPop("ports", portsBtn.mapToItem(ui, 0, 0).x + portsBtn.width / 2); }
+                            }
+                        }
                         // microphone muted: shown only then (part of the privacy widget); click = unmute
                         Item {
                             visible: root.barWidgetEnabled("privacy") && root.micReal && root.micMuted
@@ -5329,6 +5511,170 @@ Scope {
                         }
                     }
                     }
+                    }
+                }
+
+                // ═════════ akiidjk fork: Ports / Updates popover (one surface, the content follows ui.pop) ═════════
+                Item {
+                    id: toolPop
+                    z: 10
+                    property real mx: 0
+                    property string kind: "ports"          // latched, so the content stays while it folds away
+                    readonly property bool latchOn: ui.pop === "ports" || ui.pop === "updates"
+                    onLatchOnChanged: if (latchOn) { mx = ui.menuX; kind = ui.pop; }
+                    width: 330
+                    height: toolCol.height + 16
+                    x: Math.max(6, Math.min(ui.width - width * root.barPopupScale - 8, toolPop.mx - width / 2))
+                    y: root.barHeight + 6
+                    opacity: latchOn ? 1 : 0
+                    visible: opacity > 0
+                    scale: root.barPopupScale * (latchOn ? 1 : 0.96)
+                    transformOrigin: Item.Top
+                    Behavior on opacity { NumberAnimation { duration: 110 } }
+                    Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                    LGlass {
+                        anchors.fill: parent
+                        backdrop: ui.glassSrc
+                        shaderUrl: root.glassShaderUrl
+                        liquid: root.liquidActive
+                        dark: root.effDark
+                        bx: toolPop.x; by: toolPop.y
+                        cornerR: 22
+                        tint: root.glassOpacity
+                        thickness: 22
+                        strength: 0.55 * root.glassLiquid
+                        rim: root.glassRim
+                        grain: root.glassGrain
+                        blur: 42
+                        debug: root.glassDebug
+                        onShaderError: root.glassState = "failed"
+                        rimTint: 1
+                        ringW: 1.4
+                    }
+                    MenuBorder {
+                        z: 2
+                        anchors.fill: parent
+                        cornerR: 22
+                        dark: root.effDark
+                        tint: root.menuBorderColor
+                    }
+                    MouseArea { anchors.fill: parent }
+                    Column {
+                        id: toolCol
+                        x: 8; y: 8
+                        width: parent.width - 16
+                        // header: title + action
+                        Item {
+                            width: parent.width; height: 34
+                            Text {
+                                x: 12
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: toolPop.kind === "ports" ? I18n.tr("Listening Ports")
+                                    : root.updatesChecking ? I18n.tr("Checking…")
+                                    : root.updates.length === 1 ? I18n.tr("1 update") : I18n.tr("%1 updates").arg(root.updates.length)
+                                color: pal.fg
+                                font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13; font.weight: Font.DemiBold
+                            }
+                            Text {
+                                id: toolAct
+                                anchors.right: parent.right; anchors.rightMargin: 12
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: toolPop.kind === "ports" ? I18n.tr("Refresh") : I18n.tr("Check Now")
+                                color: toolActMa.containsMouse ? pal.fg : pal.fg2
+                                font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 12
+                                MouseArea {
+                                    id: toolActMa
+                                    anchors.fill: parent; anchors.margins: -6
+                                    hoverEnabled: true
+                                    onClicked: toolPop.kind === "ports" ? root.refreshPorts() : root.checkUpdates()
+                                }
+                            }
+                        }
+                        // Ports: one row per listener; ✕ stops the process
+                        Repeater {
+                            model: toolPop.kind === "ports" ? root.ports : []
+                            delegate: Item {
+                                id: pr
+                                required property var modelData
+                                width: parent.width; height: 34
+                                Rectangle { anchors.fill: parent; radius: 12; color: pal.hover; opacity: prMa.containsMouse ? 1 : 0 }
+                                MouseArea { id: prMa; anchors.fill: parent; hoverEnabled: true }
+                                Text {
+                                    id: prPort
+                                    x: 12; width: 56
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: ":" + pr.modelData.port
+                                    color: pal.fg
+                                    font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13; font.weight: Font.DemiBold
+                                    font.features: { "tnum": 1 }
+                                }
+                                Text {
+                                    anchors.left: prPort.right; anchors.right: prKill.left; anchors.rightMargin: 8
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    elide: Text.ElideRight
+                                    text: (pr.modelData.proc || I18n.tr("system")) + (pr.modelData.pid ? " · " + pr.modelData.pid : "") + "   " + pr.modelData.addr
+                                    color: pr.modelData.pid ? pal.fg : pal.fg2
+                                    font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 12
+                                }
+                                Text {
+                                    id: prKill
+                                    anchors.right: parent.right; anchors.rightMargin: 12
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    visible: pr.modelData.pid > 0
+                                    text: "✕"
+                                    color: prKillMa.containsMouse ? "#FF453A" : pal.fg2
+                                    font.pixelSize: 13
+                                    MouseArea { id: prKillMa; anchors.fill: parent; anchors.margins: -8; hoverEnabled: true; onClicked: root.killPort(pr.modelData.pid) }
+                                }
+                            }
+                        }
+                        // Updates: the list (first 12), then the terminal
+                        Repeater {
+                            model: toolPop.kind === "updates" ? root.updates.slice(0, 12) : []
+                            delegate: Item {
+                                id: ur
+                                required property string modelData
+                                readonly property var f: modelData.split(" ")
+                                width: parent.width; height: 26
+                                Text {
+                                    x: 12; width: parent.width - 150
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    elide: Text.ElideRight
+                                    text: ur.f[0]
+                                    color: pal.fg
+                                    font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 12
+                                }
+                                Text {
+                                    anchors.right: parent.right; anchors.rightMargin: 12
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 130; horizontalAlignment: Text.AlignRight
+                                    elide: Text.ElideLeft
+                                    text: ur.f[ur.f.length - 1]
+                                    color: pal.fg2
+                                    font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 11
+                                }
+                            }
+                        }
+                        Text {
+                            visible: toolPop.kind === "updates" && root.updates.length > 12
+                            x: 12; height: 24; verticalAlignment: Text.AlignVCenter
+                            text: I18n.tr("and %1 more").arg(root.updates.length - 12)
+                            color: pal.fg2
+                            font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 11
+                        }
+                        Item {
+                            visible: toolPop.kind === "updates"
+                            width: parent.width; height: 40
+                            Rectangle { anchors.fill: parent; anchors.topMargin: 4; radius: 12; color: pal.hover; opacity: updRunMa.containsMouse ? 1 : 0 }
+                            Text {
+                                x: 12
+                                anchors.verticalCenter: parent.verticalCenter; anchors.verticalCenterOffset: 2
+                                text: I18n.tr("Update in Terminal…")
+                                color: pal.fg
+                                font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13
+                            }
+                            MouseArea { id: updRunMa; anchors.fill: parent; hoverEnabled: true; onClicked: { ui.pop = ""; root.runUpdates(); } }
+                        }
                     }
                 }
 

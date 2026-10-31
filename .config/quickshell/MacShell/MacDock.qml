@@ -1917,6 +1917,33 @@ Scope {
                         t: pal; title: I18n.tr("Clock and calendar")
                         SSwitch { t: pal; checked: root.bar ? root.bar.barWidgetEnabled("clock") : true; onToggled: v => { if (root.bar) root.bar.setBarWidget("clock", v); } }
                     }
+                    SRow {
+                        t: pal; title: I18n.tr("System stats")
+                        subtitle: I18n.tr("CPU, memory and temperature, read every 3 seconds while shown")
+                        SSwitch { t: pal; checked: root.bar ? root.bar.barWidgetEnabled("stats") : false; onToggled: v => { if (root.bar) root.bar.setBarWidget("stats", v); } }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("Stats shown")
+                        visible: root.bar ? root.bar.barWidgetEnabled("stats") : false
+                        SSegmented {
+                            t: pal
+                            readonly property var sets: [["cpu", "ram", "temp"], ["cpu", "ram"], ["cpu", "temp"], ["temp"]]
+                            model: ["All", "CPU · RAM", "CPU · Temp", "Temp"]
+                            segWidth: 84
+                            current: root.bar ? Math.max(0, sets.map(function (x) { return x.join(); }).indexOf(root.bar.statsShow.join())) : 0
+                            onPicked: i => { if (root.bar) root.bar.statsShow = sets[i]; }
+                        }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("Updates")
+                        subtitle: I18n.tr("pacman and AUR updates, checked every hour; shown only when there are some")
+                        SSwitch { t: pal; checked: root.bar ? root.bar.barWidgetEnabled("updates") : false; onToggled: v => { if (root.bar) { root.bar.setBarWidget("updates", v); if (v) root.bar.checkUpdates(); } } }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("Ports")
+                        subtitle: I18n.tr("Listening TCP ports, with the process behind each and a button to stop it")
+                        SSwitch { t: pal; checked: root.bar ? root.bar.barWidgetEnabled("ports") : false; onToggled: v => { if (root.bar) root.bar.setBarWidget("ports", v); } }
+                    }
                 }
 
                 SLabel { t: pal; header: true; text: I18n.tr("Screenshots") }
@@ -3430,6 +3457,43 @@ Scope {
             id: paneNotif
             Column {
                 spacing: 10
+                SLabel { t: pal; header: true; text: I18n.tr("System Alerts") }
+                SCard {
+                    t: pal
+                    SRow {
+                        t: pal; title: I18n.tr("Warn me about the system")
+                        subtitle: I18n.tr("In the Dynamic Island (or a banner): heat or memory held for a minute, a disk almost full; at most every 15 minutes each")
+                        SSwitch { t: pal; checked: root.bar ? root.bar.alertsEnabled : true; onToggled: v => { if (root.bar) root.bar.alertsEnabled = v; } }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("CPU temperature"); visible: root.bar ? root.bar.alertsEnabled : true
+                        subtitle: (root.bar ? root.bar.alertTemp : 90) + " °C"
+                        SSlider {
+                            t: pal; from: 60; to: 100; stepSize: 1
+                            value: root.bar ? root.bar.alertTemp : 90
+                            onMoved: v => { if (root.bar) root.bar.alertTemp = Math.round(v); }
+                        }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("Memory in use"); visible: root.bar ? root.bar.alertsEnabled : true
+                        subtitle: (root.bar ? root.bar.alertRam : 92) + "%"
+                        SSlider {
+                            t: pal; from: 70; to: 99; stepSize: 1
+                            value: root.bar ? root.bar.alertRam : 92
+                            onMoved: v => { if (root.bar) root.bar.alertRam = Math.round(v); }
+                        }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("Free disk space below"); visible: root.bar ? root.bar.alertsEnabled : true
+                        subtitle: (root.bar ? root.bar.alertDisk : 10) + "%"
+                        SSlider {
+                            t: pal; from: 2; to: 30; stepSize: 1
+                            value: root.bar ? root.bar.alertDisk : 10
+                            onMoved: v => { if (root.bar) root.bar.alertDisk = Math.round(v); }
+                        }
+                    }
+                }
+                SLabel { t: pal; header: true; text: I18n.tr("Notifications") }
                 SCard {
                     t: pal
                     SRow {
