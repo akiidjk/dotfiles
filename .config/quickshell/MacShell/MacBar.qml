@@ -81,7 +81,8 @@ Scope {
     readonly property bool menuBarShown: barEnabled && !topBarHidden
     readonly property bool islandShown: menuBarShown && islandEnabled
     // Settings → Dynamic Island. notch = hangs from the screen edge in place of the workspaces;
-    // island = the phone's floating pill, just below the bar (the workspaces stay in the bar)
+    // island = the phone's floating pill, just below the bar (either way the
+    // workspaces leave the bar while the island is on)
     property string islandStyle: "notch"
     property int islandOffset: 6             // island style: gap between the bar and the pill
     property int islandHeight: 0             // collapsed height, 0 = auto (bar + 5 for the notch, 32 for the pill)
@@ -97,10 +98,8 @@ Scope {
     property bool islandLyrics: true
     property real islandLyricLead: 0.4       // a lyric line shows this many seconds early
     property bool islandOutline: false       // island style: hairline rim (stays visible on dark wallpapers)
-    property bool islandShadow: true         // island style: soft shadow under the pill
     readonly property var islandKinds: ["workspace", "battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"]
-    property var islandAlerts: ["battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"]
-    readonly property bool islandNotch: islandEnabled && islandStyle === "notch"
+    property var islandAlerts: ["workspace", "battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"]
     property bool islandClaudeLimits: true   // Claude plan limits under the date when the island peeks
     // Claude Code's plan limits, written by its status line (hypr-macshell/scripts/claude-statusline.sh):
     // { at, rate_limits: { five_hour: { used_percentage, resets_at }, seven_day: {...} } }, or null
@@ -366,7 +365,7 @@ Scope {
     property string kbMain: ""                // name of the main keyboard (Hyprland)
     property string recordFile: ""
 
-    readonly property var settingKeys: ["barEnabled", "islandEnabled", "islandStyle", "islandOffset", "islandHeight", "islandWidth", "islandScale", "islandRadius", "islandSpring", "islandBounce", "islandIdle", "islandHoverExpand", "islandAutoShowMs", "islandAlertMs", "islandLyrics", "islandLyricLead", "islandOutline", "islandShadow", "islandAlerts", "islandClaudeLimits", "statsShow", "alertsEnabled", "alertTemp", "alertRam", "alertDisk",
+    readonly property var settingKeys: ["barEnabled", "islandEnabled", "islandStyle", "islandOffset", "islandHeight", "islandWidth", "islandScale", "islandRadius", "islandSpring", "islandBounce", "islandIdle", "islandHoverExpand", "islandAutoShowMs", "islandAlertMs", "islandLyrics", "islandLyricLead", "islandOutline", "islandAlerts", "islandClaudeLimits", "statsShow", "alertsEnabled", "alertTemp", "alertRam", "alertDisk",
         "accentFromWallpaper", "darkMode", "appearanceMode", "accent", "fontFamily", "barHeight", "glassOpacity",
         "barStyle", "barGlass", "glassRim", "glassGrain", "glassLiquid", "glassBlur", "barBgOpacity", "glassRealtime", "liveWallGlass", "glassDebug", "wallpaperPath", "use24h", "showDate",
         "showSeconds", "showBatteryPercent", "showTray",
@@ -3498,8 +3497,8 @@ Scope {
         barEnabled = true; islandEnabled = true; accentFromWallpaper = true;
         islandStyle = "notch"; islandOffset = 6; islandHeight = 0; islandWidth = 200; islandScale = 1.0; islandRadius = -1;
         islandSpring = 4.5; islandBounce = 0.34; islandIdle = "show"; islandHoverExpand = true; islandAutoShowMs = 3000;
-        islandAlertMs = 1.0; islandLyrics = true; islandLyricLead = 0.4; islandOutline = false; islandShadow = true; islandClaudeLimits = true;
-        islandAlerts = ["battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"];
+        islandAlertMs = 1.0; islandLyrics = true; islandLyricLead = 0.4; islandOutline = false; islandClaudeLimits = true;
+        islandAlerts = ["workspace", "battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"];
         darkMode = true; appearanceMode = "dark"; accent = "#0a84ff"; fontFamily = "Open Runde"; glassOpacity = 0.42; glassBlur = 5; barBgOpacity = 0.10; glassRealtime = false; liveWallGlass = false;
         barStyle = "liquid"; use24h = true; showDate = true; showSeconds = false; showBatteryPercent = true;
         showTray = true;
@@ -4963,7 +4962,7 @@ Scope {
                     // ── centre: workspaces (minimal, text only), or the Dynamic Island (Island.qml, its own layer) ──
                     Row {
                         id: wsRow
-                        visible: root.barWidgetEnabled("workspaces") && !root.islandNotch   // the notch takes the centre (the pill hangs below)
+                        visible: root.barWidgetEnabled("workspaces") && !root.islandEnabled   // the island (either style) takes their place
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.verticalCenter: parent.verticalCenter
                         height: 28

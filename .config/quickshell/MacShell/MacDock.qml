@@ -1382,7 +1382,7 @@ Scope {
                     SRow {
                         t: pal
                         title: I18n.tr("Style")
-                        subtitle: isl.pill ? I18n.tr("A floating black pill below the menu bar, like the phone; the workspaces stay in the bar")
+                        subtitle: isl.pill ? I18n.tr("A floating black pill below the menu bar, like the phone")
                                            : I18n.tr("A notch hanging from the screen edge, in place of the workspaces")
                         SSegmented {
                             t: pal
@@ -1521,11 +1521,6 @@ Scope {
                         subtitle: I18n.tr("A hairline rim, so the pill stays visible on dark wallpapers")
                         SSwitch { t: pal; checked: isl.b ? isl.b.islandOutline : false; onToggled: v => { if (isl.b) isl.b.islandOutline = v; } }
                     }
-                    SRow {
-                        t: pal
-                        title: I18n.tr("Shadow")
-                        SSwitch { t: pal; checked: isl.b ? isl.b.islandShadow : true; onToggled: v => { if (isl.b) isl.b.islandShadow = v; } }
-                    }
                 }
 
                 SLabel { t: pal; header: true; text: I18n.tr("Now Playing") }
@@ -1609,8 +1604,8 @@ Scope {
                             b.islandStyle = "notch"; b.islandOffset = 6; b.islandHeight = 0; b.islandWidth = 200; b.islandScale = 1.0;
                             b.islandRadius = -1; b.islandSpring = 4.5; b.islandBounce = 0.34; b.islandIdle = "show"; b.islandHoverExpand = true;
                             b.islandAutoShowMs = 3000; b.islandAlertMs = 1.0; b.islandLyrics = true; b.islandLyricLead = 0.4;
-                            b.islandOutline = false; b.islandShadow = true; b.islandClaudeLimits = true;
-                            b.islandAlerts = ["battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"];
+                            b.islandOutline = false; b.islandClaudeLimits = true;
+                            b.islandAlerts = ["workspace", "battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"];
                         }
                     }
                 }

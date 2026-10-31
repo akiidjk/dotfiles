@@ -7,11 +7,10 @@ import Quickshell.Services.Mpris
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Shapes
-import QtQuick.Effects
 
 // Dynamic Island (Settings → Dynamic Island), in one of two styles:
 //   notch        a black notch hanging from the centre of the menu bar, in place of the workspaces
-//   island       the phone's floating black pill, just below the bar (the workspaces stay in the bar)
+//   island       the phone's floating black pill, just below the bar
 // What it shows, most important first:
 //   hover        the player (or the date when nothing is loaded)
 //   alert        a passing activity: battery, Bluetooth, Wi-Fi, microphone / camera, input source, downloads,
@@ -39,7 +38,7 @@ PanelWindow {
     // fixed (the player is the tallest face, the compact lyric line the widest + bump + ears) — surface never resizes.
     // Only as wide as the notch can get: every frame redraws the whole surface, a full-width one cost 4x more.
     anchors.top: true
-    // (+ room for the pill's shadow, the widest scale and Claude's limits; the island style starts lower)
+    // (+ room for the widest scale and Claude's limits; the island style starts lower)
     implicitWidth: Math.ceil(460 * Math.max(1, sc)) + 60
     implicitHeight: 300 + topY + Math.max(0, collapsedH - 33)
     exclusionMode: ExclusionMode.Ignore
@@ -360,15 +359,6 @@ PanelWindow {
         Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
         Behavior on scale { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
 
-        // the pill's soft shadow (island style)
-        RectangularShadow {
-            visible: island.pill && island.bar.islandShadow
-            x: card.x; y: card.y + 3
-            width: card.width; height: card.height
-            radius: card.radius
-            blur: 16
-            color: Qt.rgba(0, 0, 0, 0.45)
-        }
         // ── the body: notch = flat top, rounded bottom, concave ears into the screen edge; island = rounded all round ──
         Rectangle {
             x: card.x; y: card.y
