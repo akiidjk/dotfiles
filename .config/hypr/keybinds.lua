@@ -106,6 +106,11 @@ hl.bind(
     { description = "Mute / unmute the microphone" }
 )
 hl.bind(
+    "SUPER + SHIFT + N",
+    hl.dsp.exec_cmd("qs -c MacShell ipc call scratchpad toggle"),
+    { description = "Scratchpad" }
+)
+hl.bind(
     "SUPER + SHIFT + T",
     hl.dsp.exec_cmd("bash ~/.config/hypr/scripts/screen-text.sh"),
     { description = "Copy text / QR code from screen" }

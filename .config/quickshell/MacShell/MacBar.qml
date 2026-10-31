@@ -124,6 +124,7 @@ Scope {
     }
     property bool keybindsOpen: false        // KeybindsPanel.qml (Super+K, Help → Hyprland Keybinds)
     property bool wallPickerOpen: false      // WallPickerPanel.qml (Super+W)
+    property bool scratchpadOpen: false      // ScratchpadPanel.qml (Super+Shift+N)
     readonly property QtObject islandPal: pal          // IslandStyle.qml reads the palette through this
     // Accent from the wallpaper: matugen writes the primary colour to ~/.config/macshell/accent (templates/macshell-accent);
     // while "Wallpaper" is the chosen accent swatch, every new value is applied to the bar and the Dock.
@@ -2982,6 +2983,12 @@ Scope {
         function close(): void { root.keybindsOpen = false; }
     }
     IpcHandler {
+        target: "scratchpad"
+        function toggle(): void { root.keybindsOpen = false; root.wallPickerOpen = false; root.scratchpadOpen = !root.scratchpadOpen; }
+        function open(): void { root.scratchpadOpen = true; }
+        function close(): void { root.scratchpadOpen = false; }
+    }
+    IpcHandler {
         target: "wallpicker"
         function toggle(): void { root.keybindsOpen = false; root.wallPickerOpen = !root.wallPickerOpen; }
         function open(): void { root.wallPickerOpen = true; }
@@ -3139,6 +3146,7 @@ Scope {
                 if (has) m.push(mi(n + " Help", "", function () { root.helpFor(id, n); }));
                 m.push(msep());
                 m.push(mi("Hyprland Keybinds", "", function () { root.keybindsOpen = true; }));
+                m.push(mi("Scratchpad", "", function () { root.scratchpadOpen = true; }));
                 m.push(mi("Reload Hyprland Config", "", function () { Quickshell.execDetached(["hyprctl", "reload"]); }));
                 m.push(msep());
                 m.push(mi("Hyprland Wiki", "", function () { Quickshell.execDetached(["xdg-open", "https://wiki.hypr.land"]); }));
@@ -8314,6 +8322,32 @@ Scope {
                 dark: root.effDark
                 bx: kbWin.panelX; by: kbWin.panelY
                 cornerR: kbWin.panelR
+                tint: root.glassOpacity
+                thickness: 22
+                strength: 0.75 * root.glassLiquid
+                rim: root.glassRim
+                grain: root.glassGrain
+                blur: root.wpBlur
+                debug: root.glassDebug
+                onShaderError: root.glassState = "failed"
+                rimTint: 1
+                ringW: 1.4
+            }
+        }
+        ScratchpadPanel {
+            id: spWin
+            screen: perScreen.modelData
+            bar: root
+            backdrop: backdropComp
+            focusedScreen: ui.toastScreen
+            LGlass {
+                anchors.fill: parent
+                backdrop: spWin.backdropItem
+                shaderUrl: root.glassShaderUrl
+                liquid: root.liquidActive
+                dark: root.effDark
+                bx: spWin.panelX; by: spWin.panelY
+                cornerR: spWin.panelR
                 tint: root.glassOpacity
                 thickness: 22
                 strength: 0.75 * root.glassLiquid
