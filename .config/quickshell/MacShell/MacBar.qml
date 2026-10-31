@@ -5665,7 +5665,8 @@ Scope {
                     property real mx: 0
                     property string kind: "ports"          // latched, so the content stays while it folds away
                     readonly property bool latchOn: ui.pop === "ports" || ui.pop === "updates"
-                    onLatchOnChanged: if (latchOn) { mx = ui.menuX; kind = ui.pop; }
+                    // ports <-> updates keeps latchOn true: follow ui.pop, not latchOn
+                    Connections { target: ui; function onPopChanged() { if (toolPop.latchOn) { toolPop.mx = ui.menuX; toolPop.kind = ui.pop; } } }
                     width: 330
                     height: toolCol.height + 16
                     x: Math.max(6, Math.min(ui.width - width * root.barPopupScale - 8, toolPop.mx - width / 2))

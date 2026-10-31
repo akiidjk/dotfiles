@@ -20,27 +20,46 @@ class GeniusLyricsParser(HTMLParser):
         self.lyrics_parts = []
         self.ignore_tags = {"script", "style", "header", "nav", "footer"}
         self.current_ignore = 0
+        self.skip = 0  # depth inside a data-exclude-from-selection subtree (contributors / title header)
 
     def handle_starttag(self, tag, attrs):
         attr_dict = dict(attrs)
+        void = tag in ("br", "img", "hr", "input", "meta", "link", "wbr")  # these never close
+        if self.skip:
+            if not void:
+                self.skip += 1
+            return
+        if attr_dict.get("data-exclude-from-selection") == "true":
+            self.skip = 1
+            return
         if tag in self.ignore_tags:
             self.current_ignore += 1
             return
-        if attr_dict.get("data-lyrics-container") == "true" or "Lyrics__Container" in attr_dict.get("class", ""):
-            self.in_lyrics_container += 1
-        elif self.in_lyrics_container > 0 and tag in ("br", "p", "div"):
+        if self.in_lyrics_container > 0:  # depth inside the container, so we leave it when it closes
+            if tag in ("br", "p", "div"):
+                self.lyrics_parts.append("\n")
+            if not void:
+                self.in_lyrics_container += 1
+        elif attr_dict.get("data-lyrics-container") == "true":
+            self.in_lyrics_container = 1
             self.lyrics_parts.append("\n")
 
     def handle_endtag(self, tag):
+        if tag in ("br", "img", "hr", "input", "meta", "link", "wbr"):  # <br/> fires start+end; depth never counted it
+            return
+        if self.skip:
+            self.skip -= 1
+            return
         if tag in self.ignore_tags:
             self.current_ignore = max(0, self.current_ignore - 1)
             return
         if self.in_lyrics_container > 0:
             if tag in ("p", "div"):
                 self.lyrics_parts.append("\n")
+            self.in_lyrics_container -= 1
 
     def handle_data(self, data):
-        if self.current_ignore > 0:
+        if self.skip or self.current_ignore > 0:
             return
         if self.in_lyrics_container > 0:
             self.lyrics_parts.append(data)
