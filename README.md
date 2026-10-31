@@ -336,6 +336,8 @@ Once a Claude Code turn has run 20 s or more, the island tells you it's done ("�
 
 Three widgets, all off until you switch them on in Settings → Menu Bar (or with `qs -c MacShell ipc call bar setWidget <stats|updates|ports> true`). **Stats** is CPU, RAM and temperature. **Updates** checks pacman and the AUR every hour, only appears when there's something to install, and opens `yay` in a terminal from its popover. **Ports** lists what's listening on TCP, with the process behind each port and a button to kill it. A muted mic (`SUPER + SHIFT + M`) gets a red icon next to the privacy dots.
 
+The volume popover doubles as a mixer, so I rarely open pavucontrol anymore. Each app gets a slider that goes up to 150%, a mute on its speaker icon, and a device label you click to send it to another output. Apps recording from a mic show up under Input the same way. Sound Settings… at the bottom opens Settings → Sound, which has the full version: every output and input device with its own volume, mute and "Use" button, playback and recording apps with the device each one uses, and the profile of every sound card (HiFi / Pro Audio, A2DP / headset on Bluetooth, analog vs digital). The 150% boost can be switched off there.
+
 System alerts live in Settings → Notifications. If the CPU runs hot or memory stays nearly full for a whole minute, or a disk drops under the free-space threshold, the island says so, once every 15 minutes at most.
 
 ### Smaller things

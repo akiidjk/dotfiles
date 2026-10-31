@@ -365,7 +365,7 @@ Scope {
     property string kbMain: ""                // name of the main keyboard (Hyprland)
     property string recordFile: ""
 
-    readonly property var settingKeys: ["barEnabled", "islandEnabled", "islandStyle", "islandOffset", "islandHeight", "islandWidth", "islandScale", "islandRadius", "islandSpring", "islandBounce", "islandIdle", "islandHoverExpand", "islandAutoShowMs", "islandAlertMs", "islandLyrics", "islandLyricLead", "islandOutline", "islandAlerts", "islandClaudeLimits", "statsShow", "alertsEnabled", "alertTemp", "alertRam", "alertDisk",
+    readonly property var settingKeys: ["barEnabled", "islandEnabled", "islandStyle", "islandOffset", "islandHeight", "islandWidth", "islandScale", "islandRadius", "islandSpring", "islandBounce", "islandIdle", "islandHoverExpand", "islandAutoShowMs", "islandAlertMs", "islandLyrics", "islandLyricLead", "islandOutline", "islandAlerts", "islandClaudeLimits", "audioBoost", "statsShow", "alertsEnabled", "alertTemp", "alertRam", "alertDisk",
         "accentFromWallpaper", "darkMode", "appearanceMode", "accent", "fontFamily", "barHeight", "glassOpacity",
         "barStyle", "barGlass", "glassRim", "glassGrain", "glassLiquid", "glassBlur", "barBgOpacity", "glassRealtime", "liveWallGlass", "glassDebug", "wallpaperPath", "use24h", "showDate",
         "showSeconds", "showBatteryPercent", "showTray",
@@ -1592,6 +1592,84 @@ Scope {
     }
 
     // one device row of the sound popover: round icon (accent when it is the active device), name, optional second line
+    // ── akiidjk fork: one app in the volume popover's mixer: volume (past 100% with Settings → Sound → boost), mute (the
+    // left icon), and the device it plays to / records from (the label on the right opens the list) ──
+    component MixRow: Item {
+        id: mr
+        required property var t
+        required property var gx
+        required property string key
+        property bool rec: false              // a recording app instead of a playing one
+        readonly property var app: root.appByKey(key, rec)
+        readonly property var devices: rec ? root.audioInputs : root.audioOutputs
+        property bool routing: false
+        // while dragging, the knob follows the pointer instead of waiting for the next volume update
+        property bool dragging: false
+        property real dragV: 0
+        readonly property real vol: dragging ? dragV : (app ? app.volume : 0)
+        readonly property bool muted: app !== null && app.muted
+        Timer { id: mrDragEnd; interval: 500; onTriggered: mr.dragging = false }
+        visible: app !== null
+        width: parent ? parent.width : 300
+        height: app ? 54 + (routing ? mrDevs.height + 4 : 0) : 0
+        clip: true
+        Text {
+            x: 4; y: 0; width: parent.width - mrDev.width - 16
+            text: (mr.app ? mr.app.name : "") + "  ·  " + (mr.muted ? I18n.tr("Muted") : Math.round(mr.vol * 100) + "%")
+            color: mr.muted ? mr.t.fg2 : (mr.vol > 1.001 ? "#FF9F0A" : mr.t.fg)
+            elide: Text.ElideRight
+            font.family: root.fontForWeight(font.weight, mr.t.fam); font.pixelSize: 12
+        }
+        Text {
+            id: mrDev
+            anchors.right: parent.right; anchors.rightMargin: 4
+            y: 0
+            width: Math.min(implicitWidth, parent.width * 0.45)
+            elide: Text.ElideLeft
+            text: (mr.app && mr.app.device ? root.audioShortName(mr.app.device) : I18n.tr("Device")) + (mr.routing ? "  ▴" : "  ▾")
+            color: mrDevMa.containsMouse || mr.routing ? mr.t.fg : mr.t.fg2
+            font.family: root.fontForWeight(font.weight, mr.t.fam); font.pixelSize: 11
+            MouseArea { id: mrDevMa; anchors.fill: parent; anchors.margins: -5; hoverEnabled: true; onClicked: mr.routing = !mr.routing }
+        }
+        CCSlider {
+            t: mr.t; gx: mr.gx; x: 0; y: 20; width: parent.width
+            value: mr.muted ? 0 : mr.vol / root.maxVolume
+            leftKind: mr.rec ? "mic" : "speaker"; leftLevel: mr.muted ? 0 : (mr.vol < 0.34 ? 1 : (mr.vol < 0.67 ? 2 : 3))
+            rightKind: mr.rec ? "mic" : "speaker"; rightLevel: 3
+            onMoved: v => {
+                mr.dragV = v * root.maxVolume; mr.dragging = true; mrDragEnd.restart();
+                root.setAppVolume(mr.app, v * root.maxVolume);
+            }
+        }
+        MouseArea { x: 0; y: 20; width: 28; height: 32; onClicked: root.toggleAppMute(mr.app) }
+        Column {
+            id: mrDevs
+            y: 56
+            width: parent.width
+            visible: mr.routing
+            Repeater {
+                model: mr.devices
+                delegate: Item {
+                    id: mrd
+                    required property var modelData
+                    readonly property bool on: mr.app !== null && mr.app.device !== null && mr.app.device.id === modelData.id
+                    width: mrDevs.width; height: 28
+                    Rectangle { anchors.fill: parent; radius: 9; color: mr.t.hover; opacity: mrdMa.containsMouse ? 1 : 0 }
+                    Text {
+                        x: 12; anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width - 40; elide: Text.ElideRight
+                        text: root.audioShortName(mrd.modelData)
+                        color: mr.t.fg
+                        font.family: root.fontForWeight(font.weight, mr.t.fam); font.pixelSize: 12
+                        font.weight: mrd.on ? Font.DemiBold : Font.Normal
+                    }
+                    Glyph { visible: mrd.on; anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; width: 14; height: 14; kind: "check"; color: mr.t.fg }
+                    MouseArea { id: mrdMa; anchors.fill: parent; hoverEnabled: true; onClicked: { root.moveApp(mr.app, mrd.modelData, mr.rec); mr.routing = false; } }
+                }
+            }
+        }
+    }
+
     component AudioRow: Item {
         id: ar
         required property var t
@@ -1970,24 +2048,40 @@ Scope {
         out.sort(function (a, b) { return String(a.description || a.name).localeCompare(String(b.description || b.name)); });
         return out;
     }
-    // Group playback streams by application: one control per app, even if it owns multiple output streams.
+    // Group streams by application: one control per app, even if it owns several streams. rec = recording streams (apps
+    // using a microphone) instead of playback. Each group also carries the device its streams are linked to (PipeWire links).
     property int audioTick: 0
-    function audioApps() {
+    property bool audioBoost: true           // Settings → Sound: app and device volume up to 150%, like pavucontrol
+    readonly property real maxVolume: audioBoost ? 1.5 : 1.0
+    function streamDevice(n, rec) {
+        var L = Pipewire.linkGroups.values;
+        for (var i = 0; i < L.length; i++) {
+            var g = L[i];
+            if (!g || !g.source || !g.target) continue;
+            var dev = rec ? (g.target.id === n.id ? g.source : null) : (g.source.id === n.id ? g.target : null);
+            if (dev && !dev.isStream) return dev;
+        }
+        return null;
+    }
+    function audioApps(rec) {
         var tick = audioTick, ns = Pipewire.nodes.values, groups = {}, out = [];
+        var want = rec ? PwNodeType.AudioInStream : PwNodeType.AudioOutStream;
         for (var i = 0; i < ns.length; i++) {
             var n = ns[i];
             if (!n || !n.audio || !n.isStream) continue;
-            var playback = n.type !== undefined ? ((n.type & PwNodeType.AudioOutStream) !== 0) : !n.isSink;
-            if (!playback) continue;
+            var match = n.type !== undefined ? ((n.type & want) === want) : (rec ? n.isSink : !n.isSink);
+            if (!match) continue;
             var p = n.properties || {};
             var name = String(p["application.name"] || p["node.description"] || n.description || p["application.process.binary"] || p["node.name"] || n.name || "App");
-            if (name.toLowerCase() === "peak detect") continue;
+            // level meters (pavucontrol, peak detect) are not apps
+            if (name.toLowerCase() === "peak detect" || String(p["application.id"]).indexOf("pavucontrol") >= 0) continue;
             var key = String(p["application.id"] || p["application.process.binary"] || name).toLowerCase();
-            if (!groups[key]) groups[key] = { key: key, name: name, nodes: [], volume: 0, muted: true };
+            if (!groups[key]) groups[key] = { key: key, name: name, nodes: [], volume: 0, muted: true, device: null };
             var g = groups[key];
             g.nodes.push(n);
-            g.volume += Math.max(0, Math.min(1, Number(n.audio.volume) || 0));
+            g.volume += Math.max(0, Math.min(maxVolume, Number(n.audio.volume) || 0));
             g.muted = g.muted && !!n.audio.muted;
+            if (!g.device) g.device = streamDevice(n, rec);
         }
         for (var k in groups) {
             var g = groups[k];
@@ -1997,30 +2091,74 @@ Scope {
         out.sort(function (a, b) { return a.name.localeCompare(b.name); });
         return out;
     }
-    readonly property var appAudioStreams: audioApps()
+    readonly property var appAudioStreams: audioApps(false)
+    readonly property var recAudioStreams: audioApps(true)
     // The list of apps the sliders are built from only changes when an app appears or goes away. appAudioStreams is rebuilt on
     // every volume tick, and feeding it straight to the Repeater destroyed the slider under your finger mid-drag.
     property var appAudioKeys: []
-    function syncAppKeys() {
-        var k = [], l = appAudioStreams;
-        for (var i = 0; i < l.length; i++) k.push(l[i].key);
-        if (JSON.stringify(k) !== JSON.stringify(appAudioKeys)) appAudioKeys = k;
-    }
-    onAppAudioStreamsChanged: syncAppKeys()
-    function appByKey(key) {
-        var l = appAudioStreams;
+    property var recAudioKeys: []
+    function keysOf(l) { var k = []; for (var i = 0; i < l.length; i++) k.push(l[i].key); return k; }
+    onAppAudioStreamsChanged: { var k = keysOf(appAudioStreams); if (JSON.stringify(k) !== JSON.stringify(appAudioKeys)) appAudioKeys = k; }
+    onRecAudioStreamsChanged: { var k = keysOf(recAudioStreams); if (JSON.stringify(k) !== JSON.stringify(recAudioKeys)) recAudioKeys = k; }
+    function appByKey(key, rec) {
+        var l = rec ? recAudioStreams : appAudioStreams;
         for (var i = 0; i < l.length; i++) if (l[i].key === key) return l[i];
         return null;
     }
     function setAppVolume(app, v) {
         if (!app || !app.nodes) return;
         osdQuiet("volume", 600);
-        var value = Math.max(0, Math.min(1, v));
+        var value = Math.max(0, Math.min(maxVolume, v));
         for (var i = 0; i < app.nodes.length; i++) {
             var n = app.nodes[i];
             if (n && n.audio) { n.audio.muted = false; n.audio.volume = value; }
         }
     }
+    function toggleAppMute(app) {
+        if (!app || !app.nodes) return;
+        var m = !app.muted;
+        for (var i = 0; i < app.nodes.length; i++) if (app.nodes[i] && app.nodes[i].audio) app.nodes[i].audio.muted = m;
+    }
+    // send every stream of an app to another device (pavucontrol's per-app output / input). pactl's index is the object serial.
+    function moveApp(app, dev, rec) {
+        if (!app || !dev) return;
+        for (var i = 0; i < app.nodes.length; i++) {
+            var serial = (app.nodes[i].properties || {})["object.serial"];
+            if (serial !== undefined)
+                Quickshell.execDetached(["pactl", rec ? "move-source-output" : "move-sink-input", String(serial), String(dev.name)]);
+        }
+    }
+    function setDeviceVolume(n, v) { if (n && n.audio) { n.audio.muted = false; n.audio.volume = Math.max(0, Math.min(maxVolume, v)); } }
+    function toggleDeviceMute(n) { if (n && n.audio) n.audio.muted = !n.audio.muted; }
+    // short device label for the mixer ("Headphones", "HDMI1", "TONOR TD520"…)
+    function audioShortName(n) {
+        if (!n) return "";
+        var p = n.properties || {};
+        return String(p["node.nick"] || n.nickname || audioSplit(n.description || n.name)[0]);
+    }
+    // sound cards and their profiles (pavucontrol's Configuration tab): read on demand, PipeWire does not expose them to QML
+    property var audioCards: []              // [{ name, desc, active, profiles: [{ id, desc }] }]
+    function refreshCards() { if (!cardsProc.running) cardsProc.running = true; }
+    Process {
+        id: cardsProc
+        command: ["pactl", "-f", "json", "list", "cards"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    root.audioCards = JSON.parse(text).map(function (c) {
+                        var ps = [];
+                        for (var id in c.profiles) if (c.profiles[id].available !== false) ps.push({ id: id, desc: c.profiles[id].description || id });
+                        return { name: c.name, desc: (c.properties || {})["device.description"] || c.name, active: c.active_profile, profiles: ps };
+                    });
+                } catch (e) { root.audioCards = []; }
+            }
+        }
+    }
+    function setCardProfile(card, profile) {
+        Quickshell.execDetached(["pactl", "set-card-profile", card, profile]);
+        cardsRefresh.restart();
+    }
+    Timer { id: cardsRefresh; interval: 600; onTriggered: root.refreshCards() }
     readonly property var audioOutputs: audioDevices(true)
     readonly property var audioInputs: audioDevices(false)
     function audioKind(n, isOut) {
@@ -3683,7 +3821,8 @@ Scope {
 
     Component.onCompleted: {
         IslandStyle.bar = root;
-        syncAppKeys();
+        appAudioKeys = keysOf(appAudioStreams);
+        recAudioKeys = keysOf(recAudioStreams);
         Quickshell.execDetached(["mkdir", "-p", configDir]);
         wallpaperColorTimer.start();
         refreshWifi();
@@ -5446,34 +5585,7 @@ Scope {
                             Text { x: 4; text: I18n.tr("Apps"); color: pal.fg2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 12; font.weight: Font.DemiBold; bottomPadding: 2 }
                             Repeater {
                                 model: root.appAudioKeys
-                                delegate: Item {
-                                    id: appRow
-                                    required property string modelData
-                                    readonly property var app: root.appByKey(modelData)
-                                    // while dragging, the knob follows the pointer instead of waiting for the next volume update
-                                    property bool dragging: false
-                                    property real dragV: 0
-                                    readonly property real vol: dragging ? dragV : (app ? app.volume : 0)
-                                    Timer { id: dragEnd; interval: 500; onTriggered: appRow.dragging = false }
-                                    visible: app !== null
-                                    width: volCol.width - 28; height: app ? 54 : 0
-                                    Text {
-                                        x: 4; y: 0; width: parent.width - 8
-                                        text: (appRow.app ? appRow.app.name : "") + "  ·  " + Math.round(appRow.vol * 100) + "%"
-                                        color: pal.fg; elide: Text.ElideRight
-                                        font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 12
-                                    }
-                                    CCSlider {
-                                        t: pal; gx: volPopGlass.ctx; x: 0; y: 20; width: parent.width
-                                        value: appRow.vol
-                                        leftKind: "speaker"; leftLevel: appRow.vol < 0.34 ? 1 : (appRow.vol < 0.67 ? 2 : 3)
-                                        rightKind: "speaker"; rightLevel: 3
-                                        onMoved: v => {
-                                            appRow.dragV = v; appRow.dragging = true; dragEnd.restart();
-                                            root.setAppVolume(appRow.app, v);
-                                        }
-                                    }
-                                }
+                                delegate: MixRow { required property string modelData; t: pal; gx: volPopGlass.ctx; key: modelData }
                             }
                             Text { visible: root.appAudioKeys.length === 0; x: 4; text: I18n.tr("No apps are playing audio"); color: pal.fg2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 11; topPadding: 2; bottomPadding: 4 }
                             Item { width: 1; height: 5 }
@@ -5517,6 +5629,29 @@ Scope {
                                 }
                             }
                             Text { visible: root.audioInputs.length === 0; x: 4; text: I18n.tr("No input devices"); color: pal.fg2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 12; topPadding: 4; bottomPadding: 4 }
+                            Item { width: 1; height: 5; visible: root.recAudioKeys.length > 0 }
+                            Text { visible: root.recAudioKeys.length > 0; x: 4; text: I18n.tr("Recording"); color: pal.fg2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 12; font.weight: Font.DemiBold; bottomPadding: 2 }
+                            Repeater {
+                                model: root.recAudioKeys
+                                delegate: MixRow { required property string modelData; t: pal; gx: volPopGlass.ctx; key: modelData; rec: true }
+                            }
+                            Item { width: 1; height: 5 }
+                            Rectangle { width: parent.width; height: 1; color: pal.sep }
+                            Item {
+                                width: parent.width; height: 34
+                                Rectangle { anchors.fill: parent; anchors.topMargin: 3; radius: 10; color: pal.hover; opacity: sndSetMa.containsMouse ? 1 : 0 }
+                                Text {
+                                    x: 8; anchors.verticalCenter: parent.verticalCenter; anchors.verticalCenterOffset: 1
+                                    text: I18n.tr("Sound Settings…")
+                                    color: pal.fg
+                                    font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13
+                                }
+                                MouseArea {
+                                    id: sndSetMa
+                                    anchors.fill: parent; hoverEnabled: true
+                                    onClicked: { ui.pop = ""; Quickshell.execDetached(["qs", "-c", "MacShell", "ipc", "call", "settings", "pane", "sound"]); }
+                                }
+                            }
                         }
                     }
                     }

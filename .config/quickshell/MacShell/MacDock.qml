@@ -381,6 +381,77 @@ Scope {
     }
 
     // macOS push button
+    // akiidjk fork, Settings → Sound: a device row, volume + mute + make default
+    component DevRow: SRow {
+        id: dr
+        required property var modelData
+        property bool isOut: true
+        readonly property var dev: root.bar ? (isOut ? root.bar.sink : root.bar.micSource) : null
+        readonly property bool cur: !!dev && dev.id === modelData.id
+        readonly property bool muted: modelData.audio ? modelData.audio.muted : false
+        readonly property real vol: modelData.audio ? modelData.audio.volume : 0
+        title: modelData.description || modelData.nickname || modelData.name
+        subtitle: (cur ? I18n.tr("In use") + " · " : "") + (muted ? I18n.tr("Muted") : Math.round(vol * 100) + "%")
+        Row {
+            spacing: 8
+            SSlider {
+                t: dr.t; width: 170
+                anchors.verticalCenter: parent.verticalCenter
+                value: dr.muted ? 0 : dr.vol / (root.bar ? root.bar.maxVolume : 1)
+                onMoved: v => { if (root.bar) root.bar.setDeviceVolume(dr.modelData, v * (root.bar ? root.bar.maxVolume : 1)); }
+            }
+            SButton { t: dr.t; anchors.verticalCenter: parent.verticalCenter; text: dr.muted ? I18n.tr("Unmute") : I18n.tr("Mute"); onClicked: if (root.bar) root.bar.toggleDeviceMute(dr.modelData) }
+            SButton { t: dr.t; anchors.verticalCenter: parent.verticalCenter; text: dr.cur ? I18n.tr("In Use") : I18n.tr("Use"); onClicked: if (root.bar && !dr.cur) root.bar.chooseAudio(dr.modelData) }
+        }
+    }
+
+    // akiidjk fork, Settings → Sound: an app, volume + mute, then the devices it can use as buttons
+    component AppMix: Column {
+        id: am
+        required property var t
+        required property string modelData
+        property bool rec: false
+        readonly property var app: root.bar ? root.bar.appByKey(modelData, rec) : null
+        readonly property var devs: root.bar ? (rec ? root.bar.audioInputs : root.bar.audioOutputs) : []
+        // the knob follows the pointer while dragging (the app list is rebuilt on every volume change)
+        property bool dragging: false
+        property real dragV: 0
+        readonly property real vol: dragging ? dragV : (app ? app.volume : 0)
+        Timer { id: amDragEnd; interval: 500; onTriggered: am.dragging = false }
+        visible: app !== null
+        width: parent ? parent.width : 0
+        SRow {
+            t: am.t
+            title: am.app ? am.app.name : ""
+            subtitle: am.app && am.app.muted ? I18n.tr("Muted") : Math.round(am.vol * 100) + "%"
+            Row {
+                spacing: 8
+                SSlider {
+                    t: am.t; width: 200
+                    anchors.verticalCenter: parent.verticalCenter
+                    value: am.app && am.app.muted ? 0 : am.vol / (root.bar ? root.bar.maxVolume : 1)
+                    onMoved: v => { am.dragV = v * (root.bar ? root.bar.maxVolume : 1); am.dragging = true; amDragEnd.restart(); root.bar.setAppVolume(am.app, v * (root.bar ? root.bar.maxVolume : 1)); }
+                }
+                SButton { t: am.t; anchors.verticalCenter: parent.verticalCenter; text: am.app && am.app.muted ? I18n.tr("Unmute") : I18n.tr("Mute"); onClicked: root.bar.toggleAppMute(am.app) }
+            }
+        }
+        Flow {
+            x: 14; width: parent.width - 28
+            spacing: 6
+            bottomPadding: 10
+            Repeater {
+                model: am.devs
+                SButton {
+                    required property var modelData
+                    readonly property bool on: am.app !== null && am.app.device !== null && am.app.device.id === modelData.id
+                    t: am.t
+                    text: (on ? "✓ " : "") + root.bar.audioShortName(modelData)
+                    onClicked: if (!on) root.bar.moveApp(am.app, modelData, am.rec)
+                }
+            }
+        }
+    }
+
     component SButton: Rectangle {
         id: b
         required property var t
@@ -3518,61 +3589,90 @@ Scope {
         // ── Sound ──
         Component {
             id: paneSound
+            // akiidjk fork: the full mixer (pavucontrol's tabs): devices with volume / mute / default, apps playing and
+            // recording with the device each one uses, and the sound cards' profiles
             Column {
                 id: sndPane
                 spacing: 10
-                readonly property var outs: Pipewire.nodes.values.filter(function (n) { return n.isSink && !n.isStream && n.audio; })
-                readonly property var ins: Pipewire.nodes.values.filter(function (n) { return !n.isSink && !n.isStream && n.audio && (n.name || "").indexOf("monitor") < 0; })
-                readonly property var src: Pipewire.defaultAudioSource
-                PwObjectTracker { objects: [Pipewire.defaultAudioSink, Pipewire.defaultAudioSource] }
+                readonly property var b: root.bar
+                readonly property real maxV: b ? b.maxVolume : 1
+                Component.onCompleted: if (b) b.refreshCards()
+
                 SCard {
                     t: pal
                     SRow {
                         t: pal; title: I18n.tr("Play user interface sound effects")
-                        SSwitch { t: pal; checked: root.bar ? root.bar.uiSounds : true; onToggled: v => { if (root.bar) root.bar.uiSounds = v; } }
+                        SSwitch { t: pal; checked: sndPane.b ? sndPane.b.uiSounds : true; onToggled: v => { if (sndPane.b) sndPane.b.uiSounds = v; } }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("Allow volume above 100%")
+                        subtitle: I18n.tr("App and device sliders go up to 150%. Loud, and it can distort")
+                        SSwitch { t: pal; checked: sndPane.b ? sndPane.b.audioBoost : true; onToggled: v => { if (sndPane.b) sndPane.b.audioBoost = v; } }
                     }
                 }
-                SLabel { t: pal; header: true; text: I18n.tr("Output") }
+
+
+                SLabel { t: pal; header: true; text: I18n.tr("Output Devices") }
                 SCard {
                     t: pal
-                    SRow {
-                        t: pal; title: I18n.tr("Output volume")
-                        SSlider { t: pal; value: root.bar ? (root.bar.muted ? 0 : root.bar.volume) : 0; onMoved: v => { if (root.bar) root.bar.setVolume(v); } }
-                    }
-                    SRow {
-                        t: pal; title: I18n.tr("Mute")
-                        SSwitch { t: pal; checked: root.bar ? root.bar.muted : false; onToggled: v => { if (root.bar && root.bar.muted !== v) root.bar.toggleMute(); } }
-                    }
-                    Repeater {
-                        model: sndPane.outs
-                        delegate: SRow {
-                            required property var modelData
-                            t: pal
-                            title: modelData.description || modelData.nickname || modelData.name
-                            id: devRowSink
-                            readonly property bool cur: Pipewire.defaultAudioSink === modelData
-                            subtitle: cur ? I18n.tr("Selected") : ""
-                            SButton { t: pal; text: devRowSink.cur ? I18n.tr("In Use") : I18n.tr("Use"); onClicked: Pipewire.preferredDefaultAudioSink = devRowSink.modelData }
-                        }
-                    }
+                    Repeater { model: sndPane.b ? sndPane.b.audioOutputs : []; delegate: DevRow { t: pal; isOut: true } }
                 }
-                SLabel { t: pal; header: true; text: I18n.tr("Input") }
+                SLabel { t: pal; header: true; text: I18n.tr("Input Devices") }
                 SCard {
                     t: pal
-                    SRow {
-                        t: pal; title: I18n.tr("Input volume")
-                        SSlider { t: pal; value: sndPane.src && sndPane.src.audio ? sndPane.src.audio.volume : 0; onMoved: v => { if (sndPane.src && sndPane.src.audio) sndPane.src.audio.volume = v; } }
-                    }
+                    Repeater { model: sndPane.b ? sndPane.b.audioInputs : []; delegate: DevRow { t: pal; isOut: false } }
+                }
+
+                SLabel { t: pal; header: true; text: I18n.tr("Playback") }
+                SCard {
+                    t: pal
+                    Repeater { model: sndPane.b ? sndPane.b.appAudioKeys : []; delegate: AppMix { t: pal } }
+                    SRow { t: pal; visible: !sndPane.b || sndPane.b.appAudioKeys.length === 0; title: I18n.tr("No apps are playing audio") }
+                }
+                SLabel { t: pal; header: true; text: I18n.tr("Recording") }
+                SCard {
+                    t: pal
+                    Repeater { model: sndPane.b ? sndPane.b.recAudioKeys : []; delegate: AppMix { t: pal; rec: true } }
+                    SRow { t: pal; visible: !sndPane.b || sndPane.b.recAudioKeys.length === 0; title: I18n.tr("No apps are using a microphone") }
+                }
+
+                SLabel { t: pal; header: true; text: I18n.tr("Sound Cards") }
+                SCard {
+                    t: pal
                     Repeater {
-                        model: sndPane.ins
-                        delegate: SRow {
+                        model: sndPane.b ? sndPane.b.audioCards : []
+                        delegate: Column {
+                            id: card
                             required property var modelData
-                            t: pal
-                            title: modelData.description || modelData.nickname || modelData.name
-                            id: devRowSource
-                            readonly property bool cur: Pipewire.defaultAudioSource === modelData
-                            subtitle: cur ? I18n.tr("Selected") : ""
-                            SButton { t: pal; text: devRowSource.cur ? I18n.tr("In Use") : I18n.tr("Use"); onClicked: Pipewire.preferredDefaultAudioSource = devRowSource.modelData }
+                            property bool open: false
+                            readonly property var activeP: modelData.profiles.filter(function (x) { return x.id === modelData.active; })[0]
+                            width: parent ? parent.width : 0
+                            SRow {
+                                t: pal
+                                title: card.modelData.desc
+                                subtitle: card.activeP ? card.activeP.desc : card.modelData.active
+                                SButton { t: pal; text: card.open ? I18n.tr("Done") : I18n.tr("Profile…"); onClicked: card.open = !card.open }
+                            }
+                            Repeater {
+                                model: card.open ? card.modelData.profiles : []
+                                delegate: Item {
+                                    id: prof
+                                    required property var modelData
+                                    readonly property bool on: modelData.id === card.modelData.active
+                                    width: card.width; height: 34
+                                    Rectangle { x: 8; width: parent.width - 16; height: parent.height; radius: 8; color: pal.ctrl; opacity: profMa.containsMouse ? 1 : 0 }
+                                    Text {
+                                        x: 28; anchors.verticalCenter: parent.verticalCenter
+                                        width: parent.width - 70; elide: Text.ElideRight
+                                        text: prof.modelData.desc
+                                        color: pal.text
+                                        font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 12
+                                        font.weight: prof.on ? Font.DemiBold : Font.Normal
+                                    }
+                                    Text { visible: prof.on; anchors.right: parent.right; anchors.rightMargin: 24; anchors.verticalCenter: parent.verticalCenter; text: "✓"; color: pal.text; font.pixelSize: 13 }
+                                    MouseArea { id: profMa; anchors.fill: parent; hoverEnabled: true; onClicked: if (!prof.on) sndPane.b.setCardProfile(card.modelData.name, prof.modelData.id) }
+                                }
+                            }
                         }
                     }
                 }
