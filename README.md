@@ -69,7 +69,8 @@ sudo pacman -S nautilus yazi
 
 # Desktop shell: MacShell + MacLock (Quickshell)
 sudo pacman -S quickshell qt6-declarative qt6-wayland qt6-svg qt6-shadertools \
-  ffmpeg zenity inotify-tools power-profiles-daemon wf-recorder wtype python-numpy papirus-icon-theme
+  ffmpeg zenity inotify-tools power-profiles-daemon wf-recorder wtype python-numpy papirus-icon-theme \
+  tesseract tesseract-data-eng zbar pacman-contrib
 sudo systemctl enable --now power-profiles-daemon bluetooth
 
 # Text editor
@@ -154,6 +155,20 @@ python3 ~/.config/hypr-macshell/scripts/macshell-make-sounds.py
 ~/.config/hypr/scripts/wallpapers/apply.sh ~/.config/wallpapers/decline.png
 ```
 Then log in to Hyprland: `hypr/macshell.lua` starts `qs -c MacShell`.
+
+### Claude Code hooks
+Optional, for Claude Code in the Dynamic Island. Add to `~/.claude/settings.json` (needs `jq`):
+```json
+{
+  "statusLine": { "type": "command", "command": "bash ~/.config/hypr-macshell/scripts/claude-statusline.sh" },
+  "hooks": {
+    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "bash ~/.config/hypr-macshell/scripts/claude-island.sh start" }] }],
+    "Stop":             [{ "hooks": [{ "type": "command", "command": "bash ~/.config/hypr-macshell/scripts/claude-island.sh stop" }] }],
+    "Notification":     [{ "hooks": [{ "type": "command", "command": "bash ~/.config/hypr-macshell/scripts/claude-island.sh notify" }] }]
+  }
+}
+```
+`claude-statusline.sh` saves the plan limits to `~/.cache/macshell/claude-limits.json` and then prints the [ponytail](https://github.com/DietrichGebert/ponytail) status line if that plugin is installed. `CLAUDE_ISLAND_MIN` (default 20) is the shortest turn, in seconds, that gets reported.
 
 ### Hyprplugin download
 ```bash
@@ -307,7 +322,22 @@ Here are some useful aliases defined in my shell configuration:
 
 The shell is a fork of [MacShell](https://github.com/0-ss/MacShell) (Quickshell, macOS-style, Liquid Glass) merged with my own pieces:
 
-- **Top bar**: the macOS menu bar or my **Dynamic Island** (with its hub: media, sliders, Wi‑Fi/Bluetooth/DND, calendar, power, notifications). Switch in Settings → General → Top bar.
+- **Dynamic Island** (Settings → Dynamic Island), in place of the workspaces (they only come back in the bar when the island is off), in two styles:
+  - **Notch**: black, hanging from the screen edge in the middle of the menu bar.
+  - **Dynamic Island**: the phone's floating black pill, anywhere from flush with the screen top to 40 px below the bar.
+  - Everything is tunable: position, height (10–48 px or auto), idle width, open size, corner radius, opening speed and bounce, hide when idle, open on hover, how long a new track stays up, outline, synced lyrics and their timing, activity duration, and which activities show (workspaces, battery, Bluetooth, Wi‑Fi, input source, mic/camera, downloads, commands, updates, system alerts).
+  - It shows the player (with synced lyrics), timers / recordings, and those activities. Scripts can post their own: `qs -c MacShell ipc call island notify "title" "subtitle" ""` (the zsh hook does it for commands that ran 15 s or more).
+  - IPC: `island setStyle notch|island`, `island setOffset <px>`, `island setHeight <px>` (0 = auto).
+- **Claude Code in the island**: a turn that ran 20 s or more reports back ("✓ Claude · project 1m 35s"), a permission prompt shows "Claude needs you", and on hover the island shows the plan limits (5 hours and week, with their reset time). Setup below, in [Claude Code hooks](#claude-code-hooks).
+- **Menu bar extras** (Settings → Menu Bar, or `qs -c MacShell ipc call bar setWidget <stats|updates|ports> true`):
+  - **Stats**: CPU, RAM and temperature.
+  - **Updates**: pacman + AUR updates, checked hourly, shown only when there are some; the popover opens `yay` in a terminal.
+  - **Ports**: listening TCP ports with the process behind each and a button to stop it.
+  - **Muted mic**: a red icon while the microphone is muted (`SUPER + SHIFT + M`), part of the Privacy widget.
+- **System alerts** (Settings → Notifications → System Alerts): CPU heat or memory held high for a minute, a disk almost full, at most once every 15 minutes each, in the island (or as a banner).
+- **Scratchpad** (`SUPER + SHIFT + N`, Help → Scratchpad): one autosaved note with Markdown preview, kept in `~/.local/share/macshell/scratchpad.md`.
+- **Text from the screen** (`SUPER + SHIFT + T`): pick an area, a QR code is copied as-is, anything else goes through OCR (tesseract).
+- **Clean URL**: tracking parameters (`utm_*`, `fbclid`, `gclid`, YouTube / Spotify `si`…) are stripped from copied links (`hypr/scripts/clean-url.py`, started by `autostart.lua`).
 - **Dock, Control Center, notifications, widgets, window switcher, screenshots** from MacShell.
 - **MacLock** lock screen (idle, suspend, lid close, `Alt+L`).
 - **Launcher**: vicinae only (MacShell's Spotlight search, with its clipboard / emoji panels, is removed).
@@ -336,9 +366,9 @@ Do not run MacShell's own `install.sh` / `macshell-update`: they would overwrite
   - `windowrule.lua` - Window rules
   - `hyprland-gui.lua` - Settings managed by HyprMod
   - `hyprshade.toml` - Screen shaders (hyprshade timer)
-  - `scripts/` - Utility scripts (`wallpapers/apply.sh`, night mode, color picker, mirror, screensharing, Spotify notifications)
-- **hypr-macshell/scripts/** - MacShell helpers (video wallpapers, UI sound generator)
-- **quickshell/MacShell/** - The shell (fork; the island / keybinds / wallpaper picker are the `Island*`, `KeybindsPanel`, `WallPickerPanel` files)
+  - `scripts/` - Utility scripts (`wallpapers/apply.sh`, night mode, color picker, mirror, screensharing, Spotify notifications, `screen-text.sh` OCR / QR, `clean-url.py`)
+- **hypr-macshell/scripts/** - MacShell helpers (video wallpapers, UI sound generator, SDDM theme, `claude-island.sh` + `claude-statusline.sh` for Claude Code)
+- **quickshell/MacShell/** - The shell (fork; the island / keybinds / wallpaper picker / scratchpad are the `Island*`, `KeybindsPanel`, `WallPickerPanel`, `ScratchpadPanel` files)
 - **quickshell/MacLock/** - The lock screen
 - **kitty/** - Terminal emulator configuration
 - **nvim/** - Neovim configuration with Lazy.vim
@@ -374,6 +404,9 @@ Simple run `SUPER + K` (or Help → Hyprland Keybinds in the menu bar). The shel
 | `ALT + L` | Lock (MacLock) |
 | `ALT + TAB` | Window switcher |
 | `SUPER + SHIFT + S` | Screenshot region (grim + slurp + swappy) |
+| `SUPER + SHIFT + T` | Copy text / QR code from a screen area |
+| `SUPER + SHIFT + N` | Scratchpad |
+| `SUPER + SHIFT + M` | Mute / unmute the microphone |
 
 <img width="1919" height="1080" alt="swappy-20260913_172045" src="https://github.com/user-attachments/assets/a977171d-145e-4ce8-93eb-542fe580d716" />
 

@@ -651,6 +651,7 @@ Scope {
             // 3 · Desktop
             { id: "dock",       sec: 3, name: "Desktop & Dock",  glyph: "dock",     c1: "#2C2C2E", c2: "#1C1C1E", keys: "size icon magnification zoom spacing margin distance corner radius round square edge hide auto labels indicators bounce trash monitor preview app switcher alt tab" },
             { id: "menubar",    sec: 3, name: "Menu Bar",        glyph: "menubar",  c1: "#3D9BFF", c2: "#0A6CFF", keys: "panel bar height clock date seconds 24 hour battery tray week monday style liquid bluetooth screenshots" },
+            { id: "island",     sec: 3, name: "Dynamic Island",  wg: "round",      c1: "#3A3A3C", c2: "#000000", keys: "island notch pill dynamic lyrics activities alerts hover bounce spring" },
             { id: "controlcenter", sec: 3, name: "Control Center", wg: "cc",       c1: "#8E8E93", c2: "#636366", keys: "modules tiles controls" },
             { id: "widgets",    sec: 3, name: "Widgets",         glyph: "widgets",  c1: "#FF9F0A", c2: "#FF7A00", keys: "desktop widgets weather clock calendar player image photo add remove arrange edit size temperature fahrenheit celsius city location" },
             // 4 · Notifications & Sound
@@ -1333,7 +1334,7 @@ Scope {
                     sourceComponent: ({
                         wifi: paneWifi, bluetooth: paneBt, network: paneNetwork, battery: paneBattery,
                         general: paneGeneral, appearance: paneAppearance, controlcenter: paneCC, dock: paneDesktopDock,
-                        displays: paneDisplays, menubar: paneMenuBar, wallpaper: paneWallpaper,
+                        displays: paneDisplays, menubar: paneMenuBar, island: paneIsland, wallpaper: paneWallpaper,
                         notifications: paneNotif, sound: paneSound, focus: paneFocus,
                         widgets: paneWidgets, lockscreen: paneLock, users: paneUsers, keyboard: paneKeyboard, mouse: paneMouse, trackpad: paneTrackpad,
                         apps: paneApps, about: paneAbout
@@ -1355,6 +1356,263 @@ Scope {
         }
 
         // ═════════════ PANES ═════════════
+
+        // ── Dynamic Island (akiidjk fork): style, size, motion, look, what it shows ──
+        Component {
+            id: paneIsland
+            Column {
+                id: isl
+                spacing: 10
+                readonly property var b: root.bar
+                readonly property bool pill: b ? b.islandStyle === "island" : false
+                readonly property var kindNames: ({ workspace: "Workspace switches", battery: "Battery and charging",
+                    bluetooth: "Bluetooth devices", wifi: "Wi-Fi", keyboard: "Input source", privacy: "Microphone and camera",
+                    downloads: "Finished downloads", notify: "Commands and Claude Code (island notify)",
+                    updates: "Available updates", alerts: "System alerts (temperature, memory, disk)" })
+
+                SLabel { t: pal; header: true; text: I18n.tr("Style") }
+                SCard {
+                    t: pal
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Dynamic Island")
+                        subtitle: I18n.tr("Super+N opens its hub, ipc call island setStyle notch|island switches the style")
+                        SSwitch { t: pal; checked: isl.b ? isl.b.islandEnabled : true; onToggled: v => { if (isl.b) isl.b.islandEnabled = v; } }
+                    }
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Style")
+                        subtitle: isl.pill ? I18n.tr("A floating black pill below the menu bar, like the phone")
+                                           : I18n.tr("A notch hanging from the screen edge, in place of the workspaces")
+                        SSegmented {
+                            t: pal
+                            model: ["Notch", "Dynamic Island"]
+                            segWidth: 120
+                            current: isl.pill ? 1 : 0
+                            onPicked: i => { if (isl.b) isl.b.islandStyle = (i === 1 ? "island" : "notch"); }
+                        }
+                    }
+                }
+
+                SLabel { t: pal; header: true; text: I18n.tr("Size and Position") }
+                SCard {
+                    t: pal
+                    SRow {
+                        t: pal
+                        visible: isl.pill
+                        title: I18n.tr("Position")
+                        subtitle: !isl.b ? "" : isl.b.islandOffset <= -isl.b.barHeight ? I18n.tr("Flush with the top of the screen")
+                                : isl.b.islandOffset < 0 ? I18n.tr("%1 px from the top of the screen").arg(isl.b.barHeight + isl.b.islandOffset)
+                                : I18n.tr("%1 px below the menu bar").arg(isl.b.islandOffset)
+                        SSlider {
+                            t: pal; from: isl.b ? -isl.b.barHeight : -28; to: 40; stepSize: 1
+                            value: isl.b ? isl.b.islandOffset : 6
+                            leftLabel: I18n.tr("Screen top"); rightLabel: I18n.tr("Below the bar")
+                            onMoved: v => { if (isl.b) isl.b.islandOffset = Math.round(v); }
+                        }
+                    }
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Height")
+                        subtitle: isl.b && isl.b.islandHeight > 0 ? isl.b.islandHeight + " px" : I18n.tr("Automatic")
+                        SSlider {
+                            // the first step (9) means Automatic, then 10 … 48 px
+                            t: pal; from: 9; to: 48; stepSize: 1
+                            value: isl.b && isl.b.islandHeight > 0 ? isl.b.islandHeight : 9
+                            leftLabel: I18n.tr("Auto"); rightLabel: I18n.tr("Tall")
+                            onMoved: v => { if (isl.b) isl.b.islandHeight = v < 10 ? 0 : Math.round(v); }
+                        }
+                    }
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Width when idle")
+                        subtitle: (isl.b ? isl.b.islandWidth : 200) + " px"
+                        SSlider {
+                            t: pal; from: 80; to: 320; stepSize: 2
+                            value: isl.b ? isl.b.islandWidth : 200
+                            leftLabel: I18n.tr("Narrow"); rightLabel: I18n.tr("Wide")
+                            onMoved: v => { if (isl.b) isl.b.islandWidth = Math.round(v); }
+                        }
+                    }
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Size when open")
+                        subtitle: Math.round((isl.b ? isl.b.islandScale : 1) * 100) + "%"
+                        SSlider {
+                            t: pal; from: 0.8; to: 1.3; stepSize: 0.05
+                            value: isl.b ? isl.b.islandScale : 1
+                            leftLabel: I18n.tr("Smaller"); rightLabel: I18n.tr("Larger")
+                            onMoved: v => { if (isl.b) isl.b.islandScale = Math.round(v * 100) / 100; }
+                        }
+                    }
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Corner radius when open")
+                        subtitle: isl.b && isl.b.islandRadius >= 0 ? isl.b.islandRadius + " px" : I18n.tr("Automatic")
+                        SSlider {
+                            t: pal; from: -1; to: 40; stepSize: 1
+                            value: isl.b ? isl.b.islandRadius : -1
+                            leftLabel: I18n.tr("Auto"); rightLabel: I18n.tr("Round")
+                            onMoved: v => { if (isl.b) isl.b.islandRadius = Math.round(v); }
+                        }
+                    }
+                }
+
+                SLabel { t: pal; header: true; text: I18n.tr("Motion") }
+                SCard {
+                    t: pal
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Opening speed")
+                        subtitle: (isl.b ? isl.b.islandSpring : 4.5).toFixed(1)
+                        SSlider {
+                            t: pal; from: 1.5; to: 9; stepSize: 0.1
+                            value: isl.b ? isl.b.islandSpring : 4.5
+                            leftLabel: I18n.tr("Slow"); rightLabel: I18n.tr("Snappy")
+                            onMoved: v => { if (isl.b) isl.b.islandSpring = Math.round(v * 10) / 10; }
+                        }
+                    }
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Bounce")
+                        subtitle: I18n.tr("How far it overshoots when it opens")
+                        // slider = bounce, the setting = damping: flip it so right means bouncier
+                        SSlider {
+                            t: pal; from: 0.15; to: 0.9; stepSize: 0.01
+                            value: 1.05 - (isl.b ? isl.b.islandBounce : 0.34)
+                            leftLabel: I18n.tr("None"); rightLabel: I18n.tr("Lots")
+                            onMoved: v => { if (isl.b) isl.b.islandBounce = Math.round((1.05 - v) * 100) / 100; }
+                        }
+                    }
+                    SRow {
+                        t: pal
+                        title: I18n.tr("When there is nothing to show")
+                        SSegmented {
+                            t: pal
+                            model: ["Show", "Hide"]
+                            current: isl.b && isl.b.islandIdle === "hide" ? 1 : 0
+                            onPicked: i => { if (isl.b) isl.b.islandIdle = (i === 1 ? "hide" : "show"); }
+                        }
+                    }
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Open on hover")
+                        subtitle: I18n.tr("The player (or the date) when the pointer is over it")
+                        SSwitch { t: pal; checked: isl.b ? isl.b.islandHoverExpand : true; onToggled: v => { if (isl.b) isl.b.islandHoverExpand = v; } }
+                    }
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Show a new track for")
+                        subtitle: ((isl.b ? isl.b.islandAutoShowMs : 3000) / 1000).toFixed(1) + " s"
+                        SSlider {
+                            t: pal; from: 0; to: 10000; stepSize: 500
+                            value: isl.b ? isl.b.islandAutoShowMs : 3000
+                            leftLabel: I18n.tr("Off"); rightLabel: "10 s"
+                            onMoved: v => { if (isl.b) isl.b.islandAutoShowMs = Math.round(v); }
+                        }
+                    }
+                }
+
+                SLabel { t: pal; header: true; visible: isl.pill; text: I18n.tr("Look") }
+                SCard {
+                    t: pal
+                    visible: isl.pill
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Outline")
+                        subtitle: I18n.tr("A hairline rim, so the pill stays visible on dark wallpapers")
+                        SSwitch { t: pal; checked: isl.b ? isl.b.islandOutline : false; onToggled: v => { if (isl.b) isl.b.islandOutline = v; } }
+                    }
+                }
+
+                SLabel { t: pal; header: true; text: I18n.tr("Now Playing") }
+                SCard {
+                    t: pal
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Synced lyrics")
+                        subtitle: I18n.tr("The line being sung in place of the title (LRCLIB)")
+                        SSwitch { t: pal; checked: isl.b ? isl.b.islandLyrics : true; onToggled: v => { if (isl.b) isl.b.islandLyrics = v; } }
+                    }
+                    SRow {
+                        t: pal
+                        visible: isl.b ? isl.b.islandLyrics : true
+                        title: I18n.tr("Lyrics timing")
+                        subtitle: I18n.tr("Shown %1 s before they are sung").arg((isl.b ? isl.b.islandLyricLead : 0.4).toFixed(2))
+                        SSlider {
+                            t: pal; from: -0.5; to: 1.5; stepSize: 0.05
+                            value: isl.b ? isl.b.islandLyricLead : 0.4
+                            leftLabel: I18n.tr("Later"); rightLabel: I18n.tr("Earlier")
+                            onMoved: v => { if (isl.b) isl.b.islandLyricLead = Math.round(v * 100) / 100; }
+                        }
+                    }
+                }
+
+                SLabel { t: pal; header: true; text: I18n.tr("Claude Code") }
+                SCard {
+                    t: pal
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Plan limits")
+                        subtitle: I18n.tr("5-hour and weekly usage under the date when the island peeks (from Claude Code's status line)")
+                        SSwitch { t: pal; checked: isl.b ? isl.b.islandClaudeLimits : true; onToggled: v => { if (isl.b) isl.b.islandClaudeLimits = v; } }
+                    }
+                }
+
+                SLabel { t: pal; header: true; text: I18n.tr("Activities") }
+                SCard {
+                    t: pal
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Duration")
+                        subtitle: Math.round((isl.b ? isl.b.islandAlertMs : 1) * 100) + "%"
+                        SSlider {
+                            t: pal; from: 0.5; to: 3; stepSize: 0.1
+                            value: isl.b ? isl.b.islandAlertMs : 1
+                            leftLabel: I18n.tr("Brief"); rightLabel: I18n.tr("Long")
+                            onMoved: v => { if (isl.b) isl.b.islandAlertMs = Math.round(v * 10) / 10; }
+                        }
+                    }
+                    Repeater {
+                        model: isl.b ? isl.b.islandKinds : []
+                        SRow {
+                            required property string modelData
+                            t: pal
+                            title: I18n.tr(isl.kindNames[modelData] || modelData)
+                            SSwitch {
+                                t: pal
+                                checked: isl.b ? isl.b.islandAlerts.indexOf(modelData) >= 0 : true
+                                onToggled: v => {
+                                    if (!isl.b) return;
+                                    var l = isl.b.islandAlerts.filter(function (k) { return k !== modelData; });
+                                    if (v) l.push(modelData);
+                                    isl.b.islandAlerts = l;
+                                }
+                            }
+                        }
+                    }
+                }
+                Row {
+                    spacing: 8
+                    SButton {
+                        t: pal; text: I18n.tr("Preview")
+                        onClicked: if (isl.b) isl.b.islandAlert({ icon: "\u{f0e7}", color: "#30D158", title: I18n.tr("Dynamic Island"),
+                                                                 sub: I18n.tr("This is what an activity looks like"), value: 0.7, ms: Math.round(3000 * isl.b.islandAlertMs) })
+                    }
+                    SButton {
+                        t: pal; text: I18n.tr("Restore Defaults")
+                        onClicked: {
+                            var b = isl.b; if (!b) return;
+                            b.islandStyle = "notch"; b.islandOffset = 6; b.islandHeight = 0; b.islandWidth = 200; b.islandScale = 1.0;
+                            b.islandRadius = -1; b.islandSpring = 4.5; b.islandBounce = 0.34; b.islandIdle = "show"; b.islandHoverExpand = true;
+                            b.islandAutoShowMs = 3000; b.islandAlertMs = 1.0; b.islandLyrics = true; b.islandLyricLead = 0.4;
+                            b.islandOutline = false; b.islandClaudeLimits = true;
+                            b.islandAlerts = ["workspace", "battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"];
+                        }
+                    }
+                }
+            }
+        }
 
         // ── General ──
         Component {
@@ -1384,7 +1642,7 @@ Scope {
                     SRow {
                         t: pal
                         title: I18n.tr("Dynamic Island")
-                        subtitle: I18n.tr("A notch in the centre of the menu bar, in place of the workspaces (Super+N opens its hub)")
+                        subtitle: I18n.tr("A notch in the menu bar or a floating pill below it (Settings → Dynamic Island)")
                         SSwitch {
                             t: pal
                             checked: root.bar ? root.bar.islandEnabled : true
@@ -1655,6 +1913,33 @@ Scope {
                     SRow {
                         t: pal; title: I18n.tr("Clock and calendar")
                         SSwitch { t: pal; checked: root.bar ? root.bar.barWidgetEnabled("clock") : true; onToggled: v => { if (root.bar) root.bar.setBarWidget("clock", v); } }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("System stats")
+                        subtitle: I18n.tr("CPU, memory and temperature, read every 3 seconds while shown")
+                        SSwitch { t: pal; checked: root.bar ? root.bar.barWidgetEnabled("stats") : false; onToggled: v => { if (root.bar) root.bar.setBarWidget("stats", v); } }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("Stats shown")
+                        visible: root.bar ? root.bar.barWidgetEnabled("stats") : false
+                        SSegmented {
+                            t: pal
+                            readonly property var sets: [["cpu", "ram", "temp"], ["cpu", "ram"], ["cpu", "temp"], ["temp"]]
+                            model: ["All", "CPU · RAM", "CPU · Temp", "Temp"]
+                            segWidth: 84
+                            current: root.bar ? Math.max(0, sets.map(function (x) { return x.join(); }).indexOf(root.bar.statsShow.join())) : 0
+                            onPicked: i => { if (root.bar) root.bar.statsShow = sets[i]; }
+                        }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("Updates")
+                        subtitle: I18n.tr("pacman and AUR updates, checked every hour; shown only when there are some")
+                        SSwitch { t: pal; checked: root.bar ? root.bar.barWidgetEnabled("updates") : false; onToggled: v => { if (root.bar) { root.bar.setBarWidget("updates", v); if (v) root.bar.checkUpdates(); } } }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("Ports")
+                        subtitle: I18n.tr("Listening TCP ports, with the process behind each and a button to stop it")
+                        SSwitch { t: pal; checked: root.bar ? root.bar.barWidgetEnabled("ports") : false; onToggled: v => { if (root.bar) root.bar.setBarWidget("ports", v); } }
                     }
                 }
 
@@ -3169,6 +3454,43 @@ Scope {
             id: paneNotif
             Column {
                 spacing: 10
+                SLabel { t: pal; header: true; text: I18n.tr("System Alerts") }
+                SCard {
+                    t: pal
+                    SRow {
+                        t: pal; title: I18n.tr("Warn me about the system")
+                        subtitle: I18n.tr("In the Dynamic Island (or a banner): heat or memory held for a minute, a disk almost full; at most every 15 minutes each")
+                        SSwitch { t: pal; checked: root.bar ? root.bar.alertsEnabled : true; onToggled: v => { if (root.bar) root.bar.alertsEnabled = v; } }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("CPU temperature"); visible: root.bar ? root.bar.alertsEnabled : true
+                        subtitle: (root.bar ? root.bar.alertTemp : 90) + " °C"
+                        SSlider {
+                            t: pal; from: 60; to: 100; stepSize: 1
+                            value: root.bar ? root.bar.alertTemp : 90
+                            onMoved: v => { if (root.bar) root.bar.alertTemp = Math.round(v); }
+                        }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("Memory in use"); visible: root.bar ? root.bar.alertsEnabled : true
+                        subtitle: (root.bar ? root.bar.alertRam : 92) + "%"
+                        SSlider {
+                            t: pal; from: 70; to: 99; stepSize: 1
+                            value: root.bar ? root.bar.alertRam : 92
+                            onMoved: v => { if (root.bar) root.bar.alertRam = Math.round(v); }
+                        }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("Free disk space below"); visible: root.bar ? root.bar.alertsEnabled : true
+                        subtitle: (root.bar ? root.bar.alertDisk : 10) + "%"
+                        SSlider {
+                            t: pal; from: 2; to: 30; stepSize: 1
+                            value: root.bar ? root.bar.alertDisk : 10
+                            onMoved: v => { if (root.bar) root.bar.alertDisk = Math.round(v); }
+                        }
+                    }
+                }
+                SLabel { t: pal; header: true; text: I18n.tr("Notifications") }
                 SCard {
                     t: pal
                     SRow {

@@ -51,6 +51,10 @@ macshell_package=(
   wtype                    # menu bar shortcuts sent to apps
   python-numpy             # macshell-make-sounds.py (UI sounds)
   papirus-icon-theme       # Dock / app icons
+  tesseract                # Super+Shift+T: text from the screen
+  tesseract-data-eng
+  zbar                     # Super+Shift+T: QR codes
+  pacman-contrib           # checkupdates (menu bar Updates)
 )
 
 hypr_package=(
