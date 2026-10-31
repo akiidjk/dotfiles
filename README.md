@@ -4,7 +4,7 @@ https://github.com/user-attachments/assets/81b7361e-8e5a-4fe5-8e1a-7303f33240a5
 Hyprland Dotfiles for Arch based distro
 My Hyprland setup for Arch, with the install scripts and my fork of the MacShell desktop shell.
 
-<img width="1920" height="1080" alt="swappy-20260913_155508" src="https://github.com/user-attachments/assets/b7f824d9-2e52-4872-89aa-9a981e6f0936" />
+<img width="1920" height="1080" alt="Desktop with the MacShell menu bar, Dynamic Island and dock" src="images/desktop.png" />
 
 
 ## Quick Install
@@ -34,8 +34,6 @@ chmod +x install.sh
 > It's all written for Arch. Other distros will need changes.
 > A few packages come from the AUR, which means you need an AUR helper like `yay`.
 > Back up your own configs before copying these over.
-
-<img width="1920" height="1080" alt="swappy-20260913_171810" src="https://github.com/user-attachments/assets/c943c8ca-57b1-4801-b4ea-5672378ecaca" />
 
 ### Core System dependencies
 ```bash
@@ -173,8 +171,7 @@ hyprpm update
 hyprpm add https://github.com/virtcode/hypr-dynamic-cursors
 hyprpm enable dynamic-cursors
 ```
-<img width="1918" height="1080" alt="swappy-20260831_222345" src="https://github.com/user-attachments/assets/27a3aed6-d91b-4fe8-91ee-01b0aff19f95" />
-<img width="1920" height="1080" alt="swappy-20260913_171941" src="https://github.com/user-attachments/assets/b45a2c1e-1dcf-43c5-a07d-4582f0a88f16" />
+<img width="1920" height="1080" alt="vicinae launcher over kitty and Neovim" src="images/vicinae.png" />
 
 ## Shell Configuration (`.zshrc`)
 
@@ -311,12 +308,14 @@ The aliases that run them, plus a couple of extras:
 | `pymain`        | `echo -e "\n\ndef main():\n    pass\n\nif __name__ == \"__main__\":\n    main()" > main.py`                                    | Create a basic Python main function template in main.py   |
 
 
-<img width="1918" height="1077" alt="swappy-20260831_223410" src="https://github.com/user-attachments/assets/405b7e88-a3cc-4ab0-8801-8e09f1c29637" />
-
-
 ## Desktop shell: MacShell (akiidjk edition)
 
 The shell is my fork of [MacShell](https://github.com/0-ss/MacShell), a macOS-looking Quickshell shell with Liquid Glass. The Dock, Control Center, notifications, widgets, window switcher, screenshots and the MacLock lock screen (idle, suspend, lid close, `Alt+L`) come from upstream. Everything below is mine.
+
+<p>
+  <img width="49%" alt="MacLock with the compact player" src="images/lockscreen-1.png" />
+  <img width="49%" alt="MacLock with the album art" src="images/lockscreen-2.png" />
+</p>
 
 ### Dynamic Island
 
@@ -325,6 +324,8 @@ It takes the middle of the menu bar, where the workspaces used to be. Turn it of
 The same page tunes the rest: position, height (10 to 48 px, or auto), idle width, size when open, corner radius, how fast it opens and how hard it bounces, hiding it when there's nothing to show, opening on hover, how long a new track stays up, an outline, synced lyrics and how early each line appears, how long activities last, plus one switch per kind of activity.
 
 Inside it you get the player with synced lyrics, running timers and screen recordings, and short activities like workspace switches, battery, Bluetooth, Wi-Fi, input source, mic and camera, downloads, updates and system alerts. Scripts can post their own with `qs -c MacShell ipc call island notify "title" "subtitle" ""`. The zsh hook does exactly that for any command that ran 15 s or more. Style, position and height have IPC calls too, `island setStyle notch|island`, `island setOffset <px>` and `island setHeight <px>` (0 is auto).
+
+<img width="1920" height="1080" alt="The notch open on hover, next to Settings → Dynamic Island and the updates popover" src="images/notch-hover.png" />
 
 ### Claude Code in the island
 
@@ -342,7 +343,11 @@ System alerts live in Settings → Notifications. If the CPU runs hot or memory 
 
 `SUPER + SHIFT + N` opens the Scratchpad, a single note saved as you type to `~/.local/share/macshell/scratchpad.md`, with a Markdown preview. `SUPER + SHIFT + T` lets you drag over part of the screen and copies the text in it through tesseract, or the content of a QR code when there is one. Clean URL strips `utm_*`, `fbclid`, `gclid` and the YouTube / Spotify `si` from every link you copy (`hypr/scripts/clean-url.py`, started from `autostart.lua`).
 
+<img width="1920" height="1080" alt="Scratchpad over Zed and a browser" src="images/scratchpad-zed-browser.png" />
+
 Vicinae is the only launcher, so MacShell's Spotlight is gone along with its clipboard and emoji panels, and the shell is English only. The keybind viewer and the wallpaper picker are mine, drawn in the same Liquid Glass style. Wallpapers and colors go through one script, `hypr/scripts/wallpapers/apply.sh`. It runs matugen and awww and recolors kitty, Hyprland, btop, spicetify and the MacShell accent (Settings → Appearance → Accent, the white-dot swatch) without restarting anything.
+
+<img width="1920" height="1080" alt="Wallpaper picker with the Control Center open" src="images/wallpaper-picker-control-center.png" />
 
 Don't run MacShell's own `install.sh` or `macshell-update`. They'd overwrite the fork.
 
@@ -407,7 +412,7 @@ sudo systemctl start sddm
 | `SUPER + SHIFT + N` | Scratchpad |
 | `SUPER + SHIFT + M` | Mute / unmute the microphone |
 
-<img width="1919" height="1080" alt="swappy-20260913_172045" src="https://github.com/user-attachments/assets/a977171d-145e-4ce8-93eb-542fe580d716" />
+<img width="1920" height="1080" alt="Keybind viewer and the calendar" src="images/keybinds-calendar.png" />
 
 ## Resources
 
