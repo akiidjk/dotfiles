@@ -80,10 +80,38 @@ Scope {
     property bool topBarHidden: false        // Super+H: hide / show the menu bar (and its island; not persisted)
     readonly property bool menuBarShown: barEnabled && !topBarHidden
     readonly property bool islandShown: menuBarShown && islandEnabled
-    // a passing activity for the island (every screen): { icon (Nerd Font glyph), image, title, sub, value 0..1, color, ms }
+    // Settings → Dynamic Island. notch = hangs from the screen edge in place of the workspaces;
+    // island = the phone's floating pill, just below the bar (the workspaces stay in the bar)
+    property string islandStyle: "notch"
+    property int islandOffset: 6             // island style: gap between the bar and the pill
+    property int islandHeight: 0             // collapsed height, 0 = auto (bar + 5 for the notch, 32 for the pill)
+    property int islandWidth: 200            // idle width
+    property real islandScale: 1.0           // width of the open faces
+    property int islandRadius: -1            // open faces' corner radius, -1 = auto (the collapsed pill is always a capsule)
+    property real islandSpring: 4.5          // opening spring: stiffness
+    property real islandBounce: 0.34         // and damping (lower = more bounce)
+    property string islandIdle: "show"       // show | hide (nothing to show = no island)
+    property bool islandHoverExpand: true
+    property int islandAutoShowMs: 3000      // a new track keeps the compact face up this long
+    property real islandAlertMs: 1.0         // activity duration multiplier
+    property bool islandLyrics: true
+    property real islandLyricLead: 0.4       // a lyric line shows this many seconds early
+    property bool islandOutline: false       // island style: hairline rim (stays visible on dark wallpapers)
+    property bool islandShadow: true         // island style: soft shadow under the pill
+    readonly property var islandKinds: ["workspace", "battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"]
+    property var islandAlerts: ["battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"]
+    readonly property bool islandNotch: islandEnabled && islandStyle === "notch"
+    // a passing activity for the island (every screen): { kind, icon (Nerd Font glyph), image, title, sub, value 0..1, color, ms }
     signal islandAlert(var a)
-    // shows `a` in the island and returns true; false while the island is off, so the caller falls back to its own UI
-    function islandSay(a) { if (!islandShown || !osdReady) return false; islandAlert(a); return true; }
+    // shows `a` in the island and returns true; false while the island is off, so the caller falls back to its own UI.
+    // A kind switched off in Settings counts as shown: the user asked for silence, not for a fallback banner.
+    function islandSay(a) {
+        if (!islandShown || !osdReady) return false;
+        if (a.kind && islandAlerts.indexOf(a.kind) < 0) return true;
+        a.ms = Math.round((a.ms || 2500) * islandAlertMs);
+        islandAlert(a);
+        return true;
+    }
     property bool keybindsOpen: false        // KeybindsPanel.qml (Super+K, Help → Hyprland Keybinds)
     property bool wallPickerOpen: false      // WallPickerPanel.qml (Super+W)
     readonly property QtObject islandPal: pal          // IslandStyle.qml reads the palette through this
@@ -327,7 +355,8 @@ Scope {
     property string kbMain: ""                // name of the main keyboard (Hyprland)
     property string recordFile: ""
 
-    readonly property var settingKeys: ["barEnabled", "islandEnabled", "accentFromWallpaper", "darkMode", "appearanceMode", "accent", "fontFamily", "barHeight", "glassOpacity",
+    readonly property var settingKeys: ["barEnabled", "islandEnabled", "islandStyle", "islandOffset", "islandHeight", "islandWidth", "islandScale", "islandRadius", "islandSpring", "islandBounce", "islandIdle", "islandHoverExpand", "islandAutoShowMs", "islandAlertMs", "islandLyrics", "islandLyricLead", "islandOutline", "islandShadow", "islandAlerts",
+        "accentFromWallpaper", "darkMode", "appearanceMode", "accent", "fontFamily", "barHeight", "glassOpacity",
         "barStyle", "barGlass", "glassRim", "glassGrain", "glassLiquid", "glassBlur", "barBgOpacity", "glassRealtime", "liveWallGlass", "glassDebug", "wallpaperPath", "use24h", "showDate",
         "showSeconds", "showBatteryPercent", "showTray",
         "ccEnabled", "notificationsEnabled", "clockAppEnabled", "ccStyle", "barLogoMode", "barCustomLogoPath", "barWidgets", "weekStartsMonday", "terminal", "launcher",
@@ -2720,9 +2749,10 @@ Scope {
         function toggle(): void { root.topBarHidden = !root.topBarHidden; }
         function hub(): void { root.topBarHidden = false; root.ccRequest(true); }
         function setEnabled(on: bool): void { root.islandEnabled = on; }
+        function setStyle(style: string): void { if (style === "notch" || style === "island") root.islandStyle = style; }
         // a script's own activity, e.g. the zsh hook for long commands:  island notify "✓ make" "2m 13s" ""
         function notify(title: string, sub: string, icon: string): void {
-            if (!root.islandSay({ icon: icon || "\u{f120}", title: title, sub: sub, ms: 4000 }))
+            if (!root.islandSay({ kind: "notify", icon: icon || "\u{f120}", title: title, sub: sub, ms: 4000 }))
                 Quickshell.execDetached(["notify-send", "-a", "macbar", title, sub]);
         }
     }
@@ -2738,27 +2768,27 @@ Scope {
     // ── island activities: system events the notch shows as they happen (all go through islandSay) ──
     onChargingChanged: {
         if (charging && osdReady) playSound("charge");
-        if (hasBattery) islandSay({ icon: charging ? "\u{f0e7}" : "\u{f240}", color: charging ? "#30D158" : "",
+        if (hasBattery) islandSay({ kind: "battery", icon: charging ? "\u{f0e7}" : "\u{f240}", color: charging ? "#30D158" : "",
                                     title: charging ? I18n.tr("Charging") : I18n.tr("On Battery"), sub: batPct + "%", value: batPct / 100 });
     }
     onBatPctChanged: if (hasBattery && !charging && (batPct === 20 || batPct === 10 || batPct === 5))
-        islandSay({ icon: "\u{f243}", color: "#FF453A", title: I18n.tr("Low Battery"), sub: batPct + "%", value: batPct / 100, ms: 5000 })
+        islandSay({ kind: "battery", icon: "\u{f243}", color: "#FF453A", title: I18n.tr("Low Battery"), sub: batPct + "%", value: batPct / 100, ms: 5000 })
     property int btSeen: 0
     onBtConnectedChanged: {
         // the name is set right after the count: read it once the update is done
         if (btConnected > btSeen) Qt.callLater(function () {
-            root.islandSay({ icon: "\u{f293}", color: "#0A84FF", title: root.btConnectedName || "Bluetooth", sub: I18n.tr("Connected") });
+            root.islandSay({ kind: "bluetooth", icon: "\u{f293}", color: "#0A84FF", title: root.btConnectedName || "Bluetooth", sub: I18n.tr("Connected") });
         });
         btSeen = btConnected;
     }
-    onWifiSsidChanged: islandSay(wifiSsid !== "" ? { icon: "\u{f1eb}", title: wifiSsid, sub: I18n.tr("Wi-Fi connected") }
-                                                 : { icon: "\u{f1eb}", color: "#FF9F0A", title: "Wi-Fi", sub: I18n.tr("Disconnected") })
-    onKeyboardLayoutChanged: islandSay({ icon: "\u{f11c}", title: kbLayouts[kbIndex] ? kbLayouts[kbIndex].name : keyboardLayout,
+    onWifiSsidChanged: islandSay(wifiSsid !== "" ? { kind: "wifi", icon: "\u{f1eb}", title: wifiSsid, sub: I18n.tr("Wi-Fi connected") }
+                                                 : { kind: "wifi", icon: "\u{f1eb}", color: "#FF9F0A", title: "Wi-Fi", sub: I18n.tr("Disconnected") })
+    onKeyboardLayoutChanged: islandSay({ kind: "keyboard", icon: "\u{f11c}", title: kbLayouts[kbIndex] ? kbLayouts[kbIndex].name : keyboardLayout,
                                          sub: I18n.tr("Input source") + " · " + keyboardLayout })
     readonly property int privMic: privacy.mic.length
     readonly property int privCam: privacy.cam.length
-    onPrivMicChanged: if (privMic > 0) islandSay({ icon: "\u{f130}", color: "#FF9F0A", title: privacy.mic.join(", "), sub: I18n.tr("Using the microphone") })
-    onPrivCamChanged: if (privCam > 0) islandSay({ icon: "\u{f03d}", color: "#30D158", title: privacy.cam.join(", "), sub: I18n.tr("Using the camera") })
+    onPrivMicChanged: if (privMic > 0) islandSay({ kind: "privacy", icon: "\u{f130}", color: "#FF9F0A", title: privacy.mic.join(", "), sub: I18n.tr("Using the microphone") })
+    onPrivCamChanged: if (privCam > 0) islandSay({ kind: "privacy", icon: "\u{f03d}", color: "#30D158", title: privacy.cam.join(", "), sub: I18n.tr("Using the camera") })
     // apps that open the webcam straight through V4L2 (OBS, most video tools) never show up in PipeWire's graph:
     // inotify reports the /dev/video* nodes being opened / closed, and fuser says who holds them.
     // Something on this system opens and closes the nodes a couple of times a second (a device scan, too brief to catch):
@@ -2802,7 +2832,7 @@ Scope {
         stdout: SplitParser {
             onRead: f => {
                 if (/^\.|\.(part|crdownload|tmp|download)$/i.test(f)) return;
-                root.islandSay({ icon: "\u{f019}", color: "#0A84FF", title: I18n.tr("Download complete"), sub: f, ms: 3500 });
+                root.islandSay({ kind: "downloads", icon: "\u{f019}", color: "#0A84FF", title: I18n.tr("Download complete"), sub: f, ms: 3500 });
             }
         }
     }
@@ -3319,6 +3349,10 @@ Scope {
     }
     function resetSettings() {
         barEnabled = true; islandEnabled = true; accentFromWallpaper = true;
+        islandStyle = "notch"; islandOffset = 6; islandHeight = 0; islandWidth = 200; islandScale = 1.0; islandRadius = -1;
+        islandSpring = 4.5; islandBounce = 0.34; islandIdle = "show"; islandHoverExpand = true; islandAutoShowMs = 3000;
+        islandAlertMs = 1.0; islandLyrics = true; islandLyricLead = 0.4; islandOutline = false; islandShadow = true;
+        islandAlerts = ["battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"];
         darkMode = true; appearanceMode = "dark"; accent = "#0a84ff"; fontFamily = "Open Runde"; glassOpacity = 0.42; glassBlur = 5; barBgOpacity = 0.10; glassRealtime = false; liveWallGlass = false;
         barStyle = "liquid"; use24h = true; showDate = true; showSeconds = false; showBatteryPercent = true;
         showTray = true;
@@ -4782,7 +4816,7 @@ Scope {
                     // ── centre: workspaces (minimal, text only), or the Dynamic Island (Island.qml, its own layer) ──
                     Row {
                         id: wsRow
-                        visible: root.barWidgetEnabled("workspaces") && !root.islandEnabled   // the island takes the centre
+                        visible: root.barWidgetEnabled("workspaces") && !root.islandNotch   // the notch takes the centre (the pill hangs below)
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.verticalCenter: parent.verticalCenter
                         height: 28

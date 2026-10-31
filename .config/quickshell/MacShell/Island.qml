@@ -7,22 +7,31 @@ import Quickshell.Services.Mpris
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Shapes
+import QtQuick.Effects
 
-// Dynamic Island: a black notch hanging from the centre of the menu bar, in place of the workspaces
-// (Settings → Menu Bar → Dynamic Island). What it shows, most important first:
+// Dynamic Island (Settings → Dynamic Island), in one of two styles:
+//   notch        a black notch hanging from the centre of the menu bar, in place of the workspaces
+//   island       the phone's floating black pill, just below the bar (the workspaces stay in the bar)
+// What it shows, most important first:
 //   hover        the player (or the date when nothing is loaded)
-//   alert        a passing activity: volume / brightness, notifications, battery, Bluetooth, Wi-Fi, microphone / camera,
-//                input source, downloads, workspace switches, `ipc call island notify` (MacBar.islandSay)
+//   alert        a passing activity: battery, Bluetooth, Wi-Fi, microphone / camera, input source, downloads,
+//                workspace switches, updates, system alerts, `ipc call island notify` (MacBar.islandSay; each kind
+//                can be switched off in Settings)
 //   live         a running screen recording, Clock timer or stopwatch
 //   compact      now playing: art, title (or the synced lyric line being sung), sound bars
-//   idle         an empty notch
+//   idle         an empty notch / pill (or nothing, with Idle → Hide)
 // Privacy dots sit at its right end. Created per screen by MacBar.qml, on its own layer.
 PanelWindow {
     id: island
 
     property var bar: null
 
-    readonly property int collapsedH: (bar ? bar.barHeight : 28) + 5   // hangs a little below the bar: room under the text
+    readonly property bool pill: bar !== null && bar.islandStyle === "island"
+    // the pill floats below the bar; the notch starts at the screen edge
+    readonly property int topY: pill ? bar.barHeight + bar.islandOffset : 0
+    // the notch hangs a little below the bar: room under the text
+    readonly property int collapsedH: bar && bar.islandHeight > 0 ? bar.islandHeight : pill ? 32 : (bar ? bar.barHeight : 28) + 5
+    readonly property real sc: bar ? bar.islandScale : 1
     readonly property int ear: 8               // concave fillet joining the notch to the screen edge
 
     visible: bar !== null && bar.islandShown
@@ -30,8 +39,9 @@ PanelWindow {
     // fixed (the player is the tallest face, the compact lyric line the widest + bump + ears) — surface never resizes.
     // Only as wide as the notch can get: every frame redraws the whole surface, a full-width one cost 4x more.
     anchors.top: true
-    implicitWidth: 500
-    implicitHeight: 220
+    // (+ room for the pill's shadow and the widest scale; the island style starts lower)
+    implicitWidth: Math.ceil(460 * Math.max(1, sc)) + 60
+    implicitHeight: 240 + topY + Math.max(0, collapsedH - 33)
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
     WlrLayershell.namespace: "macisland"
@@ -52,8 +62,8 @@ PanelWindow {
 
     // synced lyrics come from the widgets' LRCLIB fetch (MacBar asks for them while the island is on)
     readonly property var lyrics: widgets && widgets.lyricsSynced && widgets.player === player ? widgets.lyricsLines : []
-    // one line on its own has to be read while it is sung: show it this many seconds early (tuning knob)
-    property real lyricLead: 0.4
+    // one line on its own has to be read while it is sung: show it this many seconds early (Settings → Lyric timing)
+    readonly property real lyricLead: bar ? bar.islandLyricLead : 0.4
     readonly property real lyricPos: {
         if (lyrics.length === 0 || !player) return 0;
         // max(): a fresh read lands before nowMs catches up — never count time backwards (or a stale gap forwards)
@@ -114,7 +124,7 @@ PanelWindow {
         }
         return r;
     }
-    readonly property string lyricLine: playing && lyricIdx >= 0 ? lyrics[lyricIdx].text : ""
+    readonly property string lyricLine: playing && lyricIdx >= 0 && (!bar || bar.islandLyrics) ? lyrics[lyricIdx].text : ""
     // MPRIS does not announce the position (only seeks): instead of polling, wake up when the next line is due,
     // read the position there, and aim again — one wake-up per line
     Timer {
@@ -130,7 +140,7 @@ PanelWindow {
     // a new track: show the compact notch for a while and give it a little bump
     property bool autoShow: false
     property int bump: 0
-    Timer { id: autoShowTimer; interval: 3000; onTriggered: island.autoShow = false }
+    Timer { id: autoShowTimer; interval: island.bar ? island.bar.islandAutoShowMs : 3000; onTriggered: island.autoShow = false }
     Timer { id: bumpTimer; interval: 160; onTriggered: island.bump = 0 }
     function kick() { bump = 18; bumpTimer.restart(); }
     Connections {
@@ -164,8 +174,9 @@ PanelWindow {
         ignoreUnknownSignals: true
         function onActiveWorkspaceChanged() {
             const ws = island.hyprMonitor.activeWorkspace;
-            if (ws && ws.id > 0 && island.bar && island.bar.osdReady)
-                island.say({ icon: "\u{f009}", title: "Workspace " + ws.name, ms: 900 });
+            // per screen, so not through bar.islandSay (that one reaches every screen): same filter, by hand
+            if (ws && ws.id > 0 && island.bar && island.bar.osdReady && island.bar.islandAlerts.indexOf("workspace") >= 0)
+                island.say({ icon: "\u{f009}", title: "Workspace " + ws.name, ms: Math.round(900 * island.bar.islandAlertMs) });
         }
     }
 
@@ -185,7 +196,7 @@ PanelWindow {
 
     // ── hover ────────────────────────────────────────────
     Timer { id: lingerTimer; interval: 300 }
-    readonly property bool hovered: cardHover.hovered || lingerTimer.running
+    readonly property bool hovered: (cardHover.hovered || lingerTimer.running) && (!bar || bar.islandHoverExpand)
 
     readonly property bool media: hasTrack && (playing || autoShow)
     readonly property var dots: bar ? bar.privacyDots : []
@@ -195,50 +206,31 @@ PanelWindow {
                                  : media ? "compact" : "idle"
     readonly property bool actTall: act !== null && ((act.sub ?? "") !== "" || act.value !== undefined)
 
-    readonly property int cardW: (mode === "player" ? 420 : mode === "alert" ? (actTall ? 380 : 260)
-                                 : mode === "peek" ? 260 : mode === "live" ? 280
-                                 : mode === "compact" ? (lyricLine !== "" ? 440 : 330) : 200) + bump
+    // nothing to show and Idle → Hide: the island shrinks away and stops taking clicks
+    readonly property bool gone: mode === "idle" && bar !== null && bar.islandIdle === "hide"
+    readonly property bool collapsed: mode === "idle" || mode === "compact" || mode === "live"
+
+    readonly property int cardW: (mode === "idle" ? (bar ? bar.islandWidth : 200)
+                                 : Math.round(sc * (mode === "player" ? 420 : mode === "alert" ? (actTall ? 380 : 260)
+                                                  : mode === "peek" ? 260 : mode === "live" ? 280
+                                                  : lyricLine !== "" ? 440 : 330))) + bump
     readonly property int cardH: mode === "player" ? Math.ceil(playerView.implicitHeight + 30)
                                : mode === "alert" ? (actTall ? 60 : collapsedH + 10)
                                : mode === "peek" ? collapsedH + 14 : collapsedH
-    readonly property int cardR: mode === "player" ? 28 : mode === "alert" || mode === "peek" ? 20 : Math.round(collapsedH / 2.4)
+    // the collapsed pill is always a capsule; Corner radius (Settings) sets the open faces
+    readonly property int cardR: pill && collapsed ? Math.floor(cardH / 2)
+                               : collapsed ? Math.round(collapsedH / 2.4)
+                               : Math.min(Math.floor(cardH / 2), bar && bar.islandRadius >= 0 ? bar.islandRadius
+                                                                : mode === "player" ? 28 : 20)
 
     SystemClock { id: dateClock; precision: SystemClock.Minutes }
 
     // input mask follows the card only
     Item {
         id: hitArea
-        x: card.x; y: 0
-        width: card.width
+        x: card.x; y: card.y
+        width: island.gone ? 0 : card.width
         height: card.height
-    }
-
-    // ── the notch: black body, flat top, rounded bottom, concave ears into the screen edge ──
-    Rectangle {
-        x: card.x; y: 0
-        width: card.width; height: card.height
-        color: "black"
-        bottomLeftRadius: card.radius
-        bottomRightRadius: card.radius
-    }
-    Repeater {
-        model: 2
-        Shape {
-            required property int index
-            x: index === 0 ? card.x - island.ear : card.x + card.width
-            y: 0
-            width: island.ear; height: island.ear
-            preferredRendererType: Shape.CurveRenderer
-            transform: Scale { xScale: index === 0 ? 1 : -1; origin.x: island.ear / 2 }
-            ShapePath {
-                fillColor: "black"
-                strokeColor: "transparent"
-                startX: 0; startY: 0
-                PathLine { x: island.ear; y: 0 }
-                PathLine { x: island.ear; y: island.ear }
-                PathArc { x: 0; y: 0; radiusX: island.ear; radiusY: island.ear; direction: PathArc.Counterclockwise }
-            }
-        }
     }
 
     // one face of the island: grows in once the notch has started to open, snaps out when it closes
@@ -299,233 +291,285 @@ PanelWindow {
         }
     }
 
+    // everything that draws: shrinks away together when the idle island is hidden
     Item {
-        id: card
-        z: 3
-        x: Math.round((island.width - width) / 2)
-        y: 0
-        width: island.cardW
-        height: island.cardH
-        property real radius: island.cardR
-        clip: true
+        id: stage
+        anchors.fill: parent
+        opacity: island.gone ? 0 : 1
+        scale: island.gone ? 0.6 : 1
+        transformOrigin: Item.Top
+        visible: opacity > 0.01
+        Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
 
-        // springs: the notch overshoots a touch when it opens, like the phone
-        Behavior on width { SpringAnimation { spring: 4.5; damping: 0.34; epsilon: 0.3 } }
-        Behavior on height { SpringAnimation { spring: 4.5; damping: 0.42; epsilon: 0.3 } }
-        Behavior on radius { NumberAnimation { duration: IslandStyle.aMed; easing.type: Easing.OutCubic } }
-
-        // a click dismisses the activity on show
-        MouseArea {
-            anchors.fill: parent
-            acceptedButtons: Qt.LeftButton
-            onClicked: island.act = null
+        // the pill's soft shadow (island style)
+        RectangularShadow {
+            visible: island.pill && island.bar.islandShadow
+            x: card.x; y: card.y + 3
+            width: card.width; height: card.height
+            radius: card.radius
+            blur: 16
+            color: Qt.rgba(0, 0, 0, 0.45)
         }
-
-        // whole-card hover that child MouseAreas can't steal (blocking:false = passes through)
-        HoverHandler {
-            id: cardHover
-            onHoveredChanged: hovered ? lingerTimer.stop() : lingerTimer.restart()
+        // ── the body: notch = flat top, rounded bottom, concave ears into the screen edge; island = rounded all round ──
+        Rectangle {
+            x: card.x; y: card.y
+            width: card.width; height: card.height
+            color: "black"
+            radius: island.pill ? card.radius : 0
+            bottomLeftRadius: card.radius
+            bottomRightRadius: card.radius
+            border.width: island.pill && island.bar.islandOutline ? 1 : 0
+            border.color: Qt.rgba(1, 1, 1, 0.16)
         }
-
-        // ═══════════ idle / compact: art + title or lyric line + sound bars ═══════════
-        Face {
-            shown: island.mode === "idle" || island.mode === "compact"
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            height: island.collapsedH
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 12
-                anchors.rightMargin: 12
-                spacing: 8
-
-                IslandArt {
-                    size: Math.round(island.collapsedH * 0.62)
-                    radius: 5
-                    url: island.player?.trackArtUrl ?? ""
-                    Layout.alignment: Qt.AlignVCenter
-                    visible: island.media
+        Repeater {
+            model: island.pill ? 0 : 2
+            Shape {
+                required property int index
+                x: index === 0 ? card.x - island.ear : card.x + card.width
+                y: 0
+                width: island.ear; height: island.ear
+                preferredRendererType: Shape.CurveRenderer
+                transform: Scale { xScale: index === 0 ? 1 : -1; origin.x: island.ear / 2 }
+                ShapePath {
+                    fillColor: "black"
+                    strokeColor: "transparent"
+                    startX: 0; startY: 0
+                    PathLine { x: island.ear; y: 0 }
+                    PathLine { x: island.ear; y: island.ear }
+                    PathArc { x: 0; y: 0; radiusX: island.ear; radiusY: island.ear; direction: PathArc.Counterclockwise }
                 }
-                FadeText {
-                    Layout.fillWidth: true
-                    visible: island.media
-                    value: island.lyricLine !== "" ? island.lyricLine : (island.player?.trackTitle ?? "")
-                }
-                Item { Layout.fillWidth: true; visible: !island.media }
-                IslandEq { running: island.playing; Layout.alignment: Qt.AlignVCenter; visible: island.media }
-                Tail { Layout.alignment: Qt.AlignVCenter }
             }
         }
 
-        // ═══════════ live: recording / timer / stopwatch ═══════════
-        Face {
-            shown: island.mode === "live"
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            height: island.collapsedH
+        Item {
+            id: card
+            z: 3
+            x: Math.round((island.width - width) / 2)
+            y: island.topY
+            width: island.cardW
+            height: island.cardH
+            property real radius: island.cardR
+            clip: true
 
-            RowLayout {
+            // springs: the notch overshoots a touch when it opens, like the phone
+            Behavior on width { SpringAnimation { spring: island.bar ? island.bar.islandSpring : 4.5; damping: island.bar ? island.bar.islandBounce : 0.34; epsilon: 0.3 } }
+            Behavior on height { SpringAnimation { spring: island.bar ? island.bar.islandSpring : 4.5; damping: island.bar ? island.bar.islandBounce + 0.08 : 0.42; epsilon: 0.3 } }
+            Behavior on radius { NumberAnimation { duration: IslandStyle.aMed; easing.type: Easing.OutCubic } }
+
+            // a click dismisses the activity on show
+            MouseArea {
                 anchors.fill: parent
-                anchors.leftMargin: 14
-                anchors.rightMargin: 14
-                spacing: 8
-
-                Rectangle {
-                    Layout.alignment: Qt.AlignVCenter
-                    visible: island.live === "rec"
-                    implicitWidth: 9; implicitHeight: 9; radius: 4.5
-                    color: "#FF453A"
-                    SequentialAnimation on opacity {          // the REC dot breathes
-                        running: island.mode === "live" && island.live === "rec"   // only while on screen
-                        loops: Animation.Infinite
-                        NumberAnimation { to: 0.35; duration: 700; easing.type: Easing.InOutSine }
-                        NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
-                    }
-                }
-                Text {
-                    Layout.alignment: Qt.AlignVCenter
-                    visible: island.live !== "rec"
-                    text: island.live === "timer" ? "\u{f254}" : "\u{f017}"
-                    color: "#FF9F0A"
-                    font.family: IslandStyle.iconFont
-                    font.pixelSize: 13
-                }
-                Text {
-                    Layout.fillWidth: true
-                    text: island.live === "rec" ? "Recording" : island.live === "timer" ? (island.clock?.timer.label || "Timer") : "Stopwatch"
-                    color: IslandStyle.fg2
-                    font.family: IslandStyle.fam
-                    font.pixelSize: 12
-                    elide: Text.ElideRight
-                }
-                Text {
-                    Layout.alignment: Qt.AlignVCenter
-                    text: island.liveTime
-                    color: island.live === "rec" ? "#FF453A" : "#FF9F0A"
-                    font.family: IslandStyle.font(Font.DemiBold)
-                    font.weight: Font.DemiBold
-                    font.pixelSize: 13
-                    font.features: { "tnum": 1 }
-                }
-                Tail { Layout.alignment: Qt.AlignVCenter }
+                acceptedButtons: Qt.LeftButton
+                onClicked: island.act = null
             }
-        }
 
-        // ═══════════ alert: icon or picture, title, subtitle or level ═══════════
-        Face {
-            shown: island.mode === "alert"
-            anchors.fill: parent
-            anchors.leftMargin: 14
-            anchors.rightMargin: 16
+            // whole-card hover that child MouseAreas can't steal (blocking:false = passes through)
+            HoverHandler {
+                id: cardHover
+                onHoveredChanged: hovered ? lingerTimer.stop() : lingerTimer.restart()
+            }
 
-            RowLayout {
-                anchors.fill: parent
-                spacing: 11
+            // ═══════════ idle / compact: art + title or lyric line + sound bars ═══════════
+            Face {
+                shown: island.mode === "idle" || island.mode === "compact"
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                height: island.collapsedH
 
-                Item {
-                    id: lead
-                    Layout.alignment: Qt.AlignVCenter
-                    implicitWidth: island.actTall ? 34 : 20
-                    implicitHeight: implicitWidth
-                    readonly property string img: {
-                        const s = island.act?.image ?? "";
-                        return s !== "" && s[0] === "/" ? "file://" + s : s;
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    spacing: 8
+
+                    IslandArt {
+                        size: Math.round(island.collapsedH * 0.62)
+                        radius: 5
+                        url: island.player?.trackArtUrl ?? ""
+                        Layout.alignment: Qt.AlignVCenter
+                        visible: island.media
                     }
-                    ClippingRectangle {
-                        anchors.fill: parent
-                        radius: 9
-                        color: "transparent"
-                        visible: pic.status === Image.Ready
-                        Image {
-                            id: pic
-                            anchors.fill: parent
-                            source: lead.img
-                            fillMode: Image.PreserveAspectCrop
-                            sourceSize: Qt.size(68, 68)
-                            asynchronous: true
+                    FadeText {
+                        Layout.fillWidth: true
+                        visible: island.media
+                        value: island.lyricLine !== "" ? island.lyricLine : (island.player?.trackTitle ?? "")
+                    }
+                    Item { Layout.fillWidth: true; visible: !island.media }
+                    IslandEq { running: island.playing; Layout.alignment: Qt.AlignVCenter; visible: island.media }
+                    Tail { Layout.alignment: Qt.AlignVCenter }
+                }
+            }
+
+            // ═══════════ live: recording / timer / stopwatch ═══════════
+            Face {
+                shown: island.mode === "live"
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                height: island.collapsedH
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 14
+                    anchors.rightMargin: 14
+                    spacing: 8
+
+                    Rectangle {
+                        Layout.alignment: Qt.AlignVCenter
+                        visible: island.live === "rec"
+                        implicitWidth: 9; implicitHeight: 9; radius: 4.5
+                        color: "#FF453A"
+                        SequentialAnimation on opacity {          // the REC dot breathes
+                            running: island.mode === "live" && island.live === "rec"   // only while on screen
+                            loops: Animation.Infinite
+                            NumberAnimation { to: 0.35; duration: 700; easing.type: Easing.InOutSine }
+                            NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
                         }
                     }
                     Text {
-                        anchors.centerIn: parent
-                        visible: pic.status !== Image.Ready
-                        text: island.act?.icon ?? ""
-                        color: island.act?.color || IslandStyle.fg
+                        Layout.alignment: Qt.AlignVCenter
+                        visible: island.live !== "rec"
+                        text: island.live === "timer" ? "\u{f254}" : "\u{f017}"
+                        color: "#FF9F0A"
                         font.family: IslandStyle.iconFont
-                        font.pixelSize: island.actTall ? 20 : 15
+                        font.pixelSize: 13
                     }
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignVCenter
-                    spacing: 4
                     Text {
                         Layout.fillWidth: true
-                        text: island.act?.title ?? ""
-                        color: IslandStyle.fg
+                        text: island.live === "rec" ? "Recording" : island.live === "timer" ? (island.clock?.timer.label || "Timer") : "Stopwatch"
+                        color: IslandStyle.fg2
+                        font.family: IslandStyle.fam
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        Layout.alignment: Qt.AlignVCenter
+                        text: island.liveTime
+                        color: island.live === "rec" ? "#FF453A" : "#FF9F0A"
                         font.family: IslandStyle.font(Font.DemiBold)
                         font.weight: Font.DemiBold
                         font.pixelSize: 13
-                        elide: Text.ElideRight
-                        textFormat: Text.PlainText
+                        font.features: { "tnum": 1 }
                     }
-                    Text {
-                        Layout.fillWidth: true
-                        visible: (island.act?.sub ?? "") !== ""
-                        text: island.act?.sub ?? ""
-                        color: IslandStyle.fg2
-                        font.family: IslandStyle.fam
-                        font.pixelSize: 11
-                        elide: Text.ElideRight
-                        maximumLineCount: 1
-                        textFormat: Text.PlainText
-                    }
-                    Rectangle {
-                        Layout.fillWidth: true
-                        visible: island.act?.value !== undefined
-                        implicitHeight: 5
-                        radius: 2.5
-                        color: IslandStyle.track
-                        Rectangle {
-                            height: parent.height
-                            radius: parent.radius
-                            width: parent.width * (island.act?.value ?? 0)
+                    Tail { Layout.alignment: Qt.AlignVCenter }
+                }
+            }
+
+            // ═══════════ alert: icon or picture, title, subtitle or level ═══════════
+            Face {
+                shown: island.mode === "alert"
+                anchors.fill: parent
+                anchors.leftMargin: 14
+                anchors.rightMargin: 16
+
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: 11
+
+                    Item {
+                        id: lead
+                        Layout.alignment: Qt.AlignVCenter
+                        implicitWidth: island.actTall ? 34 : 20
+                        implicitHeight: implicitWidth
+                        readonly property string img: {
+                            const s = island.act?.image ?? "";
+                            return s !== "" && s[0] === "/" ? "file://" + s : s;
+                        }
+                        ClippingRectangle {
+                            anchors.fill: parent
+                            radius: 9
+                            color: "transparent"
+                            visible: pic.status === Image.Ready
+                            Image {
+                                id: pic
+                                anchors.fill: parent
+                                source: lead.img
+                                fillMode: Image.PreserveAspectCrop
+                                sourceSize: Qt.size(68, 68)
+                                asynchronous: true
+                            }
+                        }
+                        Text {
+                            anchors.centerIn: parent
+                            visible: pic.status !== Image.Ready
+                            text: island.act?.icon ?? ""
                             color: island.act?.color || IslandStyle.fg
-                            Behavior on width { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                            font.family: IslandStyle.iconFont
+                            font.pixelSize: island.actTall ? 20 : 15
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: 4
+                        Text {
+                            Layout.fillWidth: true
+                            text: island.act?.title ?? ""
+                            color: IslandStyle.fg
+                            font.family: IslandStyle.font(Font.DemiBold)
+                            font.weight: Font.DemiBold
+                            font.pixelSize: 13
+                            elide: Text.ElideRight
+                            textFormat: Text.PlainText
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            visible: (island.act?.sub ?? "") !== ""
+                            text: island.act?.sub ?? ""
+                            color: IslandStyle.fg2
+                            font.family: IslandStyle.fam
+                            font.pixelSize: 11
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                            textFormat: Text.PlainText
+                        }
+                        Rectangle {
+                            Layout.fillWidth: true
+                            visible: island.act?.value !== undefined
+                            implicitHeight: 5
+                            radius: 2.5
+                            color: IslandStyle.track
+                            Rectangle {
+                                height: parent.height
+                                radius: parent.radius
+                                width: parent.width * (island.act?.value ?? 0)
+                                color: island.act?.color || IslandStyle.fg
+                                Behavior on width { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // ═══════════ peek (hover, nothing loaded): the date ═══════════
-        Face {
-            shown: island.mode === "peek"
-            anchors.fill: parent
-            Text {
-                anchors.centerIn: parent
-                text: Qt.formatDateTime(dateClock.date, "dddd d MMMM")
-                color: IslandStyle.fg
-                font.family: IslandStyle.font(Font.DemiBold)
-                font.weight: Font.DemiBold
-                font.pixelSize: 13
+            // ═══════════ peek (hover, nothing loaded): the date ═══════════
+            Face {
+                shown: island.mode === "peek"
+                anchors.fill: parent
+                Text {
+                    anchors.centerIn: parent
+                    text: Qt.formatDateTime(dateClock.date, "dddd d MMMM")
+                    color: IslandStyle.fg
+                    font.family: IslandStyle.font(Font.DemiBold)
+                    font.weight: Font.DemiBold
+                    font.pixelSize: 13
+                }
             }
-        }
 
-        // ═══════════ player (hover with a track) ═══════════
-        Face {
-            shown: island.mode === "player"
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.leftMargin: 20
-            anchors.rightMargin: 20
-            anchors.topMargin: 14
-            height: playerView.implicitHeight
-            IslandMedia { id: playerView; anchors.fill: parent }
+            // ═══════════ player (hover with a track) ═══════════
+            Face {
+                shown: island.mode === "player"
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.leftMargin: 20
+                anchors.rightMargin: 20
+                anchors.topMargin: 14
+                height: playerView.implicitHeight
+                IslandMedia { id: playerView; anchors.fill: parent }
+            }
         }
     }
 }
