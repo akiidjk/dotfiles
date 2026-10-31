@@ -1948,6 +1948,10 @@ Scope {
     PwObjectTracker { objects: [root.micSource] }
     readonly property bool micMuted: (micSource && micSource.audio) ? micSource.audio.muted : true
     function toggleMicMute() { if (micSource && micSource.audio) micSource.audio.muted = !micSource.audio.muted; }
+    readonly property bool micReal: micSource !== null && micSource.audio !== null
+    // every mute change (key, Super+Shift+M, Control Center) says so in the island
+    onMicMutedChanged: if (micReal) islandSay({ kind: "privacy", icon: micMuted ? "\u{f131}" : "\u{f130}", color: micMuted ? "#FF453A" : "",
+                                                title: micMuted ? I18n.tr("Microphone muted") : I18n.tr("Microphone on"), ms: 1500 })
     readonly property real volLevel: muted || volume <= 0.001 ? 0 : (volume < 0.34 ? 1 : (volume < 0.67 ? 2 : 3))
     readonly property real micVolume: (micSource && micSource.audio) ? micSource.audio.volume : 0
     function setMicVolume(v) { if (micSource && micSource.audio) { micSource.audio.muted = false; micSource.audio.volume = Math.max(0, Math.min(1, v)); } }
@@ -4936,6 +4940,13 @@ Scope {
                             }
                             SymIcon { anchors.centerIn: parent; name: root.btOn ? "status/bluetooth-active-symbolic" : "status/bluetooth-disabled-symbolic"; color: root.btOn && root.btConnected > 0 ? bpal.fg : bpal.fg2 }
                             MouseArea { anchors.fill: parent; onClicked: ui.openPop("bt", btBtn.mapToItem(ui, 0, 0).x) }
+                        }
+                        // microphone muted: shown only then (part of the privacy widget); click = unmute
+                        Item {
+                            visible: root.barWidgetEnabled("privacy") && root.micReal && root.micMuted
+                            width: visible ? 26 : 0; height: 28
+                            SymIcon { anchors.centerIn: parent; name: "status/microphone-disabled-symbolic"; color: "#FF453A" }
+                            MouseArea { anchors.fill: parent; onClicked: root.toggleMicMute() }
                         }
                         // volume (opens a popover with just the volume slider)
                         Item {
