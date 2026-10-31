@@ -1,12 +1,10 @@
-https://github.com/user-attachments/assets/d4ee26ca-e82c-40df-b5a7-f257a6471f7e
+https://github.com/user-attachments/assets/81b7361e-8e5a-4fe5-8e1a-7303f33240a5
 
 
-# Hyprland Dotfiles for Arch based distro
+Hyprland Dotfiles for Arch based distro
 My Hyprland setup for Arch, with the install scripts and my fork of the MacShell desktop shell.
 
 <img width="1920" height="1080" alt="swappy-20260913_155508" src="https://github.com/user-attachments/assets/b7f824d9-2e52-4872-89aa-9a981e6f0936" />
-
-
 
 
 ## Quick Install
