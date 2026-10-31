@@ -37,6 +37,8 @@ chmod +x ~/.config/quickshell/MacLock/*.sh ~/.config/quickshell/MacLock/*.py
 python3 ~/.config/hypr-macshell/scripts/macshell-make-sounds.py
 mkdir -p ~/.config/macshell
 grep -m1 '^primary ' ~/.config/hypr/colors.lua | grep -oE '#[0-9a-fA-F]{6}' > ~/.config/macshell/accent || true
+# Claude Code in the Dynamic Island (hooks + plan limits), only if Claude Code is installed
+bash ~/.config/hypr-macshell/scripts/claude-setup.sh
 
 #Install others fonts
 mkdir -p ~/.local/share/fonts

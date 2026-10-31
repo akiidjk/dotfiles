@@ -157,7 +157,7 @@ python3 ~/.config/hypr-macshell/scripts/macshell-make-sounds.py
 Then log in to Hyprland: `hypr/macshell.lua` starts `qs -c MacShell`.
 
 ### Claude Code hooks
-Optional, for Claude Code in the Dynamic Island. Add to `~/.claude/settings.json` (needs `jq`):
+Optional, for Claude Code in the Dynamic Island. The installer does it when Claude Code is installed; by hand: `bash ~/.config/hypr-macshell/scripts/claude-setup.sh` (safe to run again, backs up to `settings.json.bak`). It adds this to `~/.claude/settings.json` (needs `jq`):
 ```json
 {
   "statusLine": { "type": "command", "command": "bash ~/.config/hypr-macshell/scripts/claude-statusline.sh" },
