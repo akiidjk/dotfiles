@@ -52,7 +52,8 @@ alias activate='source ~/.venv/bin/activate'
 alias vimage='kitty +kitten icat'
 alias cpu='auto-cpufreq --stats'
 alias zed='zeditor'
-alias ssh="kitty +kitten ssh"
+alias ssh='kitty +kitten ssh'
+alias k='kubectl'
 
 alias docker-start='sudo systemctl start docker.service'
 alias docker-stop='sudo systemctl stop docker.service'
