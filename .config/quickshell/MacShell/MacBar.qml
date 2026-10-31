@@ -2764,6 +2764,7 @@ Scope {
         function hub(): void { root.topBarHidden = false; root.ccRequest(true); }
         function setEnabled(on: bool): void { root.islandEnabled = on; }
         function setStyle(style: string): void { if (style === "notch" || style === "island") root.islandStyle = style; }
+        function setHeight(px: int): void { root.islandHeight = px < 10 ? 0 : Math.min(48, px); }   // 0 = automatic
         function setOffset(px: int): void { root.islandOffset = Math.max(-root.barHeight, Math.min(40, px)); }   // -barHeight = screen top
         // a script's own activity, e.g. the zsh hook for long commands:  island notify "✓ make" "2m 13s" ""
         function notify(title: string, sub: string, icon: string): void {

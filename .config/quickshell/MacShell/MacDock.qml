@@ -1416,11 +1416,11 @@ Scope {
                         title: I18n.tr("Height")
                         subtitle: isl.b && isl.b.islandHeight > 0 ? isl.b.islandHeight + " px" : I18n.tr("Automatic")
                         SSlider {
-                            t: pal; from: 0; to: 48; stepSize: 1
-                            value: isl.b ? isl.b.islandHeight : 0
+                            // the first step (9) means Automatic, then 10 … 48 px
+                            t: pal; from: 9; to: 48; stepSize: 1
+                            value: isl.b && isl.b.islandHeight > 0 ? isl.b.islandHeight : 9
                             leftLabel: I18n.tr("Auto"); rightLabel: I18n.tr("Tall")
-                            // below 20 px nothing fits: the low end of the slider means Automatic
-                            onMoved: v => { if (isl.b) isl.b.islandHeight = v < 20 ? 0 : Math.round(v); }
+                            onMoved: v => { if (isl.b) isl.b.islandHeight = v < 10 ? 0 : Math.round(v); }
                         }
                     }
                     SRow {
