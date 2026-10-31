@@ -219,7 +219,8 @@ I run Oh-My-Zsh with these plugins:
 | `vimage`        | `kitty +kitten icat` - Display images directly in Kitty terminal                                      |
 | `cpu`           | `auto-cpufreq --stats` - Show CPU frequency and stats                                                 |
 | `zed`           | `zeditor` - Launch Zed editor                                                                         |
-
+| `k`             | `kubectl` - Manager kubernetes cluster                                                                |
+  
 ### Docker Aliases
 
 | Alias           | Command                                  | Description                    |
