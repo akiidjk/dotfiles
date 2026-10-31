@@ -101,6 +101,16 @@ Scope {
     readonly property var islandKinds: ["workspace", "battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"]
     property var islandAlerts: ["battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"]
     readonly property bool islandNotch: islandEnabled && islandStyle === "notch"
+    property bool islandClaudeLimits: true   // Claude plan limits under the date when the island peeks
+    // Claude Code's plan limits, written by its status line (hypr-macshell/scripts/claude-statusline.sh):
+    // { at, rate_limits: { five_hour: { used_percentage, resets_at }, seven_day: {...} } }, or null
+    property var claudeLimits: null
+    FileView {
+        path: (Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache") + "/macshell/claude-limits.json"
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: { try { root.claudeLimits = JSON.parse(text()).rate_limits || null; } catch (e) { } }
+    }
     // a passing activity for the island (every screen): { kind, icon (Nerd Font glyph), image, title, sub, value 0..1, color, ms }
     signal islandAlert(var a)
     // shows `a` in the island and returns true; false while the island is off, so the caller falls back to its own UI.
@@ -355,7 +365,7 @@ Scope {
     property string kbMain: ""                // name of the main keyboard (Hyprland)
     property string recordFile: ""
 
-    readonly property var settingKeys: ["barEnabled", "islandEnabled", "islandStyle", "islandOffset", "islandHeight", "islandWidth", "islandScale", "islandRadius", "islandSpring", "islandBounce", "islandIdle", "islandHoverExpand", "islandAutoShowMs", "islandAlertMs", "islandLyrics", "islandLyricLead", "islandOutline", "islandShadow", "islandAlerts",
+    readonly property var settingKeys: ["barEnabled", "islandEnabled", "islandStyle", "islandOffset", "islandHeight", "islandWidth", "islandScale", "islandRadius", "islandSpring", "islandBounce", "islandIdle", "islandHoverExpand", "islandAutoShowMs", "islandAlertMs", "islandLyrics", "islandLyricLead", "islandOutline", "islandShadow", "islandAlerts", "islandClaudeLimits",
         "accentFromWallpaper", "darkMode", "appearanceMode", "accent", "fontFamily", "barHeight", "glassOpacity",
         "barStyle", "barGlass", "glassRim", "glassGrain", "glassLiquid", "glassBlur", "barBgOpacity", "glassRealtime", "liveWallGlass", "glassDebug", "wallpaperPath", "use24h", "showDate",
         "showSeconds", "showBatteryPercent", "showTray",
@@ -3351,7 +3361,7 @@ Scope {
         barEnabled = true; islandEnabled = true; accentFromWallpaper = true;
         islandStyle = "notch"; islandOffset = 6; islandHeight = 0; islandWidth = 200; islandScale = 1.0; islandRadius = -1;
         islandSpring = 4.5; islandBounce = 0.34; islandIdle = "show"; islandHoverExpand = true; islandAutoShowMs = 3000;
-        islandAlertMs = 1.0; islandLyrics = true; islandLyricLead = 0.4; islandOutline = false; islandShadow = true;
+        islandAlertMs = 1.0; islandLyrics = true; islandLyricLead = 0.4; islandOutline = false; islandShadow = true; islandClaudeLimits = true;
         islandAlerts = ["battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"];
         darkMode = true; appearanceMode = "dark"; accent = "#0a84ff"; fontFamily = "Open Runde"; glassOpacity = 0.42; glassBlur = 5; barBgOpacity = 0.10; glassRealtime = false; liveWallGlass = false;
         barStyle = "liquid"; use24h = true; showDate = true; showSeconds = false; showBatteryPercent = true;

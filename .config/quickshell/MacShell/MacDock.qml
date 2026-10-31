@@ -1551,6 +1551,17 @@ Scope {
                     }
                 }
 
+                SLabel { t: pal; header: true; text: I18n.tr("Claude Code") }
+                SCard {
+                    t: pal
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Plan limits")
+                        subtitle: I18n.tr("5-hour and weekly usage under the date when the island peeks (from Claude Code's status line)")
+                        SSwitch { t: pal; checked: isl.b ? isl.b.islandClaudeLimits : true; onToggled: v => { if (isl.b) isl.b.islandClaudeLimits = v; } }
+                    }
+                }
+
                 SLabel { t: pal; header: true; text: I18n.tr("Activities") }
                 SCard {
                     t: pal
@@ -1598,7 +1609,7 @@ Scope {
                             b.islandStyle = "notch"; b.islandOffset = 6; b.islandHeight = 0; b.islandWidth = 200; b.islandScale = 1.0;
                             b.islandRadius = -1; b.islandSpring = 4.5; b.islandBounce = 0.34; b.islandIdle = "show"; b.islandHoverExpand = true;
                             b.islandAutoShowMs = 3000; b.islandAlertMs = 1.0; b.islandLyrics = true; b.islandLyricLead = 0.4;
-                            b.islandOutline = false; b.islandShadow = true;
+                            b.islandOutline = false; b.islandShadow = true; b.islandClaudeLimits = true;
                             b.islandAlerts = ["battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"];
                         }
                     }

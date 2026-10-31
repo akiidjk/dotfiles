@@ -39,9 +39,9 @@ PanelWindow {
     // fixed (the player is the tallest face, the compact lyric line the widest + bump + ears) — surface never resizes.
     // Only as wide as the notch can get: every frame redraws the whole surface, a full-width one cost 4x more.
     anchors.top: true
-    // (+ room for the pill's shadow and the widest scale; the island style starts lower)
+    // (+ room for the pill's shadow, the widest scale and Claude's limits; the island style starts lower)
     implicitWidth: Math.ceil(460 * Math.max(1, sc)) + 60
-    implicitHeight: 240 + topY + Math.max(0, collapsedH - 33)
+    implicitHeight: 300 + topY + Math.max(0, collapsedH - 33)
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
     WlrLayershell.namespace: "macisland"
@@ -212,11 +212,11 @@ PanelWindow {
 
     readonly property int cardW: (mode === "idle" ? (bar ? bar.islandWidth : 200)
                                  : Math.round(sc * (mode === "player" ? 420 : mode === "alert" ? (actTall ? 380 : 260)
-                                                  : mode === "peek" ? 260 : mode === "live" ? 280
+                                                  : mode === "peek" ? (limitRows.length ? 340 : 260) : mode === "live" ? 280
                                                   : lyricLine !== "" ? 440 : 330))) + bump
-    readonly property int cardH: mode === "player" ? Math.ceil(playerView.implicitHeight + 30)
+    readonly property int cardH: mode === "player" ? Math.ceil(playerView.implicitHeight + 30 + limitsH)
                                : mode === "alert" ? (actTall ? 60 : collapsedH + 10)
-                               : mode === "peek" ? collapsedH + 14 : collapsedH
+                               : mode === "peek" ? collapsedH + 14 + (limitsH ? limitsH + 2 : 0) : collapsedH
     // the collapsed pill is always a capsule; Corner radius (Settings) sets the open faces
     readonly property int cardR: pill && collapsed ? Math.floor(cardH / 2)
                                : collapsed ? Math.round(collapsedH / 2.4)
@@ -224,6 +224,22 @@ PanelWindow {
                                                                 : mode === "player" ? 28 : 20)
 
     SystemClock { id: dateClock; precision: SystemClock.Minutes }
+
+    // Claude plan limits for the peek face: a window whose reset has passed is back to 0
+    readonly property var limitRows: {
+        const L = bar && bar.islandClaudeLimits ? bar.claudeLimits : null;
+        if (!L) return [];
+        const now = dateClock.date.getTime() / 1000, out = [];
+        for (const [k, name] of [["five_hour", "5 hours"], ["seven_day", "Week"]]) {
+            const w = L[k];
+            if (!w || w.used_percentage === undefined) continue;
+            const over = (w.resets_at ?? 0) <= now;
+            const at = new Date((w.resets_at ?? 0) * 1000);
+            out.push({ name: name, pct: over ? 0 : Math.round(w.used_percentage),
+                       reset: over ? "" : Qt.formatDateTime(at, k === "five_hour" ? (bar.use24h ? "HH:mm" : "h:mm AP") : (bar.use24h ? "ddd HH:mm" : "ddd h AP")) });
+        }
+        return out;
+    }
 
     // input mask follows the card only
     Item {
@@ -288,6 +304,48 @@ PanelWindow {
         Repeater {
             model: island.dots
             Rectangle { required property var modelData; anchors.verticalCenter: parent.verticalCenter; width: 6; height: 6; radius: 3; color: modelData }
+        }
+    }
+
+    // Claude's plan limits: one bar per window (peek and player faces)
+    readonly property int limitsH: limitRows.length ? 8 + 22 * limitRows.length : 0
+    component LimitBars: Column {
+        spacing: 8
+        Repeater {
+            model: island.limitRows
+            RowLayout {
+                required property var modelData
+                width: parent.width
+                height: 14
+                spacing: 8
+                Text {
+                    Layout.preferredWidth: 46
+                    text: modelData.name
+                    color: IslandStyle.fg2
+                    font.family: IslandStyle.fam
+                    font.pixelSize: 11
+                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 5
+                    radius: 2.5
+                    color: IslandStyle.track
+                    Rectangle {
+                        height: parent.height
+                        radius: parent.radius
+                        width: parent.width * Math.min(1, modelData.pct / 100)
+                        // Claude orange, red when nearly out
+                        color: modelData.pct >= 90 ? "#FF453A" : "#D97757"
+                    }
+                }
+                Text {
+                    text: modelData.pct + "%" + (modelData.reset !== "" ? "  ·  " + modelData.reset : "")
+                    color: IslandStyle.fg2
+                    font.family: IslandStyle.fam
+                    font.pixelSize: 11
+                    font.features: { "tnum": 1 }
+                }
+            }
         }
     }
 
@@ -544,17 +602,23 @@ PanelWindow {
                 }
             }
 
-            // ═══════════ peek (hover, nothing loaded): the date ═══════════
+            // ═══════════ peek (hover, nothing loaded): the date, and Claude's plan limits ═══════════
             Face {
                 shown: island.mode === "peek"
                 anchors.fill: parent
-                Text {
+                Column {
                     anchors.centerIn: parent
-                    text: Qt.formatDateTime(dateClock.date, "dddd d MMMM")
-                    color: IslandStyle.fg
-                    font.family: IslandStyle.font(Font.DemiBold)
-                    font.weight: Font.DemiBold
-                    font.pixelSize: 13
+                    width: parent.width - 36
+                    spacing: 8
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: Qt.formatDateTime(dateClock.date, "dddd d MMMM")
+                        color: IslandStyle.fg
+                        font.family: IslandStyle.font(Font.DemiBold)
+                        font.weight: Font.DemiBold
+                        font.pixelSize: 13
+                    }
+                    LimitBars { width: parent.width }
                 }
             }
 
@@ -567,8 +631,9 @@ PanelWindow {
                 anchors.leftMargin: 20
                 anchors.rightMargin: 20
                 anchors.topMargin: 14
-                height: playerView.implicitHeight
-                IslandMedia { id: playerView; anchors.fill: parent }
+                height: playerView.implicitHeight + island.limitsH
+                IslandMedia { id: playerView; width: parent.width; height: implicitHeight }
+                LimitBars { y: playerView.height + 8; width: parent.width }
             }
         }
     }
