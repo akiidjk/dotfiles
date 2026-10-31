@@ -2,7 +2,7 @@ https://github.com/user-attachments/assets/d4ee26ca-e82c-40df-b5a7-f257a6471f7e
 
 
 # Hyprland Dotfiles for Arch based distro
-This repository contains my personal configuration files for Hyprland on Arch.
+My Hyprland setup for Arch, with the install scripts and my fork of the MacShell desktop shell.
 
 <img width="1920" height="1080" alt="swappy-20260913_155508" src="https://github.com/user-attachments/assets/b7f824d9-2e52-4872-89aa-9a981e6f0936" />
 
@@ -12,14 +12,14 @@ This repository contains my personal configuration files for Hyprland on Arch.
 ## Quick Install
 
 > [!Warning]
-> This script do a full installation of the dotfiles and required packages included Hyprland and SDDM.
-> It will overwrite existing configuration files in your home directory.
+> `install.sh` installs everything, Hyprland and SDDM included, and then copies these configs over the ones in your home.
+> Whatever it replaces gets backed up to `~/dotfiles-backup-<date>` first.
 
 ```bash
 # Clone the repository
 git clone https://github.com/akiidjk/dotfiles.git
 
-# Copy dotfiles to home directory
+# Run the installer
 cd dotfiles
 
 chmod +x install.sh
@@ -32,12 +32,10 @@ chmod +x install.sh
 
 > [!Warning]
 >
-> Also note that some packages may have additional dependencies that need to be installed separately.
-> Please refer to the official documentation of each package for more details.
-> This setup is tailored for Arch Linux; adjustments may be needed for other distributions.
-> Some packages are installed via AUR, so ensure you have an AUR helper like `yay` installed.
-> This setup assumes you have basic knowledge of Linux command line and package management.
-> Make sure to back up your existing configuration files before applying these dotfiles.
+> Some packages pull in dependencies you'll have to install yourself, so check their docs when something is missing.
+> It's all written for Arch. Other distros will need changes.
+> A few packages come from the AUR, which means you need an AUR helper like `yay`.
+> Back up your own configs before copying these over.
 
 <img width="1920" height="1080" alt="swappy-20260913_171810" src="https://github.com/user-attachments/assets/c943c8ca-57b1-4801-b4ea-5672378ecaca" />
 
@@ -126,7 +124,7 @@ sudo pacman -S spotify-launcher spicetify-cli
 # Installing marketplace
 curl -fsSL https://raw.githubusercontent.com/khanhas/spicetify-cli/main/install.sh | bash
 
-# Permission fixes (I am not sure is this required)
+# Permission fixes (not sure this is still needed)
 sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/
 sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/ -R
 ```
@@ -154,10 +152,10 @@ python3 ~/.config/hypr-macshell/scripts/macshell-make-sounds.py
 # first wallpaper + matugen theme (afterwards just use Super+W)
 ~/.config/hypr/scripts/wallpapers/apply.sh ~/.config/wallpapers/decline.png
 ```
-Then log in to Hyprland: `hypr/macshell.lua` starts `qs -c MacShell`.
+Then log in to Hyprland. `hypr/macshell.lua` starts the shell (`qs -c MacShell`).
 
 ### Claude Code hooks
-Optional, for Claude Code in the Dynamic Island. The installer does it when Claude Code is installed; by hand: `bash ~/.config/hypr-macshell/scripts/claude-setup.sh` (safe to run again, backs up to `settings.json.bak`). It adds this to `~/.claude/settings.json` (needs `jq`):
+Only if you use Claude Code. The installer sets it up when it finds Claude Code, and you can run it yourself with `bash ~/.config/hypr-macshell/scripts/claude-setup.sh`. Running it twice adds nothing twice, and the previous file stays around as `settings.json.bak`. It needs `jq` and puts this in `~/.claude/settings.json`:
 ```json
 {
   "statusLine": { "type": "command", "command": "bash ~/.config/hypr-macshell/scripts/claude-statusline.sh" },
@@ -168,7 +166,7 @@ Optional, for Claude Code in the Dynamic Island. The installer does it when Clau
   }
 }
 ```
-`claude-statusline.sh` saves the plan limits to `~/.cache/macshell/claude-limits.json` and then prints the [ponytail](https://github.com/DietrichGebert/ponytail) status line if that plugin is installed. `CLAUDE_ISLAND_MIN` (default 20) is the shortest turn, in seconds, that gets reported.
+`claude-statusline.sh` writes the plan limits to `~/.cache/macshell/claude-limits.json`, then hands off to the [ponytail](https://github.com/DietrichGebert/ponytail) status line if you have that plugin. Turns shorter than `CLAUDE_ISLAND_MIN` seconds (20 by default) aren't reported.
 
 ### Hyprplugin download
 ```bash
@@ -182,11 +180,11 @@ hyprpm enable dynamic-cursors
 
 ## Shell Configuration (`.zshrc`)
 
-This section documents the complete Zsh configuration including Oh-My-Zsh plugins, custom aliases, and productivity enhancements defined in [`.zshrc`](./dotfiles/.zshrc).
+The plugins, aliases and tweaks in [`.zshrc`](./.zshrc).
 
 ### Oh-My-Zsh Plugins
 
-The configuration uses Oh-My-Zsh with the following plugins enabled:
+I run Oh-My-Zsh with these plugins:
 
 - **aliases** - Manage and list aliases
 - **cp** - Safe copy with progress bar
@@ -206,8 +204,8 @@ The configuration uses Oh-My-Zsh with the following plugins enabled:
 
 ### Enhanced Shell Tools
 
-- **Starship** - Modern, fast, and customizable prompt
-- **Zoxide** - Smarter `cd` command that learns your habits
+- **Starship** - The prompt
+- **Zoxide** - A `cd` that remembers the directories you use
 - **FZF** - Fuzzy finder for history and file search (CTRL+R for history)
   - Configured with `bat` preview in a 60% right split
   - Shows syntax-highlighted previews of files
@@ -217,15 +215,15 @@ The configuration uses Oh-My-Zsh with the following plugins enabled:
 | Alias           | Command / Description                                                                                   |
 |-----------------|-------------------------------------------------------------------------------------------------------|
 | `cd`            | `z` - Zoxide replacement for cd (learns frequently used directories)                                   |
-| `ls`            | `eza --icons` — List files with icons (modern `ls` replacement)                                        |
-| `ll`            | `eza -al --icons` — List all files (including hidden) in long format with icons                       |
-| `ltr`           | `eza -a --tree --level=1 --icons` — Tree view of files/folders, one level deep, with icons            |
-| `c`             | `clear` — Clear the terminal                                                                          |
-| `cat`           | `bat` — Show file contents with syntax highlighting and paging                                         |
-| `activate`      | `source ~/.venv/bin/activate` — Activate Python virtual environment                                   |
-| `vimage`        | `kitty +kitten icat` — Display images directly in Kitty terminal                                      |
-| `cpu`           | `auto-cpufreq --stats` — Show CPU frequency and stats                                                 |
-| `zed`           | `zeditor` — Launch Zed editor                                                                         |
+| `ls`            | `eza --icons` - List files with icons (modern `ls` replacement)                                        |
+| `ll`            | `eza -al --icons` - List all files (including hidden) in long format with icons                       |
+| `ltr`           | `eza -a --tree --level=1 --icons` - Tree view of files/folders, one level deep, with icons            |
+| `c`             | `clear` - Clear the terminal                                                                          |
+| `cat`           | `bat` - Show file contents with syntax highlighting and paging                                         |
+| `activate`      | `source ~/.venv/bin/activate` - Activate Python virtual environment                                   |
+| `vimage`        | `kitty +kitten icat` - Display images directly in Kitty terminal                                      |
+| `cpu`           | `auto-cpufreq --stats` - Show CPU frequency and stats                                                 |
+| `zed`           | `zeditor` - Launch Zed editor                                                                         |
 
 ### Docker Aliases
 
@@ -251,7 +249,7 @@ The configuration uses Oh-My-Zsh with the following plugins enabled:
 
 ### Suffix Aliases
 
-Suffix aliases automatically open files with specific extensions using designated programs:
+Type a file name on its own and zsh opens it with the program for its extension:
 
 | Extension | Opens With | Description                              |
 |-----------|------------|------------------------------------------|
@@ -265,11 +263,11 @@ Suffix aliases automatically open files with specific extensions using designate
 | `.js`     | `$EDITOR`  | JavaScript files in default editor       |
 | `.ts`     | `$EDITOR`  | TypeScript files in default editor       |
 
-**Usage**: Simply type the filename: `example.json` instead of `jless example.json`
+So `example.json` alone runs `jless example.json`.
 
 ### Global Aliases
 
-Global aliases can be used anywhere in a command, not just at the beginning:
+Global aliases expand anywhere in a command, the end included:
 
 | Alias | Expansion                  | Description                                   | Example                          |
 |-------|----------------------------|-----------------------------------------------|----------------------------------|
@@ -293,17 +291,17 @@ Global aliases can be used anywhere in a command, not just at the beginning:
 
 ### Startup
 
-- **fastfetch** runs automatically on new shell sessions to display system information
+- **fastfetch** prints the system info in every new shell
 
-See [`.zshrc`](./dotfiles/.zshrc) for the complete configuration.
+The rest is in [`.zshrc`](./.zshrc).
 
 ## Some utility scripts I use in my configuration
 
-This repository includes several utility scripts and shell aliases to make daily tasks easier and more efficient. Most scripts are located in `~/scripts/` or `~/.config/hypr/scripts/`.
+A few scripts I use every day. Most of them sit in `~/scripts/` or `~/.config/hypr/scripts/`.
 
 ### Aliases
 
-Here are some useful aliases defined in my shell configuration:
+The aliases that run them, plus a couple of extras:
 
 | Alias         | Command                                                                                                                         | Description                                               |
 |---------------|---------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|
@@ -320,32 +318,33 @@ Here are some useful aliases defined in my shell configuration:
 
 ## Desktop shell: MacShell (akiidjk edition)
 
-The shell is a fork of [MacShell](https://github.com/0-ss/MacShell) (Quickshell, macOS-style, Liquid Glass) merged with my own pieces:
+The shell is my fork of [MacShell](https://github.com/0-ss/MacShell), a macOS-looking Quickshell shell with Liquid Glass. The Dock, Control Center, notifications, widgets, window switcher, screenshots and the MacLock lock screen (idle, suspend, lid close, `Alt+L`) come from upstream. Everything below is mine.
 
-- **Dynamic Island** (Settings → Dynamic Island), in place of the workspaces (they only come back in the bar when the island is off), in two styles:
-  - **Notch**: black, hanging from the screen edge in the middle of the menu bar.
-  - **Dynamic Island**: the phone's floating black pill, anywhere from flush with the screen top to 40 px below the bar.
-  - Everything is tunable: position, height (10–48 px or auto), idle width, open size, corner radius, opening speed and bounce, hide when idle, open on hover, how long a new track stays up, outline, synced lyrics and their timing, activity duration, and which activities show (workspaces, battery, Bluetooth, Wi‑Fi, input source, mic/camera, downloads, commands, updates, system alerts).
-  - It shows the player (with synced lyrics), timers / recordings, and those activities. Scripts can post their own: `qs -c MacShell ipc call island notify "title" "subtitle" ""` (the zsh hook does it for commands that ran 15 s or more).
-  - IPC: `island setStyle notch|island`, `island setOffset <px>`, `island setHeight <px>` (0 = auto).
-- **Claude Code in the island**: a turn that ran 20 s or more reports back ("✓ Claude · project 1m 35s"), a permission prompt shows "Claude needs you", and on hover the island shows the plan limits (5 hours and week, with their reset time). Setup below, in [Claude Code hooks](#claude-code-hooks).
-- **Menu bar extras** (Settings → Menu Bar, or `qs -c MacShell ipc call bar setWidget <stats|updates|ports> true`):
-  - **Stats**: CPU, RAM and temperature.
-  - **Updates**: pacman + AUR updates, checked hourly, shown only when there are some; the popover opens `yay` in a terminal.
-  - **Ports**: listening TCP ports with the process behind each and a button to stop it.
-  - **Muted mic**: a red icon while the microphone is muted (`SUPER + SHIFT + M`), part of the Privacy widget.
-- **System alerts** (Settings → Notifications → System Alerts): CPU heat or memory held high for a minute, a disk almost full, at most once every 15 minutes each, in the island (or as a banner).
-- **Scratchpad** (`SUPER + SHIFT + N`, Help → Scratchpad): one autosaved note with Markdown preview, kept in `~/.local/share/macshell/scratchpad.md`.
-- **Text from the screen** (`SUPER + SHIFT + T`): pick an area, a QR code is copied as-is, anything else goes through OCR (tesseract).
-- **Clean URL**: tracking parameters (`utm_*`, `fbclid`, `gclid`, YouTube / Spotify `si`…) are stripped from copied links (`hypr/scripts/clean-url.py`, started by `autostart.lua`).
-- **Dock, Control Center, notifications, widgets, window switcher, screenshots** from MacShell.
-- **MacLock** lock screen (idle, suspend, lid close, `Alt+L`).
-- **Launcher**: vicinae only (MacShell's Spotlight search, with its clipboard / emoji panels, is removed).
-- **Keybind viewer** and **wallpaper picker** in MacShell's Liquid Glass style.
-- **Wallpapers + colors**: one apply path, `hypr/scripts/wallpapers/apply.sh` → matugen → awww → kitty / Hyprland / btop / spicetify colors + the MacShell accent (Settings → Appearance → Accent, white-dot swatch). No shell restart.
-- English only.
+### Dynamic Island
 
-Do not run MacShell's own `install.sh` / `macshell-update`: they would overwrite the fork.
+It takes the middle of the menu bar, where the workspaces used to be. Turn it off and they come back. Settings → Dynamic Island has two styles. **Notch** hangs black from the top edge of the screen, like a MacBook. **Dynamic Island** is the floating pill from the iPhone, and you can park it anywhere from flush with the screen top to 40 px under the bar.
+
+The same page tunes the rest: position, height (10 to 48 px, or auto), idle width, size when open, corner radius, how fast it opens and how hard it bounces, hiding it when there's nothing to show, opening on hover, how long a new track stays up, an outline, synced lyrics and how early each line appears, how long activities last, plus one switch per kind of activity.
+
+Inside it you get the player with synced lyrics, running timers and screen recordings, and short activities like workspace switches, battery, Bluetooth, Wi-Fi, input source, mic and camera, downloads, updates and system alerts. Scripts can post their own with `qs -c MacShell ipc call island notify "title" "subtitle" ""`. The zsh hook does exactly that for any command that ran 15 s or more. Style, position and height have IPC calls too, `island setStyle notch|island`, `island setOffset <px>` and `island setHeight <px>` (0 is auto).
+
+### Claude Code in the island
+
+Once a Claude Code turn has run 20 s or more, the island tells you it's done ("✓ Claude · project 1m 35s"). Permission prompts show up as "Claude needs you". Hover and you get the plan limits for the 5-hour window and the week, each with its reset time. It needs three hooks and a status line, see [Claude Code hooks](#claude-code-hooks).
+
+### Menu bar extras
+
+Three widgets, all off until you switch them on in Settings → Menu Bar (or with `qs -c MacShell ipc call bar setWidget <stats|updates|ports> true`). **Stats** is CPU, RAM and temperature. **Updates** checks pacman and the AUR every hour, only appears when there's something to install, and opens `yay` in a terminal from its popover. **Ports** lists what's listening on TCP, with the process behind each port and a button to kill it. A muted mic (`SUPER + SHIFT + M`) gets a red icon next to the privacy dots.
+
+System alerts live in Settings → Notifications. If the CPU runs hot or memory stays nearly full for a whole minute, or a disk drops under the free-space threshold, the island says so, once every 15 minutes at most.
+
+### Smaller things
+
+`SUPER + SHIFT + N` opens the Scratchpad, a single note saved as you type to `~/.local/share/macshell/scratchpad.md`, with a Markdown preview. `SUPER + SHIFT + T` lets you drag over part of the screen and copies the text in it through tesseract, or the content of a QR code when there is one. Clean URL strips `utm_*`, `fbclid`, `gclid` and the YouTube / Spotify `si` from every link you copy (`hypr/scripts/clean-url.py`, started from `autostart.lua`).
+
+Vicinae is the only launcher, so MacShell's Spotlight is gone along with its clipboard and emoji panels, and the shell is English only. The keybind viewer and the wallpaper picker are mine, drawn in the same Liquid Glass style. Wallpapers and colors go through one script, `hypr/scripts/wallpapers/apply.sh`. It runs matugen and awww and recolors kitty, Hyprland, btop, spicetify and the MacShell accent (Settings → Appearance → Accent, the white-dot swatch) without restarting anything.
+
+Don't run MacShell's own `install.sh` or `macshell-update`. They'd overwrite the fork.
 
 ## Configuration Structure
 
@@ -368,7 +367,7 @@ Do not run MacShell's own `install.sh` / `macshell-update`: they would overwrite
   - `hyprshade.toml` - Screen shaders (hyprshade timer)
   - `scripts/` - Utility scripts (`wallpapers/apply.sh`, night mode, color picker, mirror, screensharing, Spotify notifications, `screen-text.sh` OCR / QR, `clean-url.py`)
 - **hypr-macshell/scripts/** - MacShell helpers (video wallpapers, UI sound generator, SDDM theme, `claude-island.sh` + `claude-statusline.sh` for Claude Code)
-- **quickshell/MacShell/** - The shell (fork; the island / keybinds / wallpaper picker / scratchpad are the `Island*`, `KeybindsPanel`, `WallPickerPanel`, `ScratchpadPanel` files)
+- **quickshell/MacShell/** - The shell, my fork. The island, keybind viewer, wallpaper picker and scratchpad are the `Island*`, `KeybindsPanel`, `WallPickerPanel` and `ScratchpadPanel` files
 - **quickshell/MacLock/** - The lock screen
 - **kitty/** - Terminal emulator configuration
 - **nvim/** - Neovim configuration with Lazy.vim
@@ -377,7 +376,7 @@ Do not run MacShell's own `install.sh` / `macshell-update`: they would overwrite
 - **vicinae/** - Launcher config
 - **yazi/** - Terminal file manager config
 - **zed/** - Zed editor configuration
-- **wallpapers/** - Collection of wallpaper and images used in the configuration
+- **wallpapers/** - The wallpapers and images used here
 
 ### Start Hyprland
 ```bash
@@ -391,7 +390,7 @@ sudo systemctl start sddm
 
 ## Keybindings
 
-Simple run `SUPER + K` (or Help → Hyprland Keybinds in the menu bar). The shell ones:
+`SUPER + K` (or Help → Hyprland Keybinds in the menu bar) lists every bind. These are the shell ones:
 
 | Keys | Action |
 |------|--------|
@@ -422,7 +421,7 @@ Simple run `SUPER + K` (or Help → Hyprland Keybinds in the menu bar). The shel
 
 ## Credits
 
-Based on various dotfile configurations and customized for personal use.
+Started from other people's dotfiles and reshaped around how I work. The two I owe the most:
 
 - [JaKooLit - Arch Hyprland Installer (Base of installer)](https://github.com/JaKooLit/Arch-Hyprland)
 - [0-ss/MacShell](https://github.com/0-ss/MacShell) - the shell and lock screen this setup forks (Rickky and vSuol)
