@@ -1400,12 +1400,14 @@ Scope {
                     SRow {
                         t: pal
                         visible: isl.pill
-                        title: I18n.tr("Distance from the menu bar")
-                        subtitle: (isl.b ? isl.b.islandOffset : 6) + " px"
+                        title: I18n.tr("Position")
+                        subtitle: !isl.b ? "" : isl.b.islandOffset <= -isl.b.barHeight ? I18n.tr("Flush with the top of the screen")
+                                : isl.b.islandOffset < 0 ? I18n.tr("%1 px from the top of the screen").arg(isl.b.barHeight + isl.b.islandOffset)
+                                : I18n.tr("%1 px below the menu bar").arg(isl.b.islandOffset)
                         SSlider {
-                            t: pal; from: 0; to: 40; stepSize: 1
+                            t: pal; from: isl.b ? -isl.b.barHeight : -28; to: 40; stepSize: 1
                             value: isl.b ? isl.b.islandOffset : 6
-                            leftLabel: I18n.tr("Touching"); rightLabel: I18n.tr("Far")
+                            leftLabel: I18n.tr("Screen top"); rightLabel: I18n.tr("Below the bar")
                             onMoved: v => { if (isl.b) isl.b.islandOffset = Math.round(v); }
                         }
                     }

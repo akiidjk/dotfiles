@@ -27,7 +27,8 @@ PanelWindow {
 
     readonly property bool pill: bar !== null && bar.islandStyle === "island"
     // the pill floats below the bar; the notch starts at the screen edge
-    readonly property int topY: pill ? bar.barHeight + bar.islandOffset : 0
+    // (a negative offset lifts it over the bar, up to flush with the screen top)
+    readonly property int topY: pill ? Math.max(0, bar.barHeight + bar.islandOffset) : 0
     // the notch hangs a little below the bar: room under the text
     readonly property int collapsedH: bar && bar.islandHeight > 0 ? bar.islandHeight : pill ? 32 : (bar ? bar.barHeight : 28) + 5
     readonly property real sc: bar ? bar.islandScale : 1

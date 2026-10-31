@@ -84,7 +84,7 @@ Scope {
     // island = the phone's floating pill, just below the bar (either way the
     // workspaces leave the bar while the island is on)
     property string islandStyle: "notch"
-    property int islandOffset: 6             // island style: gap between the bar and the pill
+    property int islandOffset: 6             // island style: gap between the bar and the pill; -barHeight = flush with the screen top
     property int islandHeight: 0             // collapsed height, 0 = auto (bar + 5 for the notch, 32 for the pill)
     property int islandWidth: 200            // idle width
     property real islandScale: 1.0           // width of the open faces
@@ -2764,6 +2764,7 @@ Scope {
         function hub(): void { root.topBarHidden = false; root.ccRequest(true); }
         function setEnabled(on: bool): void { root.islandEnabled = on; }
         function setStyle(style: string): void { if (style === "notch" || style === "island") root.islandStyle = style; }
+        function setOffset(px: int): void { root.islandOffset = Math.max(-root.barHeight, Math.min(40, px)); }   // -barHeight = screen top
         // a script's own activity, e.g. the zsh hook for long commands:  island notify "✓ make" "2m 13s" ""
         function notify(title: string, sub: string, icon: string): void {
             if (!root.islandSay({ kind: "notify", icon: icon || "\u{f120}", title: title, sub: sub, ms: 4000 }))
