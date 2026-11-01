@@ -5,12 +5,13 @@
 # Determine the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Back up any existing files/dirs that this repo is about to overwrite in $HOME
+# Back up any existing files/dirs that this repo is about to overwrite in $HOME, into backup/ (gitignored)
 backup_dotfiles() {
-	local backup_dir="$HOME/dotfiles-backup-$(date +%Y%m%d-%H%M%S)"
+	local backup_dir="$PWD/backup/$(date +%Y%m%d-%H%M%S)"
 	local backed_up=false
 
 	for item in .[!.]* *; do
+		[ "$item" = backup ] && continue
 		[ -e "$HOME/$item" ] || continue
 		mkdir -p "$backup_dir"
 		cp -r "$HOME/$item" "$backup_dir/"
@@ -23,7 +24,10 @@ backup_dotfiles() {
 }
 
 backup_dotfiles
-cp -r . ~/
+# Everything goes to $HOME, except the backups: those stay in the repo
+for item in .[!.]* *; do
+	[ "$item" = backup ] || cp -r "$item" ~/
+done
 rm -r ~/install-scripts ~/install.sh *.log Install-Logs dotfiles
 
 # Set execute permissions for scripts

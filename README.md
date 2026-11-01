@@ -11,7 +11,7 @@ My Hyprland setup for Arch, with the install scripts and my fork of the MacShell
 
 > [!Warning]
 > `install.sh` installs everything, Hyprland and SDDM included, and then copies these configs over the ones in your home.
-> Whatever it replaces gets backed up to `~/dotfiles-backup-<date>` first.
+> Whatever it replaces gets backed up to `backup/<date>` in this repo (gitignored) first.
 
 ```bash
 # Clone the repository
