@@ -645,8 +645,10 @@ Scope {
     QtObject {
         id: ccPal
         readonly property bool dark: root.ccDark
-        // the Control Center follows the selected UI font like everything else (Open Runde by default)
-        readonly property string fam: root.fontFamily
+        // the Control Center follows the selected UI font like everything else (Open Runde by default), but ALL of its text
+        // (titles, subtitles, "Now Playing", the Wi-Fi / Bluetooth pages, Edit Controls) uses the Semibold face of Open Runde.
+        // Another selected font (Noto Sans, System) keeps its own family.
+        readonly property string fam: root.boldFontFamily      // same as the top-bar clock: always the Semibold face
         readonly property color accent: root.accent
         readonly property color fg: root.mixp(Qt.color("#1D1D1F"), Qt.color("#FFFFFF"))
         readonly property color fg2: root.mixp(Qt.rgba(0, 0, 0, 0.55), Qt.rgba(1, 1, 1, 0.62))
@@ -748,6 +750,20 @@ Scope {
                 ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
                 ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r); ctx.closePath();
             }
+            // Tahoe-style speaker (speaker.wave.fill): a soft, rounded cone + body, and bold separated sound arcs
+            function speaker(lv, slash) {
+                rpoly([1.4, 6.6, 4.5, 6.6, 8.3, 3.4, 8.3, 14.6, 4.5, 11.4, 1.4, 11.4], 1.1);
+                ctx.lineWidth = 1.7;
+                if (slash || lv <= 0) {
+                    ctx.beginPath(); ctx.moveTo(11.2, 6.9); ctx.lineTo(15.8, 11.1); ctx.moveTo(15.8, 6.9); ctx.lineTo(11.2, 11.1); ctx.stroke();
+                } else if (lv >= 1) {   // 0 < level < 1: bare speaker, no waves
+                    var n = Math.min(2, Math.ceil(lv / 1.5));
+                    for (var a = 1; a <= n; a++) {
+                        ctx.beginPath(); ctx.arc(7.6, 9, 2.5 + a * 3.1, -0.72, 0.72); ctx.stroke();
+                    }
+                }
+                ctx.lineWidth = 1.5;
+            }
             var k = kind, i2;
 
             if (k === "arch") {
@@ -813,14 +829,7 @@ Scope {
                 ctx.beginPath(); ctx.moveTo(6, 2.6); ctx.quadraticCurveTo(7.2, 4, 6, 5.4); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(9.4, 2.6); ctx.quadraticCurveTo(10.6, 4, 9.4, 5.4); ctx.stroke();
             } else if (k === "speaker") {
-                poly([2.2, 7, 5.4, 7, 9.2, 3.6, 9.2, 14.4, 5.4, 11, 2.2, 11], true);
-                if (level <= 0) {
-                    line(12, 6.8, 16, 11.2); line(16, 6.8, 12, 11.2);
-                } else if (level >= 1) {   // 0 < level < 1: bare speaker, no waves
-                    for (i2 = 1; i2 <= Math.min(2, Math.ceil(level / 1.5)); i2++) {
-                        ctx.beginPath(); ctx.arc(9.2, 9, 2.4 + i2 * 3.0, -0.62, 0.62); ctx.stroke();
-                    }
-                }
+                speaker(level, false);
             } else if (k === "record") {
                 circ(9, 9, 7); ctx.stroke();
                 circ(9, 9, 3.7); ctx.fill();
@@ -880,14 +889,20 @@ Scope {
                 circ(7.6, 7.6, 4.8); ctx.stroke();
                 line(11.2, 11.2, 15.4, 15.4);
             } else if (k === "cc") {
-                rrect(2, 3, 14, 5.2, 2.6); ctx.stroke();
-                circ(12.4, 5.6, 1.5); ctx.fill();
-                rrect(2, 9.8, 14, 5.2, 2.6); ctx.stroke();
-                circ(5.6, 12.4, 1.5); ctx.fill();
+                // two switches, as in the Tahoe menu bar: top = outline with a big knob on the left,
+                // bottom = solid pill with a darker, see-through knob on the right
+                ctx.lineWidth = 1.3;
+                rrect(1.55, 1.55, 14.9, 5.5, 2.75); ctx.stroke();
+                circ(4.5, 4.3, 1.95); ctx.fill();
+                rrect(0.9, 10.3, 16.2, 6.8, 3.4); ctx.fill();
+                ctx.globalCompositeOperation = "destination-out";
+                ctx.fillStyle = "rgba(0,0,0,0.78)";
+                circ(13.5, 13.7, 2.3); ctx.fill();
+                ctx.globalCompositeOperation = "source-over";
+                ctx.fillStyle = color;
+                ctx.lineWidth = 1.5;
             } else if (k === "volume") {
-                poly([2.2, 7, 5.4, 7, 9.2, 3.6, 9.2, 14.4, 5.4, 11, 2.2, 11], true);
-                ctx.beginPath(); ctx.arc(9.2, 9, 4.4, -0.62, 0.62); ctx.stroke();
-                ctx.beginPath(); ctx.arc(9.2, 9, 7.4, -0.62, 0.62); ctx.stroke();
+                speaker(3, false);
             } else if (k === "bolt") {
                 poly([10, 1.5, 4.5, 10, 8.4, 10, 7.6, 16.5, 13.5, 7.6, 9.6, 7.6], true);
             } else if (k === "appstore") {
@@ -6779,7 +6794,7 @@ Scope {
                             width: parent.width; leftPadding: 6
                             text: root.wifiSsid + " · " + root.wifiSignal + "%" + (root.wifiIp !== "" ? " · " + root.wifiIp : "")
                             color: pp.fg2
-                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 11
+                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 11
                             elide: Text.ElideRight
                         }
                         Text { visible: root.otherConnections.length>0; width:parent.width; leftPadding:6; text:I18n.tr("Ethernet & VPN"); color:pp.fg2; font.family: root.fontForWeight(Font.DemiBold, pp.fam); font.pixelSize:11; font.weight:Font.DemiBold }
@@ -6792,7 +6807,7 @@ Scope {
                                     width: parent.width; height: 30
                                     Rectangle { anchors.fill:parent; radius:8; color:connMa.containsMouse?pp.hover:"transparent" }
                                     Glyph { x:8; anchors.verticalCenter:parent.verticalCenter; width:14; height:14; kind:modelData.type==="vpn"?"lock":"wifi"; color:pp.fg }
-                                    Text { x:30; anchors.verticalCenter:parent.verticalCenter; width:parent.width-42; elide:Text.ElideRight; text:modelData.name+(modelData.active?I18n.tr(" · Connected"):""); color:pp.fg; font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize:12 }
+                                    Text { x:30; anchors.verticalCenter:parent.verticalCenter; width:parent.width-42; elide:Text.ElideRight; text:modelData.name+(modelData.active?I18n.tr(" · Connected"):""); color:pp.fg; font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize:12 }
                                     MouseArea { id:connMa; anchors.fill:parent; hoverEnabled:true; onClicked:root.toggleConnection(modelData) }
                                 }
                             }
@@ -6804,7 +6819,7 @@ Scope {
                             horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
                             text: I18n.tr("Wi-Fi is turned off")
                             color: pp.fg2
-                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 13
+                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 13
                         }
                         Text {
                             visible: root.wifiOn && root.wifiNets.length === 0
@@ -6812,7 +6827,7 @@ Scope {
                             horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
                             text: root.wifiScanning ? I18n.tr("Searching\u2026") : I18n.tr("No networks found")
                             color: pp.fg2
-                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 13
+                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 13
                         }
                         Text {
                             visible: root.wifiOn && root.wifiNets.length > 0
@@ -6868,7 +6883,7 @@ Scope {
                                                 text: nr.modelData.ssid
                                                 color: wma.containsMouse ? "white" : pp.fg
                                                 font.family: root.fontForWeight((nr.modelData.inUse ? Font.DemiBold : Font.Normal), pp.fam); font.pixelSize: 13
-                                                font.weight: nr.modelData.inUse ? Font.DemiBold : Font.Normal
+                                                font.weight: (pp === ccPal || nr.modelData.inUse) ? Font.DemiBold : Font.Normal
                                             }
                                             Text {
                                                 visible: nr.busy
@@ -6876,7 +6891,7 @@ Scope {
                                                 anchors.verticalCenter: parent.verticalCenter
                                                 text: I18n.tr("Connecting\u2026")
                                                 color: pp.fg2
-                                                font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 12
+                                                font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 12
                                             }
                                             Text {
                                                 visible: !nr.busy && nr.modelData.inUse && wma.containsMouse
@@ -6884,7 +6899,7 @@ Scope {
                                                 anchors.verticalCenter: parent.verticalCenter
                                                 text: I18n.tr("Disconnect")
                                                 color: "white"
-                                                font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 12
+                                                font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 12
                                             }
                                             Row {
                                                 visible: !nr.busy && !(nr.modelData.inUse && wma.containsMouse)
@@ -6929,7 +6944,7 @@ Scope {
                                                 visible: pw.text === ""
                                                 text: I18n.tr("Password")
                                                 color: pp.fg3
-                                                font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 13
+                                                font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 13
                                             }
                                             TextInput {
                                                 id: pw
@@ -6941,7 +6956,7 @@ Scope {
                                                 color: pp.fg
                                                 selectionColor: root.accent
                                                 selectedTextColor: "white"
-                                                font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 13
+                                                font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 13
                                                 onVisibleChanged: if (visible) { text = ""; forceActiveFocus(); }
                                                 Keys.onPressed: event => {
                                                     if (event.key === Qt.Key_Escape) { ui.wifiPrompt = ""; event.accepted = true; }
@@ -6975,7 +6990,7 @@ Scope {
                             wrapMode: Text.WordWrap
                             text: root.wifiError
                             color: "#FF6961"
-                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 12
+                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 12
                         }
 
                         Rectangle { width: parent.width; height: 1; color: pp.sep }
@@ -6990,7 +7005,7 @@ Scope {
                                 x: 10; anchors.verticalCenter: parent.verticalCenter
                                 text: I18n.tr("Wi-Fi Settings\u2026")
                                 color: wsa.containsMouse ? "white" : pp.fg
-                                font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 13
+                                font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 13
                             }
                             MouseArea {
                                 id: wsa
@@ -7126,7 +7141,7 @@ Scope {
                             horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
                             text: I18n.tr("Bluetooth is turned off")
                             color: pp.fg2
-                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 13
+                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 13
                         }
 
                         Text {
@@ -7135,7 +7150,7 @@ Scope {
                             horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
                             text: root.btScanning ? I18n.tr("Searching for devices\u2026") : I18n.tr("No devices found")
                             color: pp.fg2
-                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 13
+                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 13
                         }
 
                         Item {
@@ -7154,7 +7169,7 @@ Scope {
                                 Text {
                                     visible: root.btScanning
                                     text: I18n.tr("Scanning\u2026")
-                                    color: pp.fg2; font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 11
+                                    color: pp.fg2; font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 11
                                 }
                                 Text {
                                     visible: !root.btScanning
@@ -7217,7 +7232,7 @@ Scope {
                                             text: devRow.modelData.name || devRow.modelData.mac
                                             color: bma.containsMouse ? "white" : pp.fg
                                             font.family: root.fontForWeight((devRow.modelData.connected ? Font.DemiBold : Font.Normal), pp.fam); font.pixelSize: 13
-                                            font.weight: devRow.modelData.connected ? Font.DemiBold : Font.Normal
+                                            font.weight: (pp === ccPal || devRow.modelData.connected) ? Font.DemiBold : Font.Normal
                                         }
 
                                         Text {
@@ -7226,7 +7241,7 @@ Scope {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: devRow.modelData.connected ? I18n.tr("Disconnecting\u2026") : I18n.tr("Connecting\u2026")
                                             color: bma.containsMouse ? "white" : pp.fg2
-                                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 12
+                                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 12
                                         }
 
                                         Text {
@@ -7235,7 +7250,7 @@ Scope {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: I18n.tr("Disconnect")
                                             color: "white"
-                                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 12
+                                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 12
                                         }
 
                                         Text {
@@ -7244,7 +7259,7 @@ Scope {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: I18n.tr("Connected")
                                             color: pp.fg2
-                                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 12
+                                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 12
                                         }
 
                                         Text {
@@ -7253,7 +7268,7 @@ Scope {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: I18n.tr("Connect")
                                             color: "white"
-                                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 12
+                                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 12
                                         }
 
                                         Text {
@@ -7262,7 +7277,7 @@ Scope {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: I18n.tr("Paired")
                                             color: pp.fg2
-                                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 12
+                                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 12
                                         }
 
                                         MouseArea {
@@ -7284,7 +7299,7 @@ Scope {
                             wrapMode: Text.WordWrap
                             text: root.btError
                             color: "#FF6961"
-                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 12
+                            font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 12
                         }
 
                         Rectangle { width: parent.width; height: 1; color: pp.sep }
@@ -7299,7 +7314,7 @@ Scope {
                                 x: 10; anchors.verticalCenter: parent.verticalCenter
                                 text: I18n.tr("Bluetooth Settings\u2026")
                                 color: bsa.containsMouse ? "white" : pp.fg
-                                font.family: root.fontForWeight(Font.Normal, pp.fam); font.pixelSize: 13
+                                font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize: 13
                             }
                             MouseArea {
                                 id: bsa
@@ -7698,12 +7713,12 @@ Scope {
                                 x: 62; anchors.verticalCenter: parent.verticalCenter
                                 width: parent.width - 62 - 24
                                 spacing: 1
-                                Text { text: I18n.tr("Wi-Fi"); color: tl.fg; font.family: root.fontForWeight(Font.DemiBold, ccPal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
+                                Text { text: I18n.tr("Wi-Fi"); color: tl.fg; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 13; font.weight: Font.DemiBold }
                                 MorphText {
                                     animateWidth: false; duration: 420
                                     width: parent.width; elide: Text.ElideRight
                                     text: !root.wifiOn ? I18n.tr("Off") : (root.wifiSsid !== "" ? root.wifiSsid : I18n.tr("Not Connected"))
-                                    color: tl.fg2; font.family: root.fontForWeight(Font.Normal, ccPal.fam); font.pixelSize: 12
+                                    color: tl.fg2; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.weight: Font.DemiBold; font.pixelSize: 12
                                 }
                             }
                         }
@@ -7737,12 +7752,12 @@ Scope {
                                 x: 62; anchors.verticalCenter: parent.verticalCenter
                                 width: parent.width - 62 - 24
                                 spacing: 1
-                                Text { text: I18n.tr("Bluetooth"); color: btTile.fg; font.family: root.fontForWeight(Font.DemiBold, ccPal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
+                                Text { text: I18n.tr("Bluetooth"); color: btTile.fg; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 13; font.weight: Font.DemiBold }
                                 MorphText {
                                     animateWidth: false; duration: 420
                                     width: parent.width; elide: Text.ElideRight
                                     text: !root.btOn ? I18n.tr("Off") : (root.btConnected > 0 ? (root.btConnectedName || (root.btConnected + I18n.tr(" Connected"))) : I18n.tr("Not Connected"))
-                                    color: btTile.fg2; font.family: root.fontForWeight(Font.Normal, ccPal.fam); font.pixelSize: 12
+                                    color: btTile.fg2; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.weight: Font.DemiBold; font.pixelSize: 12
                                 }
                             }
                         }
@@ -7780,8 +7795,8 @@ Scope {
                                 x: 62; anchors.verticalCenter: parent.verticalCenter
                                 width: parent.width - 62 - 10
                                 spacing: 1
-                                Text { width: parent.width; elide: Text.ElideRight; text: I18n.tr("Focus"); color: tl.fg; font.family: root.fontForWeight(Font.DemiBold, ccPal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
-                                MorphText { animateWidth: false; duration: 420; width: parent.width; elide: Text.ElideRight; text: root.dnd ? I18n.tr("On") : I18n.tr("Off"); color: tl.fg2; font.family: root.fontForWeight(Font.Normal, ccPal.fam); font.pixelSize: 12 }
+                                Text { width: parent.width; elide: Text.ElideRight; text: I18n.tr("Focus"); color: tl.fg; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 13; font.weight: Font.DemiBold }
+                                MorphText { animateWidth: false; duration: 420; width: parent.width; elide: Text.ElideRight; text: root.dnd ? I18n.tr("On") : I18n.tr("Off"); color: tl.fg2; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.weight: Font.DemiBold; font.pixelSize: 12 }
                             }
                         }
                     }
@@ -7804,8 +7819,8 @@ Scope {
                                 x: 62; anchors.verticalCenter: parent.verticalCenter
                                 width: parent.width - 62 - 10
                                 spacing: 1
-                                MorphText { animateWidth: false; duration: 420; width: parent.width; elide: Text.ElideRight; text: root.recording ? "Stop" : I18n.tr("Record"); color: tl.fg; font.family: root.fontForWeight(Font.DemiBold, ccPal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
-                                MorphText { animateWidth: false; duration: 420; width: parent.width; elide: Text.ElideRight; text: root.recording ? root.recTime() : I18n.tr("Screen"); color: tl.fg2; font.family: root.fontForWeight(Font.Normal, ccPal.fam); font.pixelSize: 12 }
+                                MorphText { animateWidth: false; duration: 420; width: parent.width; elide: Text.ElideRight; text: root.recording ? "Stop" : I18n.tr("Record"); color: tl.fg; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 13; font.weight: Font.DemiBold }
+                                MorphText { animateWidth: false; duration: 420; width: parent.width; elide: Text.ElideRight; text: root.recording ? root.recTime() : I18n.tr("Screen"); color: tl.fg2; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.weight: Font.DemiBold; font.pixelSize: 12 }
                             }
                         }
                     }
@@ -7908,13 +7923,13 @@ Scope {
                                     width: parent.width; elide: Text.ElideRight
                                     text: np.pl && np.pl.trackTitle ? np.pl.trackTitle : I18n.tr("Now Playing")
                                     color: np.pl ? ccPal.fg : ccPal.fg2
-                                    font.family: root.fontForWeight(Font.DemiBold, ccPal.fam); font.pixelSize: 13; font.weight: Font.DemiBold
+                                    font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 13; font.weight: Font.DemiBold
                                 }
                                 Text {
                                     visible: np.pl !== null && np.pl !== undefined
                                     width: parent.width; elide: Text.ElideRight
                                     text: np.pl && np.pl.trackArtist ? np.pl.trackArtist : ""
-                                    color: ccPal.fg2; font.family: root.fontForWeight(Font.Normal, ccPal.fam); font.pixelSize: 12
+                                    color: ccPal.fg2; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.weight: Font.DemiBold; font.pixelSize: 12
                                 }
                             }
                             Row {
@@ -7959,7 +7974,7 @@ Scope {
                             Text {
                                 x: 14; y: 8
                                 text: I18n.tr("Display")
-                                color: ccPal.fg; font.family: root.fontForWeight(Font.DemiBold, ccPal.fam); font.pixelSize: 12; font.weight: Font.DemiBold
+                                color: ccPal.fg; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 12; font.weight: Font.DemiBold
                             }
                             HoverHandler { id: tileHovDisplay }
                             CCSlider {
@@ -7983,7 +7998,7 @@ Scope {
                             Text {
                                 x: 14; y: 8
                                 text: I18n.tr("Sound")
-                                color: ccPal.fg; font.family: root.fontForWeight(Font.DemiBold, ccPal.fam); font.pixelSize: 12; font.weight: Font.DemiBold
+                                color: ccPal.fg; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 12; font.weight: Font.DemiBold
                             }
                             HoverHandler { id: tileHovSound }
                             CCSlider {
@@ -8128,7 +8143,7 @@ Scope {
                                     elide: Text.ElideRight
                                     text: ccPriv.names
                                     color: ccPal.fg
-                                    font.family: root.fontForWeight(Font.Medium, ccPal.fam); font.pixelSize: 13; font.weight: Font.Medium
+                                    font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 13; font.weight: Font.DemiBold
                                 }
                                 // while recording, the pill also carries the Stop button
                                 Rectangle {
@@ -8137,7 +8152,7 @@ Scope {
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: 44; height: 20; radius: 10
                                     color: "#FF453A"
-                                    Text { anchors.centerIn: parent; text: "Stop"; color: "white"; font.family: root.fontForWeight(Font.DemiBold, ccPal.fam); font.pixelSize: 11; font.weight: Font.DemiBold }
+                                    Text { anchors.centerIn: parent; text: "Stop"; color: "white"; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 11; font.weight: Font.DemiBold }
                                     MouseArea { anchors.fill: parent; onClicked: root.toggleRecording() }
                                 }
                             }
@@ -8155,7 +8170,7 @@ Scope {
                                 visible: root.ccPlan.items.length === 0
                                 anchors.centerIn: parent
                                 text: I18n.tr("No controls. Use Edit Controls to add some.")
-                                color: ccPal.fg2; font.family: root.fontForWeight(Font.Normal, ccPal.fam); font.pixelSize: 12
+                                color: ccPal.fg2; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.weight: Font.DemiBold; font.pixelSize: 12
                             }
 
                             Repeater {
@@ -8264,7 +8279,7 @@ Scope {
                                 leftPadding: 4
                                 text: I18n.tr("Add Controls")
                                 color: ccPal.fg2
-                                font.family: root.fontForWeight(Font.DemiBold, ccPal.fam); font.pixelSize: 12; font.weight: Font.DemiBold
+                                font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 12; font.weight: Font.DemiBold
                             }
                             Flow {
                                 width: parent.width
@@ -8296,7 +8311,7 @@ Scope {
                                             Text {
                                                 anchors.verticalCenter: parent.verticalCenter
                                                 text: I18n.tr(chip.modelData.label)
-                                                color: ccPal.fg; font.family: root.fontForWeight(Font.Normal, ccPal.fam); font.pixelSize: 12
+                                                color: ccPal.fg; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.weight: Font.DemiBold; font.pixelSize: 12
                                             }
                                         }
                                         MouseArea { anchors.fill: parent; onClicked: root.ccAdd(chip.modelData.id) }
