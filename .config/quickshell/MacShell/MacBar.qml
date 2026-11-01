@@ -2556,6 +2556,7 @@ Scope {
     // brightness
     property real brightness: 0.5
     function refreshBrightness() { if (!brightProc.running) brightProc.running = true; }
+    Timer { interval: 700; running: true; onTriggered: root.refreshBrightness() }     // the first reading lands before osdReady: no popup at start-up
     Process {
         id: brightProc
         command: ["sh", "-c", "brightnessctl -m 2>/dev/null | head -n1"]
