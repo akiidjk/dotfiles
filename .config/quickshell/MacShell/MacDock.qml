@@ -232,7 +232,7 @@ Scope {
         default property alias content: col.data
         width: parent ? parent.width : 0
         height: col.implicitHeight
-        radius: 10
+        radius: 22
         color: t.card
         border.width: 1
         border.color: t.cardBorder
@@ -280,7 +280,7 @@ Scope {
                 text: r.title
                 elide: Text.ElideRight
                 color: r.t.text
-                font.family: root.fontForWeight(font.weight, r.t.fam)
+                font.family: root.fontForWeight(Font.Normal, r.t.fam)
                 font.pixelSize: 13
             }
             Text {
@@ -289,7 +289,7 @@ Scope {
                 text: r.subtitle
                 wrapMode: Text.WordWrap
                 color: r.t.text2
-                font.family: root.fontForWeight(font.weight, r.t.fam)
+                font.family: root.fontForWeight(Font.Normal, r.t.fam)
                 font.pixelSize: 12
             }
         }
@@ -312,7 +312,7 @@ Scope {
         topPadding: header ? 8 : 0
         wrapMode: Text.WordWrap
         color: t.text2
-        font.family: root.fontForWeight(font.weight, t.fam)
+        font.family: root.fontForWeight((header ? Font.DemiBold : Font.Normal), t.fam)
         font.pixelSize: header ? 12 : 12
         font.weight: header ? Font.DemiBold : Font.Normal
     }
@@ -460,7 +460,7 @@ Scope {
         signal clicked()
         width: lbl.implicitWidth + 26
         height: 24
-        radius: 6
+        radius: 10
         color: ma.pressed ? t.buttonPressed : t.button
         border.width: 1
         border.color: t.buttonBorder
@@ -469,7 +469,7 @@ Scope {
             anchors.centerIn: parent
             text: b.text
             color: b.destructive ? b.t.danger : b.t.text
-            font.family: root.fontForWeight(font.weight, b.t.fam)
+            font.family: root.fontForWeight(Font.Normal, b.t.fam)
             font.pixelSize: 13
         }
         MouseArea { id: ma; anchors.fill: parent; onClicked: b.clicked() }
@@ -545,7 +545,7 @@ Scope {
             anchors.horizontalCenter: parent.horizontalCenter
             text: I18n.tr(tile.label)
             color: tile.t.text
-            font.family: root.fontForWeight(font.weight, tile.t.fam)
+            font.family: root.fontForWeight(Font.Normal, tile.t.fam)
             font.pixelSize: 12
         }
         MouseArea { anchors.fill: parent; onClicked: tile.clicked() }
@@ -657,7 +657,7 @@ Scope {
                     anchors.centerIn: parent
                     text: "i"
                     color: "white"
-                    font.family: Fonts.forWeight(font.weight, gl.fam); font.pixelSize: 10
+                    font.family: Fonts.forWeight(Font.Bold, gl.fam); font.pixelSize: 10
                     font.bold: true
                 }
             }
@@ -918,16 +918,18 @@ Scope {
                 }
                 Rectangle { visible: !sidebar.floating; anchors.right: parent.right; width: 1; height: parent.height; color: pal.sep }
 
-                // the glass slab: refracts the wallpaper exactly where the window sits (Hyprland's blur is xray, so
-                // that is also what the rest of the window shows, blurred)
+                // Hidden Liquid Glass capture: the wallpaper exactly where the window sits, grabbed as ONE picture.
+                // Nothing is drawn fullscreen — only the back / forward pill refracts this picture (via pillSrc).
                 Loader {
-                    anchors.fill: parent
-                    z: -1
-                    active: false       // Liquid Glass sidebar removed: Settings is plain transparent + frosted blur
+                    id: sbLd
+                    parent: frame
+                    z: -60
+                    active: false      // the < > pill no longer refracts the wallpaper: // settingsGlass && the window's position on its monitor is known
+                    readonly property real pillM: 64                    // backdrop margin around the window (refraction reach)
                     sourceComponent: Item {
                         id: sbg
-                        readonly property real m: 64       // backdrop margin around the window (refraction reach)
-                        readonly property real pad: 12     // shader padding (drop shadow)
+                        readonly property real m: sbLd.pillM
+                        readonly property var pillSrc: pillSes          // exposed for the back / forward pill (ids inside don't escape)
                         Item {
                             id: prefsBackdrop
                             parent: frame
@@ -954,49 +956,13 @@ Scope {
                             }
                         }
                         ShaderEffectSource {
-                            id: sbSrc
+                            id: pillSes
                             sourceItem: prefsBackdrop
                             hideSource: true
                             live: true
+                            mipmap: true
                             visible: false
                             textureSize: Qt.size(Math.round(prefsBackdrop.width / 2), Math.round(prefsBackdrop.height / 2))
-                        }
-                        MultiEffect {
-                            id: sbBlurFx
-                            source: sbSrc
-                            width: sbSrc.textureSize.width; height: sbSrc.textureSize.height
-                            blurEnabled: true; blurMax: 48
-                            blur: Math.min(1, root.glassBlur * 1.4 * 0.5 / 48 + 0.25)
-                            autoPaddingEnabled: false
-                            visible: false
-                        }
-                        ShaderEffectSource { id: sbBlur; sourceItem: sbBlurFx; live: true; mipmap: true; visible: false }
-                        ShaderEffect {
-                            x: -sbg.pad; y: -sbg.pad
-                            width: sidebar.width + 2 * sbg.pad
-                            height: sidebar.height + 2 * sbg.pad
-                            fragmentShader: root.glassShaderUrl
-                            property variant src: sbBlur
-                            property vector2d itemSize: Qt.vector2d(width, height)
-                            property vector2d glassSize: Qt.vector2d(sidebar.width, sidebar.height)
-                            property vector2d srcSize: Qt.vector2d(prefsBackdrop.width, prefsBackdrop.height)
-                            property vector2d srcOffset: Qt.vector2d(sidebar.x - sbg.pad + sbg.m, sidebar.y - sbg.pad + sbg.m)
-                            property real pad: sbg.pad
-                            property real radius: sidebar.radius
-                            property real bezel: 24
-                            property real thickness: 30 * root.glassLiquid * 1.6
-                            property real dispersion: 0.06 * root.glassLiquid * 1.3
-                            property real magnify: 0.03 * root.glassLiquid
-                            property real rim: Math.max(0.5, root.glassRim)
-                            property real grain: root.glassGrain * 0.2
-                            property real blurPx: 1.5
-                            property real tintMix: root.glassOpacity * 0.5
-                            property real saturation: 1.25
-                            property real dark: root.dockDark ? 1 : 0
-                            property real debug: 0
-                            property real shadowAmt: 0.6
-                            property real rimTint: 0
-                            property real ringW: 0
                         }
                     }
                 }
@@ -1120,7 +1086,7 @@ Scope {
                         selectByMouse: true
                         color: pal.text
                         selectionColor: pal.accent
-                        font.family: root.fontForWeight(font.weight, pal.fam)
+                        font.family: root.fontForWeight(Font.Normal, pal.fam)
                         font.pixelSize: 13
                         onTextChanged: prefsWindow.query = text
                     }
@@ -1130,7 +1096,7 @@ Scope {
                         visible: searchInput.text === ""
                         text: I18n.tr("Search")
                         color: pal.text3
-                        font.family: root.fontForWeight(font.weight, pal.fam)
+                        font.family: root.fontForWeight(Font.Normal, pal.fam)
                         font.pixelSize: 13
                     }
                     Rectangle {   // clear button
@@ -1145,7 +1111,7 @@ Scope {
                             anchors.verticalCenterOffset: -0.5
                             text: "\u00D7"
                             color: pal.sidebar
-                            font.family: Fonts.forWeight(font.weight, pal.fam); font.pixelSize: 12
+                            font.family: Fonts.forWeight(Font.Bold, pal.fam); font.pixelSize: 12
                             font.bold: true
                         }
                         MouseArea { anchors.fill: parent; onClicked: searchInput.text = "" }
@@ -1172,8 +1138,8 @@ Scope {
                     }
                     Column {
                         x: 52; anchors.verticalCenter: parent.verticalCenter
-                        Text { text: root.userName; color: prefsWindow.cur === acct.idx && prefsWindow.active ? "white" : pal.text; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
-                        Text { text: I18n.tr("Local Account"); color: prefsWindow.cur === acct.idx && prefsWindow.active ? Qt.rgba(1, 1, 1, 0.8) : pal.text2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 11 }
+                        Text { text: root.userName; color: prefsWindow.cur === acct.idx && prefsWindow.active ? "white" : pal.text; font.family: root.fontForWeight(Font.DemiBold, pal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
+                        Text { text: I18n.tr("Local Account"); color: prefsWindow.cur === acct.idx && prefsWindow.active ? Qt.rgba(1, 1, 1, 0.8) : pal.text2; font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 11 }
                     }
                     MouseArea { id: acctMa; anchors.fill: parent; hoverEnabled: true; onClicked: prefsWindow.go(acct.idx) }
                 }
@@ -1248,7 +1214,7 @@ Scope {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: I18n.tr(navRow.p.name)
                                 color: (navRow.sel && prefsWindow.active) ? "white" : pal.text
-                                font.family: root.fontForWeight(font.weight, pal.fam)
+                                font.family: root.fontForWeight(Font.Normal, pal.fam)
                                 font.pixelSize: 14
                             }
                             MouseArea {
@@ -1268,12 +1234,34 @@ Scope {
                         horizontalAlignment: Text.AlignHCenter
                         text: I18n.tr("No Results")
                         color: pal.text2
-                        font.family: root.fontForWeight(font.weight, pal.fam)
+                        font.family: root.fontForWeight(Font.Normal, pal.fam)
                         font.pixelSize: 12
                     }
                 }
                 }
             }
+
+            // Backdrop for the < > pill: the Settings window itself (page colour, the sidebar edge and the page scrolling under the
+            // toolbar), grabbed as one picture. The pill refracts this, never the wallpaper.
+            Item {
+                id: pillBack
+                parent: frame
+                z: -100
+                readonly property real m: 64
+                x: header.x + navPill.x - m; y: header.y + navPill.y - m
+                width: navPill.width + 2 * m; height: navPill.height + 2 * m
+                Rectangle { anchors.fill: parent; color: pal.contentSolid }
+                Rectangle { x: 0; y: 0; width: Math.max(0, sidebar.x + sidebar.width - pillBack.x); height: parent.height; color: pal.sidebar }
+                Rectangle { x: Math.max(0, sidebar.x + sidebar.width - pillBack.x); y: 0; width: 1; height: parent.height; color: pal.sep }
+                ShaderEffectSource {
+                    x: flick.x - pillBack.x; y: flick.y - pillBack.y
+                    width: Math.max(1, parent.width - x); height: Math.max(1, parent.height - y)
+                    sourceItem: flick
+                    sourceRect: Qt.rect(0, 0, width, height)
+                    live: true
+                }
+            }
+            ShaderEffectSource { id: pillSes; sourceItem: pillBack; hideSource: true; live: true; mipmap: true; visible: false }
 
             // ───────── toolbar ─────────
             Item {
@@ -1291,7 +1279,12 @@ Scope {
                     glass: root.settingsGlass
                     shaderUrl: root.glassShaderUrl
                     dark: pal.dark
+                    // refracts the Settings window itself (pillBack below), never the wallpaper
+                    src: pillSes
+                    srcSize: Qt.size(pillBack.width, pillBack.height)
+                    origin: Qt.point(pillBack.m, pillBack.m)
                     baseColor: pal.dark ? "#3C3C40" : "#FBFBFD"
+                    blurPx: 6                              // more blur behind the < > pill (was 1.5)
                     thickness: 14; strengthMul: 0.6        // same glass as the Control Center buttons
                     liquid: root.glassLiquid
                     rim: root.glassRim * 0.25
@@ -1320,16 +1313,11 @@ Scope {
                             readonly property bool ok: modelData.dir < 0 ? prefsWindow.backStack.length > 0
                                                                            : prefsWindow.fwdStack.length > 0
                             width: 26; height: 28
-                            Rectangle {         // hover: the same faint light as the Control Center pills
-                                anchors.fill: parent; radius: 13
-                                color: (navBtn.ok && navMa.containsMouse) ? (pal.dark ? Qt.rgba(1, 1, 1, 0.07) : Qt.rgba(1, 1, 1, 0.5)) : "transparent"
-                                Behavior on color { ColorAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                            }
                             Text {
                                 anchors.centerIn: parent
                                 anchors.verticalCenterOffset: -2
                                 text: navBtn.modelData.g
-                                font.family: Fonts.forWeight(font.weight, pal.fam); font.pixelSize: 28
+                                font.family: Fonts.forWeight(Font.Normal, pal.fam); font.pixelSize: 28
                                 color: navBtn.ok ? pal.text : pal.text3
                                 opacity: navBtn.ok ? 1 : 0.5
                                 scale: (navBtn.ok && navMa.pressed) ? 0.86 : 1
@@ -1353,38 +1341,15 @@ Scope {
                     anchors.verticalCenter: parent.verticalCenter
                     text: I18n.tr(prefsWindow.panes[prefsWindow.cur].name)
                     color: pal.text
-                    font.family: root.fontForWeight(font.weight, pal.fam)
+                    font.family: root.fontForWeight(Font.DemiBold, pal.fam)
                     font.pixelSize: 15
                     font.weight: Font.DemiBold
                 }
             }
 
             // ───────── scrolling content ─────────
-            // feather: the page scrolls all the way up under the toolbar; what slides under it melts away. Same feather as the
-            // lyrics in the Player widget: one smooth alpha mask over the scroller (switched on as the page starts to scroll).
-            Item {
-                id: flickFeather
-                visible: false; layer.enabled: true
-                width: flick.width; height: flick.height
-                readonly property real fp: Math.min(0.32, 46 / Math.max(1, height))     // feather depth: 46 px
-                readonly property real amt: Math.max(0, Math.min(1, flick.contentY / 18))
-                function a(base) { return 1 - amt * (1 - base); }
-                Rectangle {
-                    anchors.fill: parent
-                    gradient: Gradient {
-                        GradientStop { position: 0.0;                    color: Qt.rgba(0, 0, 0, flickFeather.a(0.0)) }
-                        GradientStop { position: flickFeather.fp * 0.25; color: Qt.rgba(0, 0, 0, flickFeather.a(0.04)) }
-                        GradientStop { position: flickFeather.fp * 0.50; color: Qt.rgba(0, 0, 0, flickFeather.a(0.30)) }
-                        GradientStop { position: flickFeather.fp * 0.75; color: Qt.rgba(0, 0, 0, flickFeather.a(0.72)) }
-                        GradientStop { position: flickFeather.fp;        color: "black" }
-                        GradientStop { position: 1.0;                    color: "black" }
-                    }
-                }
-            }
             Flickable {
                 id: flick
-                layer.enabled: true
-                layer.effect: MultiEffect { maskEnabled: true; maskSource: flickFeather }
                 x: sidebar.x + sidebar.width + 1
                 y: 1
                 width: parent.width - sidebar.x - sidebar.width - 2
@@ -1412,6 +1377,18 @@ Scope {
                     })[prefsWindow.panes[prefsWindow.cur].id]
                     onLoaded: fadeIn.restart()
                 }
+            }
+            // Tahoe-style scroll-under blur: what slides up under the toolbar is blurred, and the blur melts away below it
+            // (FeatherBlur.qml). It re-draws the page; the page itself keeps scrolling and clicking as before.
+            FeatherBlur {
+                z: 1
+                x: flick.x; y: flick.y; width: flick.width; height: flick.height
+                target: flick
+                topHold: 36                  // height of the fully blurred band
+                topDepth: 22                 // short, soft fade-out
+                radiusScale: 1.4
+                blurMax: 32
+                topAmount: Math.max(0, Math.min(1, flick.contentY / 18))
             }
             Rectangle {   // thin overlay scrollbar
                 visible: flick.contentHeight > flick.height + 1
@@ -1814,7 +1791,7 @@ Scope {
                                     selectByMouse: true
                                     color: pal.text
                                     selectionColor: pal.accent
-                                    font.family: root.fontForWeight(font.weight, pal.fam)
+                                    font.family: root.fontForWeight(Font.Normal, pal.fam)
                                     font.pixelSize: 12
                                     text: root.bar ? root.bar.barCustomLogoPath : ""
                                     onTextEdited: { if (root.bar) root.bar.barCustomLogoPath = text; }
@@ -1832,7 +1809,7 @@ Scope {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: "~/Pictures/logo.png"
                                     color: pal.text3
-                                    font.family: root.fontForWeight(font.weight, pal.fam)
+                                    font.family: root.fontForWeight(Font.Normal, pal.fam)
                                     font.pixelSize: 12
                                 }
                             }
@@ -2047,7 +2024,7 @@ Scope {
                                     selectByMouse: true
                                     color: pal.text
                                     selectionColor: pal.accent
-                                    font.family: root.fontForWeight(font.weight, pal.fam)
+                                    font.family: root.fontForWeight(Font.Normal, pal.fam)
                                     font.pixelSize: 12
                                     text: root.bar ? root.bar.screenshotDir : ""
                                     onTextEdited: { if (root.bar) root.bar.screenshotDir = text; }
@@ -2058,7 +2035,7 @@ Scope {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: "~/Pictures/Screenshots"
                                     color: pal.text3
-                                    font.family: root.fontForWeight(font.weight, pal.fam)
+                                    font.family: root.fontForWeight(Font.Normal, pal.fam)
                                     font.pixelSize: 12
                                 }
                             }
@@ -2284,7 +2261,7 @@ Scope {
                                     maximumLength: 7
                                     color: pal.text
                                     selectionColor: pal.accent
-                                    font.family: root.fontForWeight(font.weight, pal.fam)
+                                    font.family: root.fontForWeight(Font.Normal, pal.fam)
                                     font.pixelSize: 12
                                     text: root.iconTintColor
                                     onEditingFinished: { if (/^#[0-9a-fA-F]{6}$/.test(text)) root.iconTintColor = text.toLowerCase(); else text = root.iconTintColor; }
@@ -2596,7 +2573,7 @@ Scope {
                                         anchors.fill: parent; anchors.leftMargin: 10; anchors.rightMargin: 10
                                         verticalAlignment: TextInput.AlignVCenter
                                         color: pal.text
-                                        font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13
+                                        font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 13
                                         selectByMouse: true
                                         maximumLength: 7
                                         validator: RegularExpressionValidator { regularExpression: /#?[0-9a-fA-F]{0,6}/ }
@@ -3064,7 +3041,7 @@ Scope {
                                 width: 120; height: 10; radius: 5; color: pal.track; anchors.verticalCenter: parent.verticalCenter
                                 Rectangle { width: parent.width * batPane.pct / 100; height: parent.height; radius: 5; color: batPane.pct <= 20 && !batPane.charging ? "#FF453A" : "#30D158" }
                             }
-                            Text { text: batPane.pct + "%"; color: pal.text; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter }
+                            Text { text: batPane.pct + "%"; color: pal.text; font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter }
                         }
                     }
                     SRow {
@@ -3223,8 +3200,8 @@ Scope {
                                     id: nameCol
                                     width: parent.width - badge.width - 12
                                     spacing: 2
-                                    Text { width: parent.width; text: addRow.modelData.name; elide: Text.ElideRight; color: pal.text; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
-                                    Text { width: parent.width; text: addRow.modelData.hint; wrapMode: Text.WordWrap; color: pal.text2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 12 }
+                                    Text { width: parent.width; text: addRow.modelData.name; elide: Text.ElideRight; color: pal.text; font.family: root.fontForWeight(Font.DemiBold, pal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
+                                    Text { width: parent.width; text: addRow.modelData.hint; wrapMode: Text.WordWrap; color: pal.text2; font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 12 }
                                 }
                                 Row {
                                     id: badge
@@ -3235,7 +3212,7 @@ Scope {
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: addRow.onDesktop + I18n.tr(" on desktop")
-                                        color: pal.text2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 12
+                                        color: pal.text2; font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 12
                                     }
                                     SButton { t: pal; text: "\u2212"; onClicked: wgPane.removeOne(addRow.modelData.type) }
                                 }
@@ -3365,7 +3342,7 @@ Scope {
                                 selectByMouse: true
                                 color: pal.text
                                 selectionColor: pal.accent
-                                font.family: root.fontForWeight(font.weight, pal.fam)
+                                font.family: root.fontForWeight(Font.Normal, pal.fam)
                                 font.pixelSize: 12
                                 text: wgPane.wdg ? wgPane.wdg.cityName : ""
                                 onEditingFinished: { if (wgPane.wdg) wgPane.wdg.cityName = text; }
@@ -3420,7 +3397,7 @@ Scope {
                         x: 14; anchors.verticalCenter: parent.verticalCenter
                         width: parent.width - 220; wrapMode: Text.WordWrap
                         text: I18n.tr("Keep these display settings? Reverting in ") + root.revertLeft + " s."
-                        color: pal.text; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13; font.weight: Font.DemiBold
+                        color: pal.text; font.family: root.fontForWeight(Font.DemiBold, pal.fam); font.pixelSize: 13; font.weight: Font.DemiBold
                     }
                     Row {
                         anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter
@@ -3666,7 +3643,7 @@ Scope {
                                         width: parent.width - 70; elide: Text.ElideRight
                                         text: prof.modelData.desc
                                         color: pal.text
-                                        font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 12
+                                        font.family: root.fontForWeight((prof.on ? Font.DemiBold : Font.Normal), pal.fam); font.pixelSize: 12
                                         font.weight: prof.on ? Font.DemiBold : Font.Normal
                                     }
                                     Text { visible: prof.on; anchors.right: parent.right; anchors.rightMargin: 24; anchors.verticalCenter: parent.verticalCenter; text: "✓"; color: pal.text; font.pixelSize: 13 }
@@ -3771,7 +3748,7 @@ Scope {
                                         Text {
                                             anchors.centerIn: parent
                                             text: "9:41"
-                                            font.family: Fonts.forWeight(font.weight, tile.modelData.fam); font.pixelSize: tile.modelData.tall ? 40 : 30
+                                            font.family: Fonts.forWeight(Math.max(100, Math.min(900, tile.modelData.w)), tile.modelData.fam); font.pixelSize: tile.modelData.tall ? 40 : 30
                                             font.weight: Math.max(100, Math.min(900, tile.modelData.w))
                                             font.variableAxes: ({ "wght": tile.modelData.w })
                                             color: tile.modelData.liquid ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(1, 1, 1, 0.78)
@@ -3780,7 +3757,7 @@ Scope {
                                         }
                                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: if (root.bar) root.bar.applyLockClockPreset(tile.modelData.id) }
                                     }
-                                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.tr(tile.modelData.name); color: tile.sel ? pal.accent : pal.text; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 12; font.weight: tile.sel ? Font.DemiBold : Font.Normal }
+                                    Text { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.tr(tile.modelData.name); color: tile.sel ? pal.accent : pal.text; font.family: root.fontForWeight((tile.sel ? Font.DemiBold : Font.Normal), pal.fam); font.pixelSize: 12; font.weight: tile.sel ? Font.DemiBold : Font.Normal }
                                 }
                             }
                         }
@@ -3913,7 +3890,7 @@ Scope {
                         subtitle: loginCard.status !== "" ? loginCard.status : I18n.tr("Clock and 24-hour setting come from the Lock Screen settings above")
                         Row {
                             spacing: 8
-                            Text { anchors.verticalCenter: parent.verticalCenter; text: loginCard.current || "—"; color: pal.text2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13 }
+                            Text { anchors.verticalCenter: parent.verticalCenter; text: loginCard.current || "—"; color: pal.text2; font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 13 }
                             SButton {
                                 anchors.verticalCenter: parent.verticalCenter
                                 visible: loginCard.current === "maclock"
@@ -3956,13 +3933,13 @@ Scope {
                             layer.enabled: true; layer.effect: MultiEffect { maskEnabled: true; maskSource: upMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
                         }
                     }
-                    Text { anchors.top: upic.bottom; anchors.topMargin: 8; anchors.horizontalCenter: parent.horizontalCenter; text: root.userName; color: pal.text; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 17; font.weight: Font.DemiBold }
+                    Text { anchors.top: upic.bottom; anchors.topMargin: 8; anchors.horizontalCenter: parent.horizontalCenter; text: root.userName; color: pal.text; font.family: root.fontForWeight(Font.DemiBold, pal.fam); font.pixelSize: 17; font.weight: Font.DemiBold }
                 }
                 SCard {
                     t: pal
-                    SRow { t: pal; title: I18n.tr("Full name"); Text { text: root.userName; color: pal.text2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13 } }
-                    SRow { t: pal; title: I18n.tr("Account name"); Text { text: Quickshell.env("USER"); color: pal.text2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13 } }
-                    SRow { t: pal; title: I18n.tr("Home folder"); Text { text: Quickshell.env("HOME"); color: pal.text2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13 } }
+                    SRow { t: pal; title: I18n.tr("Full name"); Text { text: root.userName; color: pal.text2; font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 13 } }
+                    SRow { t: pal; title: I18n.tr("Account name"); Text { text: Quickshell.env("USER"); color: pal.text2; font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 13 } }
+                    SRow { t: pal; title: I18n.tr("Home folder"); Text { text: Quickshell.env("HOME"); color: pal.text2; font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 13 } }
                     SRow {
                         t: pal; title: I18n.tr("Picture")
                         subtitle: I18n.tr("Used on the lock screen and here")
@@ -4120,18 +4097,18 @@ Scope {
                             Text {
                                 width: parent.width; elide: Text.ElideRight
                                 text: wpPane.curPath !== "" ? wpPane.nameOf(wpPane.curPath) : I18n.tr("No wallpaper")
-                                color: pal.text; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 15; font.weight: Font.DemiBold
+                                color: pal.text; font.family: root.fontForWeight(Font.DemiBold, pal.fam); font.pixelSize: 15; font.weight: Font.DemiBold
                             }
                             Text {
                                 width: parent.width
                                 text: wpPane.curVideo !== "" ? I18n.tr("Animated wallpaper") : I18n.tr("Picture")
-                                color: pal.text2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 12
+                                color: pal.text2; font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 12
                             }
                             Text {
                                 width: parent.width; wrapMode: Text.WordWrap
                                 visible: wpPane.curVideo !== ""
                                 text: I18n.tr("Plays on every display and pauses behind fullscreen windows. The Liquid Glass and the lock screen use it too.")
-                                color: pal.text3; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 11
+                                color: pal.text3; font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 11
                             }
                             Row {
                                 spacing: 8
@@ -4210,7 +4187,7 @@ Scope {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "⌕"
                             color: pal.text3
-                            font.family: Fonts.forWeight(font.weight, pal.fam); font.pixelSize: 19
+                            font.family: Fonts.forWeight(Font.Normal, pal.fam); font.pixelSize: 19
                         }
                         Item {
                             width: parent.width - 52
@@ -4221,7 +4198,7 @@ Scope {
                                 verticalAlignment: TextInput.AlignVCenter
                                 color: pal.text
                                 selectionColor: pal.accent
-                                font.family: root.fontForWeight(font.weight, pal.fam)
+                                font.family: root.fontForWeight(Font.Normal, pal.fam)
                                 font.pixelSize: 12
                                 clip: true
                                 selectByMouse: true
@@ -4232,7 +4209,7 @@ Scope {
                                 verticalAlignment: Text.AlignVCenter
                                 text: I18n.tr("Search wallpapers")
                                 color: pal.text3
-                                font.family: root.fontForWeight(font.weight, pal.fam)
+                                font.family: root.fontForWeight(Font.Normal, pal.fam)
                                 font.pixelSize: 12
                                 visible: wpSearchInput.text === "" && !wpSearchInput.activeFocus
                                 MouseArea { anchors.fill: parent; onClicked: wpSearchInput.forceActiveFocus() }
@@ -4243,7 +4220,7 @@ Scope {
                             visible: wpSearchInput.text !== ""
                             text: "×"
                             color: pal.text2
-                            font.family: Fonts.forWeight(font.weight, pal.fam); font.pixelSize: 18
+                            font.family: Fonts.forWeight(Font.Normal, pal.fam); font.pixelSize: 18
                             MouseArea {
                                 anchors.fill: parent
                                 anchors.margins: -6
@@ -4325,7 +4302,7 @@ Scope {
                                             id: wtBadge
                                             anchors.centerIn: parent
                                             text: I18n.tr("\u25B6  Animated")
-                                            color: "white"; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 9; font.weight: Font.DemiBold
+                                            color: "white"; font.family: root.fontForWeight(Font.DemiBold, pal.fam); font.pixelSize: 9; font.weight: Font.DemiBold
                                         }
                                     }
                                 }
@@ -4353,7 +4330,7 @@ Scope {
                                             anchors.centerIn: parent
                                             text: wt.modelData.fav ? "★" : "☆"
                                             color: wt.modelData.fav ? "#ffd60a" : "white"
-                                            font.family: Fonts.forWeight(font.weight, pal.fam); font.pixelSize: 16
+                                            font.family: Fonts.forWeight(Font.Normal, pal.fam); font.pixelSize: 16
                                         }
                                         MouseArea {
                                             id: wtFavMa
@@ -4371,7 +4348,7 @@ Scope {
                                 elide: Text.ElideMiddle
                                 text: wt.modelData.name
                                 color: wt.cur ? pal.text : pal.text2
-                                font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 11
+                                font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 11
                             }
                     }
                 }
@@ -4414,7 +4391,7 @@ Scope {
                             horizontalAlignment: Text.AlignHCenter
                             text: "macshell"
                             color: pal.text
-                            font.family: root.fontForWeight(font.weight, pal.fam)
+                            font.family: root.fontForWeight(Font.DemiBold, pal.fam)
                             font.pixelSize: 21
                             font.weight: Font.DemiBold
                         }
@@ -4430,7 +4407,7 @@ Scope {
                                 anchors.centerIn: parent
                                 text: "akiidjk edition"
                                 color: "white"
-                                font.family: root.fontForWeight(font.weight, pal.fam)
+                                font.family: root.fontForWeight(Font.DemiBold, pal.fam)
                                 font.pixelSize: 12
                                 font.weight: Font.DemiBold
                             }
@@ -4441,7 +4418,7 @@ Scope {
                             horizontalAlignment: Text.AlignHCenter
                             text: I18n.tr("Version 0.3.5-akiidjk (based on MacShell d4f8500) \u2022 Hyprland \u2022 Quickshell")
                             color: pal.text2
-                            font.family: root.fontForWeight(font.weight, pal.fam)
+                            font.family: root.fontForWeight(Font.Normal, pal.fam)
                             font.pixelSize: 12
                         }
                     }
@@ -4455,7 +4432,7 @@ Scope {
                         Text {
                             text: "~/.config/macdock"
                             color: pal.text2
-                            font.family: root.fontForWeight(font.weight, pal.fam)
+                            font.family: root.fontForWeight(Font.Normal, pal.fam)
                             font.pixelSize: 13
                         }
                     }
@@ -4537,21 +4514,21 @@ Scope {
                                 spacing: 2
                                 Row {
                                     spacing: 8
-                                    Text { anchors.verticalCenter: parent.verticalCenter; text: cr.modelData.name; color: pal.text; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
+                                    Text { anchors.verticalCenter: parent.verticalCenter; text: cr.modelData.name; color: pal.text; font.family: root.fontForWeight(Font.DemiBold, pal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
                                     Rectangle {
                                         visible: cr.mine
                                         anchors.verticalCenter: parent.verticalCenter
                                         width: mineBadge.implicitWidth + 14; height: 18; radius: 9
                                         color: pal.accent
-                                        Text { id: mineBadge; anchors.centerIn: parent; text: "This version"; color: "white"; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 10; font.weight: Font.DemiBold }
+                                        Text { id: mineBadge; anchors.centerIn: parent; text: "This version"; color: "white"; font.family: root.fontForWeight(Font.DemiBold, pal.fam); font.pixelSize: 10; font.weight: Font.DemiBold }
                                     }
                                 }
-                                Text { width: parent.width; text: I18n.tr(cr.modelData.role); wrapMode: Text.WordWrap; color: pal.text2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 11 }
+                                Text { width: parent.width; text: I18n.tr(cr.modelData.role); wrapMode: Text.WordWrap; color: pal.text2; font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 11 }
                             }
                             Text {
                                 anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
                                 text: "@" + cr.modelData.gh
-                                color: pal.accent; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 12
+                                color: pal.accent; font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 12
                                 font.underline: crMa.containsMouse
                                 MouseArea { id: crMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Quickshell.execDetached(["xdg-open", "https://github.com/" + cr.modelData.gh]) }
                             }
@@ -4563,7 +4540,7 @@ Scope {
                     horizontalAlignment: Text.AlignHCenter
                     topPadding: 4
                     text: I18n.tr("Designed by Apple in California.\nRebuilt on Linux by two people who could not afford the Mac.\nThis edition put together by akiidjk.")
-                    color: pal.text3; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 11
+                    color: pal.text3; font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 11
                 }
 
                 // (keep scrolling…)
@@ -4583,18 +4560,18 @@ Scope {
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter; y: 64
                             text: I18n.tr("Protect your MacShell with AppleCare+")
-                            color: pal.text; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 17; font.weight: Font.DemiBold
+                            color: pal.text; font.family: root.fontForWeight(Font.DemiBold, pal.fam); font.pixelSize: 17; font.weight: Font.DemiBold
                         }
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter; y: 90
                             width: parent.width - 60; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
                             text: I18n.tr("Unlimited repairs for accidental damage, 24/7 priority access to Apple experts, and battery service coverage. Same price as for a MacBook Pro.")
-                            color: pal.text2; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 12
+                            color: pal.text2; font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 12
                         }
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter; y: 136
                             text: I18n.tr("$279.00 for 3 years or $99.99/yr.")
-                            color: pal.text; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13; font.weight: Font.Medium
+                            color: pal.text; font.family: root.fontForWeight(Font.Medium, pal.fam); font.pixelSize: 13; font.weight: Font.Medium
                         }
                         Rectangle {
                             anchors.horizontalCenter: parent.horizontalCenter; y: 166
@@ -4602,7 +4579,7 @@ Scope {
                             color: careMa.pressed ? Qt.darker(pal.accent, 1.15) : pal.accent
                             scale: careMa.pressed ? 0.96 : 1
                             Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutQuint } }
-                            Text { anchors.centerIn: parent; text: I18n.tr("Add AppleCare+"); color: "white"; font.family: root.fontForWeight(font.weight, pal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
+                            Text { anchors.centerIn: parent; text: I18n.tr("Add AppleCare+"); color: "white"; font.family: root.fontForWeight(Font.DemiBold, pal.fam); font.pixelSize: 13; font.weight: Font.DemiBold }
                             MouseArea { id: careMa; anchors.fill: parent; cursorShape: Qt.PointingHandCursor }
                         }
                     }
@@ -4937,7 +4914,7 @@ Scope {
         var m = [];
         if (item.kind === "win") {
             m.push({ kind: "item", label: I18n.tr("Show"), run: function () { activate(item, false); } });
-            m.push({ kind: "item", label: I18n.tr("Close"), run: function () { if (item.tl) item.tl.close(); } });
+            m.push({ kind: "item", label: I18n.tr("Close"), run: function () { var t = item.tl; if (!t) return; if (root.hub) root.hub.closeQuietly(function () { if (t) t.close(); }); else t.close(); } });
             m.push({ kind: "sep" });
             m.push({ kind: "item", label: I18n.tr("Settings\u2026"), run: function() { root.openPrefs(); } });
             return m;
@@ -4970,7 +4947,8 @@ Scope {
             m.push({ kind: "sep" });
             m.push({ kind: "item", label: I18n.tr("Quit"), run: function () {
                 var ws = windowsFor(item.key);
-                for (var j = 0; j < ws.length; j++) ws[j].close();
+                var closeAll = function () { for (var j = 0; j < ws.length; j++) { try { if (ws[j]) ws[j].close(); } catch (err) { } } };
+                if (root.hub) root.hub.closeQuietly(closeAll); else closeAll();
             } });
         }
         
@@ -5382,12 +5360,12 @@ Scope {
                         anchors.fill: parent; radius: 10
                         color: Qt.rgba(0.09, 0.08, 0.09, 0.88)
                     }
-                    ScreencopyView {
+                    SafeCapture {
                         id: gsv
                         visible: tearGhost.isWin
                         anchors.fill: parent
-                        captureSource: tearGhost.isWin && tearWin.visible ? ui.tearItem.tl : null
-                        live: tearGhost.isWin && tearWin.visible && tearGhost.visible
+                        want: (tearGhost.isWin && tearWin.visible && ui.tearItem && ui.tearItem.tl) ? ui.tearItem.tl : null
+                        wantLive: tearGhost.isWin && tearWin.visible && tearGhost.visible
                         layer.enabled: true
                         layer.effect: MultiEffect { maskEnabled: true; maskSource: gsvMask; maskThresholdMin: 0.5; maskSpreadAtMin: 1.0 }
                     }
@@ -5412,13 +5390,52 @@ Scope {
                 id: ui
                 anchors.fill: parent
 
+                // pointer x, followed EXACTLY (no animation). This used to ease over 55 ms, restarted on every pointer event: moving
+                // the mouse quickly left the magnification a few frames behind the pointer, worse with many icons
                 property real mx: 0
-                Behavior on mx { NumberAnimation { duration: 55; easing.type: Easing.OutQuad } }
+                // raw pointer x as the events arrive; ui.mx (which every cell's scale is bound to) takes it once per FRAME. A 1000 Hz mouse
+                // used to re-evaluate every cell's bindings + the Row layout hundreds of times a second, more with more pinned apps.
+                property real rawMx: 0
+                FrameAnimation {
+                    running: hh.hovered && !ui.dragging
+                    onTriggered: if (ui.mx !== ui.rawMx && (!ui.menuOpen || hh.point.position.y > ui.activeTop)) ui.mx = ui.rawMx
+                }
                 property bool revealed: false
                 property var menuItem: null
                 property var menuModel: []
                 property string armed: ""            // label of a confirm-type entry that was clicked once (e.g. Empty Trash)
-                onMenuItemChanged: armed = ""
+                property real menuTailX: -1
+                function updateMenuTail() {
+                    if (!menuOpen) return;
+                    var w = menuW;
+                    var idealX = menuCx - w / 2;
+                    var clampedX = Math.max(8, Math.min(ui.width - w - 8, idealX));
+                    menuTailX = Math.round(menuCx - clampedX);
+                }
+                onMenuItemChanged: {
+                    armed = "";
+                    if (menuItem === null) {
+                        menuCell = null;
+                        menuIconTop = -1;
+                        menuTailX = -1;
+                    } else {
+                        updateMenuTail();
+                    }
+                }
+                // the cell the right-click menu belongs to: while the menu is open it follows that icon (its centre and its top edge), the
+                // way the hover label does, as the icons magnify and the Dock widens / narrows
+                property Item menuCell: null
+                property real menuIconTop: -1
+                function syncMenu() {
+                    var c = menuCell;
+                    if (!c || !c.iconImg) return;
+                    var p = c.mapToItem(ui, c.width / 2, 0);
+                    if (Math.abs(p.x - menuCx) > 0.05) menuCx = p.x;
+                    var t = c.iconImg.mapToItem(ui, 0, 0).y;
+                    if (Math.abs(t - menuIconTop) > 0.05) menuIconTop = t;
+                    if (menuTailX < 0) updateMenuTail();
+                }
+                FrameAnimation { running: ui.menuOpen && ui.menuCell !== null; onTriggered: ui.syncMenu() }
                 property real menuCx: 0
                 // the menu is as wide as its longest entry (measured here whenever a menu is built)
                 property real menuTextW: 0
@@ -5439,7 +5456,10 @@ Scope {
                     }
                     menuTextW = w;
                 }
-                onMenuModelChanged: measureMenu()
+                onMenuModelChanged: {
+                    measureMenu();
+                    updateMenuTail();
+                }
                 readonly property bool menuOpen: menuItem !== null
                 readonly property bool wantsHide: root.hideMode === "always"
                     || (root.hideMode === "smart" && root.busyMonitors[win.modelData.name] === true)
@@ -5637,13 +5657,17 @@ Scope {
                 readonly property real refLeft: (width - root.totalW0) / 2
                 readonly property real activeTop: height - root.margin - root.bgHeight
                                                   - root.iconSize * (root.effMag - 1) - 12
-                readonly property bool active: dragging || (hh.hovered && hh.point.position.y > activeTop && !tucked)
+                readonly property bool active: dragging || (hh.hovered && !tucked && (hh.point.position.y > activeTop || (menuOpen && hh.point.position.y > menu.y)))
                 property real strength: active ? 1 : 0
                 Behavior on strength { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
                 HoverHandler {
                     id: hh
-                    onPointChanged: if (hovered && !ui.dragging) ui.mx = point.position.x
+                    onPointChanged: {
+                        if (!hovered || ui.dragging) return;
+                        ui.rawMx = point.position.x;
+                        if (ui.strength < 0.02) ui.mx = ui.rawMx;     // coming in from outside: start under the pointer
+                    }
                     onHoveredChanged: {
                         if (hovered) { hideTimer.stop(); ui.revealed = true; }
                         else hideTimer.restart();
@@ -5656,10 +5680,32 @@ Scope {
                 Loader {
                     id: glassBackdrop
                     active: root.liquidActive
+                    // opaque wrapper: translucent windows (btop in a transparent terminal, Settings...) leave alpha < 1 in the backdrop,
+                    // which made the Dock's hover label / right-click menu see-through to the REAL screen (sharp, weakly blurred).
+                    // The backdrop is rendered once into the wrapper over an opaque base, so the glass always gets alpha 1.
                     sourceComponent: Item {
-                        id: bd
+                        id: flatRoot
                         x: 0
                         y: -(win.modelData.height - ui.height)
+                        width: win.modelData.width
+                        height: win.modelData.height
+                        Rectangle { x: -160; y: -160; width: parent.width + 320; height: parent.height + 320; color: "#000000" }
+                        ShaderEffectSource {
+                            id: flatSrc
+                            anchors.fill: parent
+                            sourceItem: bd
+                            live: true
+                            hideSource: false
+                        }
+                        // Edge padding: the glass blurs and refracts up to ~64 px beyond the screen edge, where the backdrop used to be empty (alpha 0),
+                        // which pulled the blur toward see-through near the screen edges (e.g. popovers on the right). Mirror the edge pixels outward instead.
+                        ShaderEffectSource { x: flatRoot.width; y: 0; width: 160; height: flatRoot.height; sourceItem: flatSrc; sourceRect: Qt.rect(flatRoot.width - 160, 0, 160, flatRoot.height); textureMirroring: ShaderEffectSource.MirrorHorizontally; live: true; hideSource: false }
+                        ShaderEffectSource { x: -160; y: 0; width: 160; height: flatRoot.height; sourceItem: flatSrc; sourceRect: Qt.rect(0, 0, 160, flatRoot.height); textureMirroring: ShaderEffectSource.MirrorHorizontally; live: true; hideSource: false }
+                        ShaderEffectSource { x: 0; y: -160; width: flatRoot.width; height: 160; sourceItem: flatSrc; sourceRect: Qt.rect(0, 0, flatRoot.width, 160); textureMirroring: ShaderEffectSource.MirrorVertically; live: true; hideSource: false }
+                        ShaderEffectSource { x: 0; y: flatRoot.height; width: flatRoot.width; height: 160; sourceItem: flatSrc; sourceRect: Qt.rect(0, flatRoot.height - 160, flatRoot.width, 160); textureMirroring: ShaderEffectSource.MirrorVertically; live: true; hideSource: false }
+                    Item {
+                        id: bd
+                        x: 0; y: 0
                         width: win.modelData.width
                         height: win.modelData.height
 
@@ -5707,9 +5753,11 @@ Scope {
 
                         ListModel { id: wm }
                         Repeater {
+                            id: wrep
                             model: wm
                             delegate: Item {
                                 id: gw
+                                property alias cap: sc
                                 required property string addr
                                 required property real wx
                                 required property real wy
@@ -5744,37 +5792,56 @@ Scope {
                                 onNearNowChanged: { if (nearNow) { nearHold.stop(); near = true; } else nearHold.restart(); }
                                 Component.onCompleted: near = nearNow
                                 Timer { id: nearHold; interval: 2500; onTriggered: gw.near = gw.nearNow }
-                                Loader {
+                                // GlassCapture (not a Loader + bare ScreencopyView): a capture is never destroyed while a frame is in flight, and
+                                // the last good frame stays on screen while a re-tiled window's capture is rebuilt (see SafeCapture.qml / GlassCapture.qml).
+                                GlassCapture {
+                                    id: sc
                                     anchors.fill: parent
-                                    active: gw.near && !gw.released
-                                    sourceComponent: ScreencopyView {
-                                        id: sc
-                                        captureSource: gw.tl
-                                        // Real-time glass ON: a window that reaches the Dock STREAMS (live: every frame the compositor renders), windows
-                                        // elsewhere refresh at 5 Hz so they are fresh the moment they slide under the Dock. Opening / closing windows no
-                                        // longer freeze the glass: only the closing window's own capture stops.
-                                        // Real-time glass OFF: the old behaviour (15 fps polling, paused while windows open / close).
-                                        readonly property bool canRun: root.glassRT
-                                            ? !(root.hub && root.hub.captureQuiet) && !gw.gone && !gw.closing
-                                            : (!root.glassHold && !ui.tucked)
-                                        live: root.glassRT && canRun && gw.overlap && !ui.tucked
-                                        Timer {
-                                            interval: root.glassRT ? (gw.overlap ? 33 : 200) : 66
-                                            repeat: true
-                                            running: sc.canRun && !sc.live && sc.captureSource !== null
-                                            onTriggered: if (typeof sc.captureFrame === "function") sc.captureFrame()
-                                        }
-                                        onCaptureSourceChanged: { if (captureSource !== null && sc.canRun) firstShot.restart(); }
-                                        Timer {
-                                            id: firstShot
-                                            interval: 60
-                                            onTriggered: { if (sc.captureSource !== null && !sc.live && sc.canRun && typeof sc.captureFrame === "function") sc.captureFrame(); }
-                                        }
+                                    placeholder: (root.bar ? root.bar.darkMode : true) ? "#1e1e20" : "#f2f2f7"
+                                    glassOn: !ui.tucked
+                                    want: (gw.near && !gw.released) ? gw.tl : null
+                                    // Real-time glass ON: a window that reaches the Dock STREAMS (live: every frame the compositor renders), windows
+                                    // elsewhere refresh at 30 Hz-ish single shots (2 Hz when far away) so they are fresh the moment they slide under the Dock.
+                                    // Real-time glass OFF: the old behaviour (15 fps polling, paused while windows open / close).
+                                    readonly property bool quiet: !!root.hub && root.hub.preClose          // a close was just requested / captures are failing in a burst: nothing in flight, please
+                                    readonly property bool canRun: !quiet && !ui.menuOpen && (root.glassRT
+                                        ? !(root.hub && root.hub.captureQuiet) && !gw.gone && !gw.closing
+                                        : (!root.glassHold && !ui.tucked))
+                                    wantLive: root.glassRT && canRun && gw.overlap && !ui.tucked
+                                    Timer {
+                                        interval: root.glassRT ? (gw.overlap ? 33 : 500) : 66
+                                        repeat: true
+                                        running: sc.canRun && !sc.wantLive && sc.armed
+                                        onTriggered: sc.snap()
+                                    }
+                                    onHeldChanged: { if (held !== null && sc.canRun) firstShot.restart(); }
+                                    Timer {
+                                        id: firstShot
+                                        interval: 60
+                                        onTriggered: { if (sc.armed && !sc.wantLive && sc.canRun) sc.snap(); }
                                     }
                                 }
                             }
                         }
 
+                        // The layout changed (a window opened / closed / was re-tiled): Hyprland fails the running captures of the windows that moved.
+                        // About 0.3 / 0.6 / 0.9 s later every capture that lost its picture is rebuilt and the others take a fresh frame, so the Dock
+                        // glass follows the windows while they slide into place. MACSHELL_BURST=1 switches it on (experimental upstream).
+                        property int settleN: 0
+                        function burst() { if (Quickshell.env("MACSHELL_BURST") !== "1") return; settleN = 0; glassSettle.restart(); }
+                        function rearm() {
+                            for (var q = 0; q < wrep.count; q++) {
+                                var it = wrep.itemAt(q);
+                                if (!it || !it.cap || it.gone || !it.cap.canRun) continue;
+                                it.cap.kick();
+                                if (!it.cap.wantLive) it.cap.snap();
+                            }
+                        }
+                        Timer {
+                            id: glassSettle
+                            interval: 300; repeat: true
+                            onTriggered: { bd.rearm(); if (++bd.settleN >= 3) stop(); }
+                        }
                         function sync() {
                             var mon = null;
                             for (var i = 0; i < root.monData.length; i++)
@@ -5809,17 +5876,21 @@ Scope {
                         property int lastCount: -1
                         Connections {
                             target: root
-                            function onGlassClientsChanged() { bd.sync(); }
+                            function onGlassClientsChanged() { bd.sync(); bd.burst(); }
                             function onMonDataChanged() { bd.sync(); }
                         }
                         Component.onCompleted: sync()
+                    }
                     }
                 }
 
                 Item {
                     id: maskItem
-                    x: ui.menuOpen ? 0 : dock.x
-                    width: ui.menuOpen ? ui.width : dock.width
+                    // The input region only changes in 64 px steps while the Dock breathes under magnification (it used to follow dock.width
+                    // exactly: a new Wayland input region every frame of every pointer move). Always a superset of the Dock.
+                    readonly property real maskW: hh.hovered ? Math.min(ui.width, Math.ceil((dock.width + 8) / 64) * 64) : dock.width
+                    x: ui.menuOpen ? 0 : (ui.width - maskW) / 2
+                    width: ui.menuOpen ? ui.width : maskW
                     y: ui.menuOpen ? 0 : (ui.tucked ? ui.height - 3 : (hh.hovered ? ui.activeTop : dock.y))
                     height: ui.height - y
                 }
@@ -5847,17 +5918,27 @@ Scope {
                             readonly property real bn: root.glassBlur * 1.5 * ds / 64.0
                             readonly property real margin: 72      // extra backdrop captured around the Dock (refraction + blur reach)
                             readonly property real padPx: root.dockGlassNew ? 30 : 10   // shader item padding (shadow room); dockglass.frag needs >= 30, the shared shader keeps its original 10
+
+                            // The backdrop is captured over a FIXED rectangle: the Dock at its widest (fully magnified), in 128 px steps, centred on the
+                            // Dock. It used to follow dock.width, and the Dock gets wider and narrower with every pointer move while icons magnify, so
+                            // 3-5 GPU textures (this capture, both blur passes, the blur's own buffers) were re-allocated on EVERY pointer move, and
+                            // the more icons were pinned the bigger they were. That was the stutter / lag of the magnification. Now the textures keep
+                            // their size and only the shader's offset moves.
+                            readonly property real magExtra: root.iconSize * (root.effMag - 1) * (root.magRadius / (root.iconSize + root.spacing) + 1)
+                            readonly property real capInner: Math.min(Math.ceil(Math.max(dock.width, root.totalW0 + 2 * root.hPad + magExtra) / 128) * 128,
+                                                                      win.modelData.width + 320 - 2 * (padPx + margin))   // the mirrored edge padding is 160 px each side
+                            readonly property real capW: capInner + 2 * (padPx + margin)
+                            readonly property real capH: dock.height + 2 * (padPx + margin)
+                            readonly property real capX: (ui.width - capW) / 2                                   // the Dock is centred in the window
+                            readonly property real capY: ui.height - root.margin - dock.height + (win.modelData.height - ui.height) - padPx - margin   // untucked position
                             ShaderEffectSource {
                                 id: bsrc
                                 sourceItem: glassBackdrop.item
                                 hideSource: true
-                                live: !ui.tucked
+                                live: !ui.tucked && !ui.menuOpen
                                 visible: false
-                                sourceRect: Qt.rect(dock.x - parent.padPx - parent.margin,
-                                                    dock.y + (win.modelData.height - ui.height) - parent.padPx - parent.margin,
-                                                    dock.width + 2 * (parent.padPx + parent.margin),
-                                                    dock.height + 2 * (parent.padPx + parent.margin))
-                                textureSize: Qt.size(Math.max(1, Math.round(sourceRect.width * dg.ds)), Math.max(1, Math.round(sourceRect.height * dg.ds)))
+                                sourceRect: Qt.rect(dg.capX, dg.capY, dg.capW, dg.capH)
+                                textureSize: Qt.size(Math.max(1, Math.round(dg.capW * dg.ds)), Math.max(1, Math.round(dg.capH * dg.ds)))
                             }
                             MultiEffect {
                                 id: bblurFx
@@ -5874,7 +5955,7 @@ Scope {
                             ShaderEffectSource {
                                 id: bblur
                                 sourceItem: bblurFx
-                                live: !ui.tucked
+                                live: !ui.tucked && !ui.menuOpen
                                 visible: false
                             }
                             MultiEffect {
@@ -5892,7 +5973,7 @@ Scope {
                                 id: bblur2
                                 // the 2nd pass is a pure copy unless the blur radius exceeds one pass: skip it then (same pixels, one GPU pass less)
                                 sourceItem: dg.bn > 1.0 ? bblur2Fx : null
-                                live: !ui.tucked
+                                live: !ui.tucked && !ui.menuOpen
                                 visible: false
                             }
                             ShaderEffect {
@@ -5916,8 +5997,10 @@ Scope {
                                 property real padPx: parent.padPx
                                 property vector2d itemSize: Qt.vector2d(width, height)
                                 property vector2d glassSize: Qt.vector2d(dock.width, dock.height)
-                                property vector2d srcSize: Qt.vector2d(bsrc.sourceRect.width, bsrc.sourceRect.height)
-                                property vector2d srcOffset: Qt.vector2d(parent.margin, parent.margin)
+                                property vector2d srcSize: Qt.vector2d(dg.capW, dg.capH)
+                                // where this item's top-left sits inside the (fixed) capture; follows the Dock as it widens / tucks
+                                property vector2d srcOffset: Qt.vector2d(dock.x - padPx - dg.capX,
+                                                                         dock.y + (win.modelData.height - ui.height) - padPx - dg.capY)
                                 property real pad: padPx
                                 property real radius: root.cornerRadius
                                 property real bezel: Math.min(dock.height * 0.36, 26)
@@ -5971,46 +6054,60 @@ Scope {
                     // top and bottom edges start (those carry the bright line from the glass shader instead). Plain black with alpha, so it
                     // darkens whatever is behind it and follows the wallpaper. The canvas is 3 px larger than the Dock on every side so
                     // the outer half of the line can be drawn; it only repaints when the Dock's size, corner radius or mode changes.
-                    Canvas {
-                        id: sideBorder
-                        anchors.fill: parent
-                        anchors.margins: -3
-                        antialiasing: true
-                        readonly property real strength: root.dockDark ? 0.14 : 0.12
-                        onStrengthChanged: requestPaint()
-                        onWidthChanged: requestPaint()
-                        onHeightChanged: requestPaint()
-                        Connections { target: root; function onCornerRadiusChanged() { sideBorder.requestPaint(); } }
-                        onPaint: {
-                            var ctx = getContext("2d");
-                            ctx.reset();
-                            var m = 3, W = width, H = height;
-                            var w = W - 2 * m, h = H - 2 * m;          // the Dock itself
-                            if (w < 4 || h < 4) return;
-                            var r = Math.max(2, Math.min(root.cornerRadius, h / 2, w / 2));
-                            // fully dark at the very left / right, easing out (smootherstep) over one corner radius: gone by the straight top / bottom
-                            var fade = Math.min(w / 2, r * 1.05);
-                            var g = ctx.createLinearGradient(m, 0, m + w, 0);
-                            var N = 24;
-                            for (var k = 0; k <= N; k++) {
-                                var u = k / N, sm = u * u * u * (u * (u * 6 - 15) + 10), al = (strength * (1 - sm)).toFixed(4);
-                                g.addColorStop(u * fade / w, "rgba(0,0,0," + al + ")");
-                                g.addColorStop(1 - u * fade / w, "rgba(0,0,0," + al + ")");
+                    // Drawn as two small end caps (left, right = mirrored) instead of one Canvas over the whole Dock. The hairline fades out
+                    // within one corner radius of each end and the Dock's HEIGHT never changes, so a cap looks the same whatever the width. The old
+                    // full-width Canvas repainted (a CPU raster + texture upload) on every pointer move while the Dock widened under magnification,
+                    // and the wider the Dock (more pinned apps) the slower that got. The caps are painted once (again on size / radius change).
+                    Repeater {
+                        model: 2
+                        delegate: Canvas {
+                            id: cap
+                            required property int index
+                            readonly property real fadeW: Math.min(root.cornerRadius, root.bgHeight / 2) * 1.05
+                            anchors.top: parent.top;       anchors.topMargin: -3
+                            anchors.bottom: parent.bottom; anchors.bottomMargin: -3
+                            width: Math.ceil(3 + fadeW) + 3
+                            antialiasing: true
+                            // index 0 hugs the left edge; index 1 is the same picture mirrored on the right edge
+                            x: index === 0 ? -3 : parent.width + 3 - width
+                            transform: Scale { origin.x: cap.width / 2; xScale: cap.index === 0 ? 1 : -1 }
+                            readonly property real strength: root.dockDark ? 0.14 : 0.12
+                            onStrengthChanged: requestPaint()
+                            onWidthChanged: requestPaint()
+                            onHeightChanged: requestPaint()
+                            Connections { target: root; function onCornerRadiusChanged() { cap.requestPaint(); } }
+                            onPaint: {
+                                var ctx = getContext("2d");
+                                ctx.reset();
+                                var m = 3, H = height;
+                                var h = H - 2 * m;                         // the Dock's height
+                                if (h < 4) return;
+                                var r = Math.max(2, Math.min(root.cornerRadius, h / 2));
+                                var fade = r * 1.05;
+                                // paint as if the Dock were wide: only its near end shows inside this narrow canvas
+                                var w = 2 * (fade + r) + 8;
+                                var g = ctx.createLinearGradient(m, 0, m + w, 0);
+                                var N = 24;
+                                for (var k = 0; k <= N; k++) {
+                                    var u = k / N, sm = u * u * u * (u * (u * 6 - 15) + 10), al = (strength * (1 - sm)).toFixed(4);
+                                    g.addColorStop(u * fade / w, "rgba(0,0,0," + al + ")");
+                                    g.addColorStop(1 - u * fade / w, "rgba(0,0,0," + al + ")");
+                                }
+                                ctx.strokeStyle = g;
+                                ctx.lineWidth = 1.6;
+                                ctx.beginPath();
+                                ctx.moveTo(m + r, m);
+                                ctx.lineTo(m + w - r, m);
+                                ctx.arc(m + w - r, m + r, r, 1.5 * Math.PI, 2 * Math.PI, false);
+                                ctx.lineTo(m + w, m + h - r);
+                                ctx.arc(m + w - r, m + h - r, r, 0, 0.5 * Math.PI, false);
+                                ctx.lineTo(m + r, m + h);
+                                ctx.arc(m + r, m + h - r, r, 0.5 * Math.PI, Math.PI, false);
+                                ctx.lineTo(m, m + r);
+                                ctx.arc(m + r, m + r, r, Math.PI, 1.5 * Math.PI, false);
+                                ctx.closePath();
+                                ctx.stroke();
                             }
-                            ctx.strokeStyle = g;
-                            ctx.lineWidth = 1.6;
-                            ctx.beginPath();
-                            ctx.moveTo(m + r, m);
-                            ctx.lineTo(m + w - r, m);
-                            ctx.arc(m + w - r, m + r, r, 1.5 * Math.PI, 2 * Math.PI, false);
-                            ctx.lineTo(m + w, m + h - r);
-                            ctx.arc(m + w - r, m + h - r, r, 0, 0.5 * Math.PI, false);
-                            ctx.lineTo(m + r, m + h);
-                            ctx.arc(m + r, m + h - r, r, 0.5 * Math.PI, Math.PI, false);
-                            ctx.lineTo(m, m + r);
-                            ctx.arc(m + r, m + r, r, Math.PI, 1.5 * Math.PI, false);
-                            ctx.closePath();
-                            ctx.stroke();
                         }
                     }
 
@@ -6080,6 +6177,7 @@ Scope {
                                 transform: Translate { x: cell.dx }
                                 z: isDragged ? 100 : 0
 
+                                readonly property Item iconImg: img
                                 readonly property bool leavingCell: modelData.leaving === true
                                 property real appear: modelData.fresh ? 0 : 1
                                 Behavior on appear { NumberAnimation { duration: cell.leavingCell ? root.leaveMs : 320; easing.type: cell.leavingCell ? Easing.InOutCubic : Easing.OutCubic } }
@@ -6160,17 +6258,18 @@ Scope {
                                         radius: 5
                                         color: Qt.rgba(0, 0, 0, 0.32)
                                     }
-                                    ScreencopyView {
+                                    SafeCapture {
                                         id: sv
                                         anchors.centerIn: parent
-                                        captureSource: (root.hub && !root.hub.windowCapture) ? null : cell.heldTl
+                                        want: (root.hub && !root.hub.windowCapture) ? null : cell.heldTl
+                                        graceMs: 400        // longer than the cell's leave animation: the preview stays until the cell is gone, and nothing is in flight by then
                                         // live only while the pointer is on the Dock (where you look at them); otherwise one fresh
                                         // frame every 2 s — live previews of every window were ~8% CPU at idle
-                                        live: !ui.tucked && !root.previewHold && !cell.closingWin && hh.hovered
+                                        wantLive: !ui.tucked && !root.previewHold && !cell.closingWin && hh.hovered
                                         Timer {
                                             interval: 2000; repeat: true; triggeredOnStart: true
-                                            running: !sv.live && !ui.tucked && !root.previewHold && !cell.closingWin && sv.captureSource !== null
-                                            onTriggered: if (typeof sv.captureFrame === "function") sv.captureFrame()
+                                            running: !sv.wantLive && !ui.tucked && !root.previewHold && !cell.closingWin && sv.armed
+                                            onTriggered: sv.snap()
                                         }
                                         readonly property real ar: (implicitWidth > 0 && implicitHeight > 0)
                                                                    ? implicitWidth / implicitHeight : 4 / 3
@@ -6252,7 +6351,13 @@ Scope {
                                 // ── hover label ──
                                 // macOS Tahoe style: a heavily blurred Liquid Glass bubble with a pointer tail, light / dark with the system
                                 // appearance, sized from the Dock (see DockGlassPanel.qml). It is only built while it is shown.
-                                readonly property bool tipOn: root.showLabels && !cell.isSep && ma.containsMouse && !ma.pressed && !ui.menuOpen && !ui.dragging
+                                // The label is a whole glass bubble (3 canvases, a masked blur capture, a shadow). It used to be built for EVERY icon the
+                                // pointer crossed, so a fast sweep over many pinned apps built and tore down a bubble per icon (a hitch each): that was the
+                                // "laggy when the mouse moves a bit fast, worse with many apps". It now appears once the pointer rests on an icon for a moment.
+                                property bool hoverSettled: false
+                                Timer { id: tipDwell; interval: 90; running: ma.containsMouse && !cell.isSep; onTriggered: cell.hoverSettled = true }
+                                Connections { target: ma; function onContainsMouseChanged() { if (!ma.containsMouse) cell.hoverSettled = false; } }
+                                readonly property bool tipOn: root.showLabels && !cell.isSep && cell.hoverSettled && ma.containsMouse && !ma.pressed && !ui.menuOpen && !ui.dragging
                                 Loader {
                                     id: tip
                                     z: 10
@@ -6290,7 +6395,7 @@ Scope {
                                             anchors.verticalCenterOffset: lp.sub !== "" ? 9.2 * lp.k : lp.bodyH / 2 + 0.5 * lp.k
                                             color: lp.dark ? Qt.rgba(1, 1, 1, 0.92) : Qt.rgba(0, 0, 0, 0.86)
                                             font.pixelSize: lp.fs
-                                            font.family: root.fontForWeight(font.weight, root.fontFamily)
+                                            font.family: root.fontForWeight(Font.Normal, root.fontFamily)
                                         }
                                         Text {
                                             id: st
@@ -6303,7 +6408,7 @@ Scope {
                                             anchors.verticalCenterOffset: 22.4 * lp.k
                                             color: lp.dark ? Qt.rgba(1, 1, 1, 0.60) : Qt.rgba(0, 0, 0, 0.58)
                                             font.pixelSize: Math.max(8, Math.round(10.2 * lp.k))
-                                            font.family: root.fontForWeight(font.weight, root.fontFamily)
+                                            font.family: root.fontForWeight(Font.Normal, root.fontFamily)
                                         }
                                     }
                                 }
@@ -6355,7 +6460,9 @@ Scope {
                                         if (mouse.button === Qt.RightButton) {
                                             ui.menuCx = cell.mapToItem(ui, cell.width / 2, 0).x;
                                             ui.menuModel = root.menuFor(cell.modelData);
+                                            ui.menuCell = cell;
                                             ui.menuItem = cell.modelData;
+                                            ui.syncMenu();
                                         } else {
                                             root.activate(cell.modelData, mouse.button === Qt.MiddleButton);
                                         }
@@ -6390,6 +6497,7 @@ Scope {
 
                     backdrop: glassBackdrop.item
                     live: root.liquidActive && glassBackdrop.item !== null
+                    frozen: ui.menuOpen      // the menu's glass stops updating while it is open
                     dark: root.darkMode
                     k: root.labelK
                     radius: 16 * k
@@ -6401,9 +6509,12 @@ Scope {
                     width: ui.menuW
                     bodyH: menuCol.height + 2 * pad
                     x: Math.max(8, Math.min(ui.width - width - 8, ui.menuCx - width / 2))
-                    y: ui.height - root.margin - root.bgHeight - root.iconSize * (root.effMag - 1) - Math.round(10 * k) - height
-                    // the tail points at the icon the menu belongs to
-                    tailX: ui.menuCx - x
+                    y: ui.menuIconTop >= 0 ? ui.menuIconTop - Math.round(10 * k) - height
+                                           : ui.height - root.margin - root.bgHeight - root.iconSize * (root.effMag - 1) - Math.round(10 * k) - height
+                    // The tail points at the icon the menu belongs to. Its position along the bubble is locked when the menu opens:
+                    // re-evaluating tailX while the menu follows its icon during magnification changed shapeKey on every frame,
+                    // repainting all of the bubble's canvases (blurred shadow included) on the CPU and causing severe magnification lag.
+                    tailX: ui.menuTailX >= 0 ? ui.menuTailX : width / 2
 
                     Column {
                         id: menuCol
@@ -6447,7 +6558,7 @@ Scope {
                                          : (mi.off ? (menu.dark ? Qt.rgba(1, 1, 1, 0.30) : Qt.rgba(0, 0, 0, 0.28))
                                                    : (menu.dark ? Qt.rgba(1, 1, 1, 0.92) : Qt.rgba(0, 0, 0, 0.86)))
                                     font.pixelSize: Math.max(9, Math.round(13 * menu.k))
-                                    font.family: root.fontForWeight(font.weight, root.fontFamily)
+                                    font.family: root.fontForWeight(Font.Normal, root.fontFamily)
                                 }
                                 MouseArea {
                                     id: mia

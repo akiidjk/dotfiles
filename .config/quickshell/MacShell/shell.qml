@@ -19,6 +19,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
+import "CaptureGate.js" as CaptureGate
 
 ShellRoot {
     // The UI font ("Open Runde") ships with MacShell: registered here, first, so every Text below can use it
@@ -75,17 +76,61 @@ ShellRoot {
         readonly property bool captureHold: churn || !windowCapture
         // Liquid Glass: only stage 1, and only while windows open / close. Live capture pauses (the glass keeps its last frame, the capture
         // source stays attached, so nothing goes blank), then resumes. Not tied to the previews switch, never cut.
-        readonly property bool glassHold: churn
+        // A short pause while windows open / close (MACSHELL_CHURNPAUSE=0 switches it off), plus a capture storm and a close the shell itself sends.
+        readonly property bool glassHold: (churn && Quickshell.env("MACSHELL_CHURNPAUSE") !== "0") || storm || preClose
         property bool captureCut: false
+        // ── capture storm ──
+        // Windows opening / closing / re-tiling make Hyprland fail the frames that are in flight, and every failed capture is a context that is
+        // destroyed and rebuilt: the burst of those is what takes the Wayland connection down ("invalid object NN"). When several captures
+        // fail within two seconds (CaptureGate.js counts them) every stream and single shot sits out until it has been quiet for 1.2 s.
+        property bool storm: false
+        Timer {
+            interval: 250; repeat: true; running: true
+            onTriggered: {
+                if (CaptureGate.recentFails(2000) >= 5) { stormEnd.restart(); if (!sharedHub.storm) sharedHub.storm = true; }
+            }
+        }
+        Timer { id: stormEnd; interval: 1200; onTriggered: sharedHub.storm = false }
         // Dock previews no longer pause as a whole while windows open / close (that froze every preview for ~1.5 s):
         // only the CLOSING window's own preview stops its live capture, the moment Hyprland announces the close
         // (before the toplevel is destroyed, so no frame is ever aborted in flight). Everything else keeps running.
-        readonly property bool previewHold: !windowCapture
+        // The menu bar's glass (Control Center, menus, popovers) is the part the person is LOOKING at while windows tile, so it only sits
+        // out for a close the shell itself sends: no churn pause, no storm pause. Its streams exist only while a popover is open.
+        readonly property bool barHold: preClose || (churn && Quickshell.env("MACSHELL_CHURNPAUSE") === "1")
+        readonly property bool previewHold: !windowCapture || storm || preClose
         property var closingWins: ({})
         onCaptureHoldChanged: { if (captureHold) cutDelay.restart(); else { cutDelay.stop(); captureCut = false; } }
         Timer { id: cutDelay; interval: 500; onTriggered: sharedHub.captureCut = true }
         Timer { id: closingForget; interval: 3000; onTriggered: sharedHub.closingWins = ({}) }
-        Timer { id: churnRelease; interval: 1200; onTriggered: sharedHub.churn = false }
+        // was 1.2 s: the glass froze for over a second after every window that opened or closed. Closing windows are now handled
+        // where the crash really was (SafeCapture keeps a capture alive until its in-flight frame is done), so the pause can be short.
+        Timer { id: churnRelease; interval: 350; onTriggered: sharedHub.churn = false }
+
+        // ── closing on purpose: go quiet first, then close ──
+        // When the person clicks Close / Quit, every live capture stops for ~150 ms BEFORE the close request is sent, so no frame is
+        // in flight when the window disappears. (A window that closes by itself is covered by SafeCapture's grace period.)
+        property bool preClose: false
+        property var preCloseQueue: []
+        Timer {
+            id: preCloseT
+            interval: 150
+            onTriggered: {
+                var q = sharedHub.preCloseQueue;
+                sharedHub.preCloseQueue = [];
+                for (var i = 0; i < q.length; i++) { try { q[i](); } catch (err) { console.log("[macshell] close:", err); } }
+                // stay quiet through the close itself, then let go
+                preCloseDone.restart();
+            }
+        }
+        Timer { id: preCloseDone; interval: 250; onTriggered: if (sharedHub.preCloseQueue.length === 0) sharedHub.preClose = false }
+        function closeQuietly(fn) {
+            preClose = true;
+            preCloseDone.stop();
+            var q = preCloseQueue.slice();
+            q.push(fn);
+            preCloseQueue = q;
+            preCloseT.restart();
+        }
         // forget admission records of windows that no longer exist (the table grew by one entry per window ever opened)
         function tlPrune() {
             var ts = Hyprland.toplevels.values, live = {}, k;
@@ -166,7 +211,7 @@ ShellRoot {
             var ts = Hyprland.toplevels.values, st = tlState, now = Date.now();
             for (var i = 0; i < ts.length; i++) {
                 var a = ts[i].address;
-                if (st.ready[a] === undefined) { st.ready[a] = Math.max(now + 200, st.last + 110); st.last = st.ready[a]; }
+                if (st.ready[a] === undefined) { st.ready[a] = Math.max(now + 100, st.last + 70); st.last = st.ready[a]; }
             }
         }
         function tlFor(addr) {
@@ -176,7 +221,7 @@ ShellRoot {
                 if (ts[i].address !== a) continue;
                 var st = tlState, now = Date.now();
                 if (st.ready[a] === undefined) {
-                    st.ready[a] = Math.max(now + 200, st.last + 110);
+                    st.ready[a] = Math.max(now + 100, st.last + 70);
                     st.last = st.ready[a];
                 }
                 if (st.ready[a] > now) {
@@ -201,6 +246,7 @@ ShellRoot {
         // when this Quickshell build can't provide the data.
         property bool ipcOk: false
         property bool ipcBroken: false
+        property int monTick: 0
         function ipcPoll() {
             var ts, ms, i, o, m, cl = [], mo = [];
             try {
@@ -209,21 +255,28 @@ ShellRoot {
                 for (i = 0; i < ts.length; i++) { o = ts[i].lastIpcObject; if (o && o.address !== undefined) cl.push(o); }
                 for (i = 0; i < ms.length; i++) { m = ms[i].lastIpcObject; if (m && m.name !== undefined) mo.push(m); }
                 Hyprland.refreshToplevels();      // the answer lands in lastIpcObject and is read on the next tick
-                Hyprland.refreshMonitors();
+                // monitors only change on workspace / monitor events (those refresh them right away, see onRawEvent): every 6th tick is plenty
+                if ((++monTick % 6) === 0) Hyprland.refreshMonitors();
             } catch (err) { ipcBroken = true; ipcOk = false; return; }
             if (mo.length === 0 || (ts.length > 0 && cl.length === 0)) { ipcOk = false; return; }
             ipcOk = true;
             tlSeed();
             // fingerprint the GEOMETRY only: a window retitling itself (a terminal, a browser tab, a player) is no
-            // reason to wake the 60 Hz path — that kept it hot (and the main thread busy) the whole time
-            var gk = [], j, c;
-            for (j = 0; j < cl.length; j++) {
-                c = cl[j];
-                gk.push([c.address, c.at, c.size, c.workspace ? c.workspace.id : 0, c.monitor, c.floating, c.fullscreen, c.mapped, c.hidden]);
+            // reason to wake the 60 Hz path — that kept it hot (and the main thread busy) the whole time.
+            // A plain string (no JSON.stringify of nested arrays): this runs up to 60 times a second.
+            var key = "", j, c, at, sz;
+            for (j = 0; j < mo.length; j++) {
+                m = mo[j];
+                key += m.name + "," + m.x + "," + m.y + "," + m.width + "," + m.height + "," + m.scale + ","
+                     + (m.activeWorkspace ? m.activeWorkspace.id : 0) + "," + (m.specialWorkspace ? m.specialWorkspace.id : 0) + ";";
             }
-            var mk = [];
-            for (j = 0; j < mo.length; j++) mk.push([mo[j].name, mo[j].x, mo[j].y, mo[j].width, mo[j].height, mo[j].scale, mo[j].activeWorkspace ? mo[j].activeWorkspace.id : 0, mo[j].specialWorkspace ? mo[j].specialWorkspace.id : 0]);
-            var key = JSON.stringify([mk, gk]);
+            key += "|";
+            for (j = 0; j < cl.length; j++) {
+                c = cl[j]; at = c.at; sz = c.size;
+                key += c.address + "," + (at ? at[0] + "," + at[1] : "") + "," + (sz ? sz[0] + "," + sz[1] : "") + ","
+                     + (c.workspace ? c.workspace.id : 0) + "," + c.monitor + "," + (c.floating ? 1 : 0) + "," + c.fullscreen + ","
+                     + (c.mapped ? 1 : 0) + (c.hidden ? 1 : 0) + ";";
+            }
             if (key === geoLast) return;
             geoLast = key;
             geoHot = true; geoCool.restart();
@@ -309,7 +362,8 @@ ShellRoot {
     MacBar { id: macBar; hub: sharedHub }
     MacDock { id: macDock; hub: sharedHub; bar: macBar }
     MacWidgets { id: macWidgets; hub: sharedHub }
-    ClockApp { id: clockApp; hub: sharedHub }
+    // The Settings toggle governs the app; a manual components.json override wins when present.
+    ClockApp { id: clockApp; hub: sharedHub; appEnabled: clockApp.manualOverride ? clockApp.manualVal : macBar.clockAppEnabled }
     AboutApp { id: aboutApp; hub: sharedHub }
 
     Component.onCompleted: {
