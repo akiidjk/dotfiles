@@ -379,6 +379,8 @@ Scope {
 
     function fetchLyrics() {
         if (!lyricsNeeded || !player || player.trackTitle === "") return;
+        // no artist = a video site's page title ("Netflix"), not a song: searching it matches random tracks
+        if (!player.trackArtist) { lyricsState = "none"; return; }
         if (lrcProc.running) return;                      // finished handler re-checks the key
         lyricsReqKey = trackKey;
         lrcTitle = player.trackTitle; lrcArtist = player.trackArtist; lrcAlbum = player.trackAlbum;

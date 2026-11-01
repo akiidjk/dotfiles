@@ -1142,7 +1142,7 @@ Item {
     property int lyrTries: 0
     Timer { id: lyrRetry; interval: 12000; onTriggered: ls.fetchLyrics() }
     function fetchLyrics() {
-        if (!ls.isPrimary || !media.pl || !(media.pl.trackTitle || "")) { lyrLines = []; lyrStatus = "idle"; return; }
+        if (!ls.isPrimary || !media.pl || !(media.pl.trackTitle || "") || !(media.pl.trackArtist || "")) { lyrLines = []; lyrStatus = "idle"; return; }
         lyrLines = []; lyrStatus = "loading";
         var len = media.pl.lengthSupported ? Math.round(media.pl.length) : 0;
         lyrProc.running = false;
