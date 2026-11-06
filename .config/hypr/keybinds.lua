@@ -40,6 +40,12 @@ hl.bind(
     hl.dsp.layout("fit active"),
     { description = "Make fit the window to all cols" }
 )
+-- Scrolling layout: stack windows in one column (one above the other) or pop them back out
+hl.bind(mainMod .. " + V", hl.dsp.layout("consume_or_expel prev"), { description = "Stack into left column / unstack" })
+hl.bind(mainMod .. " + SHIFT + V", hl.dsp.layout("consume_or_expel next"), { description = "Stack into right column / unstack" })
+-- Column width: cycle explicit_column_widths (1/3, 1/2, 2/3, full)
+hl.bind(mainMod .. " + R", hl.dsp.layout("colresize +conf"), { description = "Next column width" })
+hl.bind(mainMod .. " + SHIFT + R", hl.dsp.layout("colresize -conf"), { description = "Previous column width" })
 hl.bind(mainMod .. " + T", hl.dsp.window.float(), { description = "Toggle floating" })
 hl.bind(mainMod .. " + J", hl.dsp.layout("swapcol r"), { description = "Swap right the col" })
 hl.bind(mainMod .. " + G", hl.dsp.layout("swapcol l"), { description = "Swap left the col" })
