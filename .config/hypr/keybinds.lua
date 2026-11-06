@@ -89,12 +89,12 @@ hl.bind(
 )
 hl.bind(
     "SUPER + SHIFT + up",
-    hl.dsp.window.resize({ x = 0, y = -40, relative = true }),
+    hl.dsp.window.resize({ x = 0, y = 40, relative = true }),
     { description = "Resize window up" }
 )
 hl.bind(
     "SUPER + SHIFT + down",
-    hl.dsp.window.resize({ x = 0, y = 40, relative = true }),
+    hl.dsp.window.resize({ x = 0, y = -40, relative = true }),
     { description = "Resize window down" }
 )
 
