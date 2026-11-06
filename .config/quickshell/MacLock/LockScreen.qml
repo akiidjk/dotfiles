@@ -1134,7 +1134,7 @@ Item {
         }
     }
 
-    // lyrics for the current track: NetEase, LRCLIB, and Genius, cached in ~/.cache/maclock/lyrics
+    // lyrics for the current track: lyrics.sh (NetEase, LRCLIB, syncedlyrics, Genius), cached in ~/.cache/maclock/lyrics
     property var lyrLines: []              // [{ t: seconds (-1 = unsynced), text }]
     property string lyrStatus: "idle"      // idle | loading | synced | plain | none
     readonly property string trackKey: media.pl ? (media.pl.trackArtist || "") + "\u0001" + (media.pl.trackTitle || "") : ""
@@ -1146,46 +1146,9 @@ Item {
         lyrLines = []; lyrStatus = "loading";
         var len = media.pl.lengthSupported ? Math.round(media.pl.length) : 0;
         lyrProc.running = false;
-        lyrProc.command = ["sh", "-c", ls.lyrScript, "sh", media.pl.trackArtist || "", media.pl.trackTitle || "", media.pl.trackAlbum || "", len > 0 ? String(len) : ""];
+        lyrProc.command = ["sh", Quickshell.env("HOME") + "/.config/quickshell/MacLock/lyrics.sh", media.pl.trackArtist || "", media.pl.trackTitle || "", media.pl.trackAlbum || "", len > 0 ? String(len) : ""];
         lyrProc.running = true;
     }
-    readonly property string lyrScript: [
-        'a="$1"; t="$2"; al="$3"; d="${4:-0}"; c="$HOME/.cache/maclock/lyrics"; mkdir -p "$c"',
-        'k=$(printf "%s|%s" "$a" "$t" | md5sum | cut -c1-16); f="$c/$k.json"',
-        '[ -s "$f" ] && { cat "$f"; exit 0; }',
-        'tmp=$(mktemp); answered=0; r=""',
-        // titles like "Song (feat. X)" / "Song - Remastered 2011": also try the bare title
-        'bare=$(printf "%s" "$t" | sed -E "s/ *[(\\[][^)\\]]*[)\\]]//g; s/ +- +(.*[Rr]emaster.*|[Ll]ive.*|[Rr]adio [Ee]dit.*)$//")',
-        // ── 1. NetEase Cloud Music: fast, not rate-limited. Same title + same length (±4 s) or it doesn't count.
-        'ne() { code=$(curl -s --max-time 6 -A "Mozilla/5.0" -o "$tmp" -w "%{http_code}" -G "https://music.163.com/api/search/get" --data-urlencode "s=$1" -d type=1 -d limit=10); [ "$code" = 200 ] || return 1; answered=1',
-        '  id=$(jq -r --arg t "$bare" --argjson d "$d" \'def n: ascii_downcase | gsub("[^\\\\p{L}\\\\p{N}]"; ""); ($t | n) as $q | [.result.songs[]? | select((.name | n) as $nm | ($nm == $q) or ($nm | startswith($q)) or ($q | startswith($nm))) | select($d == 0 or (((.duration / 1000) - $d) | fabs) <= 4)][0].id // empty\' "$tmp")',
-        '  [ -n "$id" ] || return 1',
-        '  curl -s --max-time 6 -A "Mozilla/5.0" -o "$tmp" "https://music.163.com/api/song/lyric?id=$id&lv=1" || return 1',
-        '  l=$(jq -r ".lrc.lyric // empty" "$tmp"); case "$l" in *"[0"*|*"[1"*) ;; *) return 1;; esac',
-        '  r=$(jq -nc --arg l "$l" "{syncedLyrics: \\$l}"); }',
-        'ne "$a $bare" || ne "$bare"',
-        // ── 2. LRCLIB (rate-limited per second: wait and retry briefly), length-checked too
-        'ua="MacLock/1.0 (https://github.com/0-ss/Macshell)"; api=https://lrclib.net/api',
-        'req() { n=0; while [ $n -lt 2 ]; do code=$(curl -s --max-time 8 -A "$ua" -o "$tmp" -w "%{http_code}" -G "$@"); case "$code" in 200) answered=1; return 0;; 404) answered=1; return 1;; 429) n=$((n+1)); sleep 1.5;; *) return 1;; esac; done; return 1; }',
-        'pick=\'[.[] | select(.syncedLyrics != null or .plainLyrics != null) | select($d == 0 or (((.duration // 0) - $d) | fabs) <= 4)] | ([.[] | select(.syncedLyrics != null)][0] // .[0]) // empty\'',
-        'lsearch() { req "$api/search" "$@" && r=$(jq -c --argjson d "$d" "$pick" "$tmp"); }',
-        '[ -z "$r" ] && lsearch --data-urlencode "track_name=$t" --data-urlencode "artist_name=$a"',
-        '[ -z "$r" ] && [ "$bare" != "$t" ] && lsearch --data-urlencode "track_name=$bare" --data-urlencode "artist_name=$a"',
-        '[ -z "$r" ] && lsearch --data-urlencode "q=$a $bare"',
-        'rm -f "$tmp"',
-        // ── 3. Genius: token-free, rich lyrics source
-        'if [ -z "$r" ] || [ "$(printf "%s" "$r" | jq -r ".syncedLyrics // empty" 2>/dev/null)" = "" ]; then',
-        '  g=$(python3 "$HOME/.config/quickshell/MacLock/genius-lyrics.py" "$a" "$bare" "$c" 2>/dev/null || true)',
-        '  if [ -n "$g" ] && [ "$g" != "{}" ]; then',
-        '    gp=$(printf "%s" "$g" | jq -r ".plain // empty" 2>/dev/null)',
-        '    if [ -n "$gp" ]; then r=$(jq -nc --arg p "$gp" "{plainLyrics: \\$p}"); answered=1; fi',
-        '  fi',
-        'fi',
-        'if [ -n "$r" ]; then printf "%s" "$r" | jq -c "{synced: .syncedLyrics, plain: .plainLyrics, instrumental: .instrumental}" | tee "$f"',
-        // a source really answered and nobody has it: remember; otherwise (offline / still limited) let the UI retry
-        'elif [ "$answered" = 1 ]; then echo "{}" | tee "$f"',
-        'else echo "{\\"retry\\":true}"; fi'
-    ].join("\n")
     Process {
         id: lyrProc
         stdout: StdioCollector {
@@ -1198,7 +1161,7 @@ Item {
                     for (i = 0; i < ls2.length; i++) {
                         var line = ls2[i], tags = [], re = /\[(\d+):(\d+(?:\.\d+)?)\]/g;
                         while ((m = re.exec(line)) !== null) tags.push(parseInt(m[1]) * 60 + parseFloat(m[2]));
-                        var txt = line.replace(/\[[^\]]*\]/g, "").trim();
+                        var txt = line.replace(/\[[^\]]*\]/g, "").replace(/<[^>]*>/g, "").trim();   // <mm:ss> = enhanced-LRC word tags
                         if (/^(制作人|作词|作曲|编曲|混音|母带|制作|和声|吉他|贝斯|鼓|录音|监制|出品|发行|OP|SP|Producer|Lyricist|Composer|Lyrics|Composed|Written)\s*[:：]/i.test(txt)) continue;
                         for (var j = 0; j < tags.length; j++) out.push({ t: tags[j], text: txt });
                     }
@@ -1292,6 +1255,16 @@ Item {
                         readonly property int rel: ls.lyrCur < 0 ? 0 : index - ls.lyrCur
                         readonly property bool cur: ls.lyrStatus === "synced" && index === ls.lyrCur
                         readonly property bool gap: (modelData.text || "") === ""
+                        // karaoke: the words of the current line light up one by one.
+                        // ponytail: LRC has no word times, so they are spread evenly over the line (≤0.7 s per word)
+                        readonly property var words: gap ? [] : modelData.text.split(/\s+/)
+                        readonly property real lineDur: {
+                            var nx = index + 1 < ls.lyrLines.length ? ls.lyrLines[index + 1].t : modelData.t + 4;
+                            return Math.max(0.6, Math.min(nx - modelData.t, words.length * 0.7 + 0.5));
+                        }
+                        readonly property int sung: !cur || gap ? -1
+                            : Math.max(1, Math.min(words.length, Math.floor((ls.estPos + 0.25 - modelData.t) / lineDur * words.length) + 1))
+                        function esc(t) { return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
                         width: lyrCol.width
                         height: gap ? 34 * ls.u : lt.implicitHeight
                         // Apple Music's wave: every line follows the scroll on its own spring, lines further down a little later
@@ -1306,7 +1279,10 @@ Item {
                             id: lt
                             visible: !ln.gap
                             width: parent.width
-                            text: ln.modelData.text
+                            text: ln.sung < 0 ? ln.modelData.text
+                                : '<font color="#ffffff">' + ln.esc(ln.words.slice(0, ln.sung).join(" ")) + '</font> <font color="#6bffffff">'
+                                  + ln.esc(ln.words.slice(ln.sung).join(" ")) + '</font>'
+                            textFormat: ln.sung < 0 ? Text.PlainText : Text.StyledText
                             wrapMode: Text.WordWrap
                             color: "white"
                             font.family: ls.fam; font.pixelSize: 31 * ls.u; font.weight: Font.Bold

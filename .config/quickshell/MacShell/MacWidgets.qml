@@ -356,7 +356,7 @@ Scope {
     }
     function pr(i, k) { var r = playerRects[i]; return r ? r[k] : 0; }
 
-    // ───────────── lyrics (LRCLIB synced first; Genius plain-text fallback) ─────────────
+    // ───────────── lyrics (MacLock/lyrics.sh: synced first, plain-text fallback) ─────────────
     property bool lyricsWanted: false
     property bool islandLyrics: false          // the Dynamic Island shows the line being sung (Island.qml)
     readonly property bool lyricsNeeded: lyricsWanted || islandLyrics
@@ -392,7 +392,8 @@ Scope {
             var line = lines[i], re = /\[(\d+):(\d+(?:\.\d+)?)\]/g, times = [], m;
             while ((m = re.exec(line)) !== null) times.push(parseInt(m[1]) * 60 + parseFloat(m[2]));
             if (times.length === 0) continue;
-            var text = line.replace(/\[[^\]]*\]/g, "").trim();
+            var text = line.replace(/\[[^\]]*\]/g, "").replace(/<[^>]*>/g, "").trim();   // <mm:ss> = enhanced-LRC word tags
+            if (/^(作词|作曲|编曲|制作人|混音|母带|Producer|Lyricist|Composer|Lyrics|Composed|Written)\s*[:：]/i.test(text)) continue;   // NetEase credits
             for (var j = 0; j < times.length; j++) out.push({ t: times[j], text: text });
         }
         out.sort(function (a, b) { return a.t - b.t; });
@@ -401,21 +402,13 @@ Scope {
     function applyLyrics(raw) {
         var o = null;
         try { o = JSON.parse(raw); } catch (err) { }
-        if (Array.isArray(o)) {                           // search fallback: prefer a result with synced lyrics
-            var pick = null;
-            for (var i = 0; i < o.length; i++) {
-                if (o[i].syncedLyrics) { pick = o[i]; break; }
-                if (!pick && o[i].plainLyrics) pick = o[i];
-            }
-            o = pick;
-        }
         if (!o || o.instrumental) { lyricsLines = []; lyricsSynced = false; lyricsState = "none"; return; }
-        if (o.syncedLyrics) {
-            var l = parseLrc(o.syncedLyrics);
+        if (o.synced) {
+            var l = parseLrc(o.synced);
             if (l.length > 0) { lyricsLines = l; lyricsSynced = true; lyricsState = "ok"; return; }
         }
-        if (o.plainLyrics) {
-            var ps = String(o.plainLyrics).split(/\r?\n/), pl = [];
+        if (o.plain) {
+            var ps = String(o.plain).split(/\r?\n/), pl = [];
             for (var k = 0; k < ps.length; k++) if (ps[k].trim() !== "") pl.push({ t: -1, text: ps[k].trim() });
             if (pl.length > 0) { lyricsLines = pl; lyricsSynced = false; lyricsState = "ok"; return; }
         }
@@ -423,17 +416,8 @@ Scope {
     }
     Process {
         id: lrcProc
-        command: ["sh", "-c",
-            "UA='macshell-widgets (quickshell)'; "
-            + "r=$(curl -fsS --max-time 8 -A \"$UA\" -G https://lrclib.net/api/get --data-urlencode \"track_name=$1\" --data-urlencode \"artist_name=$2\" "
-            + "--data-urlencode \"album_name=$3\" -d \"duration=$4\" 2>/dev/null "
-            + "|| curl -fsS --max-time 8 -A \"$UA\" -G https://lrclib.net/api/search --data-urlencode \"q=$2 $1\" 2>/dev/null || true); "
-            + "if printf '%s' \"$r\" | jq -e 'if type == \"array\" then any(.[]; (.syncedLyrics // \"\") != \"\") else (.syncedLyrics // \"\") != \"\" end' >/dev/null 2>&1; then printf '%s' \"$r\"; exit 0; fi; "
-            + "g=$(python3 \"$HOME/.config/quickshell/MacShell/genius-lyrics.py\" \"$2\" \"$1\" \"$HOME/.cache/macshell/lyrics\" 2>/dev/null || true); "
-            + "gp=$(printf '%s' \"$g\" | jq -r '.plain // empty' 2>/dev/null); "
-            + "if [ -n \"$gp\" ]; then jq -nc --arg p \"$gp\" '{plainLyrics:$p}'; "
-            + "elif [ -n \"$r\" ]; then printf '%s' \"$r\"; else printf '{}'; fi",
-            "sh", root.lrcTitle, root.lrcArtist, root.lrcAlbum, root.lrcDur]
+        // same fetcher as MacLock (NetEase, LRCLIB, syncedlyrics, Genius; length-checked, cached)
+        command: ["sh", Quickshell.env("HOME") + "/.config/quickshell/MacLock/lyrics.sh", root.lrcArtist, root.lrcTitle, root.lrcAlbum, root.lrcDur]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (root.lyricsReqKey !== root.trackKey) {            // the song changed while we were asking

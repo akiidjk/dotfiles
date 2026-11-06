@@ -535,13 +535,26 @@ Item {
                     readonly property bool cur: w.lyricsSynced && index === w.lyricIdx
                     property real bl: (!w.lyricsSynced || cur) ? 0 : Math.min(1, 0.22 + dist * 0.16)
                     Behavior on bl { NumberAnimation { duration: 480; easing.type: Easing.OutCubic } }
+                    // karaoke: words of the current line light up one by one (same as MacLock).
+                    // ponytail: LRC has no word times, so they are spread evenly over the line (≤0.7 s per word)
+                    readonly property var words: modelData.text !== "" ? modelData.text.split(/\s+/) : []
+                    readonly property real lineDur: {
+                        var nx = index + 1 < w.lyrics.length ? w.lyrics[index + 1].t : modelData.t + 4;
+                        return Math.max(0.6, Math.min(nx - modelData.t, words.length * 0.7 + 0.5));
+                    }
+                    readonly property int sung: !cur || words.length === 0 ? -1
+                        : Math.max(1, Math.min(words.length, Math.floor((w.position + 0.3 - modelData.t) / lineDur * words.length) + 1))
+                    function esc(t) { return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
                     width: ListView.view.width
                     height: txt.implicitHeight + 12 * w.k
                     Text {
                         id: txt
                         width: parent.width
                         anchors.verticalCenter: parent.verticalCenter
-                        text: ln.modelData.text !== "" ? ln.modelData.text : "\u266A"
+                        text: ln.sung < 0 ? (ln.modelData.text !== "" ? ln.modelData.text : "\u266A")
+                            : '<font color="' + w.fg + '">' + ln.esc(ln.words.slice(0, ln.sung).join(" ")) + '</font> <font color="'
+                              + Qt.rgba(w.fg.r, w.fg.g, w.fg.b, 0.42) + '">' + ln.esc(ln.words.slice(ln.sung).join(" ")) + '</font>'
+                        textFormat: ln.sung < 0 ? Text.PlainText : Text.StyledText
                         wrapMode: Text.Wrap
                         color: w.fg
                         font.family: Fonts.forWeight(Font.Bold, w.fam)
