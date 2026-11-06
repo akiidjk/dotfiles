@@ -4723,6 +4723,7 @@ Scope {
 
     // MacShell's own windows (About This Linux, Settings, Finder, Photos ...) all have the app id "org.quickshell":
     // they show the MacShell logo and name instead of a generic icon
+    readonly property string appsIconPath: decodeURIComponent(String(Qt.resolvedUrl("assets/apps-dock.svg")).replace(/^file:\/\//, ""))
     readonly property string logoPath: decodeURIComponent(String(Qt.resolvedUrl("assets/macshell-logo.png")).replace(/^file:\/\//, ""))
     function isShellApp(appId) { return appId === "org.quickshell"; }
 
@@ -4838,6 +4839,7 @@ Scope {
 
     function activate(item, forceNew) {
         if (item.kind === "win") { if (item.tl) item.tl.activate(); return; }
+        if (item.special === "apps") { Quickshell.execDetached(["vicinae", "toggle"]); return; }   // upstream opens Spotlight; vicinae is our launcher
         if (item.special === "trash") {
             // the file manager first (Dolphin understands trash:/ natively); xdg-open only as the last resort
             Quickshell.execDetached(["sh", "-c",
@@ -4892,19 +4894,34 @@ Scope {
         var vis = [];
         for (var i = 0; i < items.length; i++) {
             var it = items[i];
-            if (it.kind === "app" && it.pinned && !it.special) vis.push(it);
+            if (it.kind === "app" && it.pinned && (!it.special || it.special === "apps")) vis.push(it);
             else break;
         }
-        if (from < 0 || from >= vis.length) return;
-        var moved = vis.splice(from, 1)[0];
-        vis.splice(Math.max(0, Math.min(to, vis.length)), 0, moved);
+        if (from < 0) return;
+        if (from >= vis.length) {
+            // "Apps" dragged out of its default spot (after the separators / windows) into the pinned block
+            var ai = items[from];
+            if (!ai || ai.special !== "apps") return;
+            vis.splice(Math.max(0, Math.min(to, vis.length)), 0, ai);
+        } else {
+            var moved = vis.splice(from, 1)[0];
+            vis.splice(Math.max(0, Math.min(to, vis.length)), 0, moved);
+        }
 
         var out = [], have = {};
-        for (var v = 0; v < vis.length; v++) { out.push(vis[v].entry.id); have[vis[v].key] = true; }
+        for (var v = 0; v < vis.length; v++) { out.push(vis[v].special === "apps" ? "__apps" : vis[v].entry.id); have[vis[v].key] = true; }
         for (var p = 0; p < pinned.length; p++) {
             var id = String(pinned[p]).replace(/\.desktop$/, "");
             if (!have[id.toLowerCase()]) out.push(pinned[p]);
         }
+        pinned = out;
+        store.setText(JSON.stringify(out, null, 2));
+        rebuild();
+    }
+
+    function resetAppsSlot() {
+        var out = [];
+        for (var i = 0; i < pinned.length; i++) if (String(pinned[i]) !== "__apps") out.push(pinned[i]);
         pinned = out;
         store.setText(JSON.stringify(out, null, 2));
         rebuild();
@@ -4915,6 +4932,13 @@ Scope {
         if (item.kind === "win") {
             m.push({ kind: "item", label: I18n.tr("Show"), run: function () { activate(item, false); } });
             m.push({ kind: "item", label: I18n.tr("Close"), run: function () { var t = item.tl; if (!t) return; if (root.hub) root.hub.closeQuietly(function () { if (t) t.close(); }); else t.close(); } });
+            m.push({ kind: "sep" });
+            m.push({ kind: "item", label: I18n.tr("Settings\u2026"), run: function() { root.openPrefs(); } });
+            return m;
+        }
+        if (item.special === "apps") {
+            m.push({ kind: "item", label: I18n.tr("Open"), run: function () { activate(item, false); } });
+            if (item.pinned) m.push({ kind: "item", label: I18n.tr("Reset Position"), run: function () { resetAppsSlot(); } });
             m.push({ kind: "sep" });
             m.push({ kind: "item", label: I18n.tr("Settings\u2026"), run: function() { root.openPrefs(); } });
             return m;
@@ -4977,7 +5001,14 @@ Scope {
         if (changed) launching = L;
 
         var list = [], seen = {};
+        var appsItem = { kind: "app", key: "__apps", name: I18n.tr("Apps"), icon: Quickshell.iconPath("view-app-grid", true) !== "" ? "view-app-grid" : appsIconPath,
+                         entry: null, running: false, pinned: false, special: "apps" };
+        var appsPlaced = false;
         for (var p = 0; p < pinned.length; p++) {
+            if (String(pinned[p]) === "__apps") {
+                if (!appsPlaced) { appsItem.pinned = true; list.push(appsItem); appsPlaced = true; }
+                continue;
+            }
             var e = DesktopEntries.byId(String(pinned[p]).replace(/\.desktop$/, ""));
             if (!e) continue;
             var ek = e.id.toLowerCase();
@@ -5022,11 +5053,11 @@ Scope {
         for (var wi = 0; wi < winIdList.length; wi++) if (liveWins.indexOf(winIdList[wi].tl) >= 0) keep.push(winIdList[wi]);
         winIdList = keep;
 
-        if (showTrash || winItems.length > 0) {
-            list.push({ kind: "sep", key: "sep:win" });
-            for (var wj = 0; wj < winItems.length; wj++) list.push(winItems[wj]);
-        }
-        if (showTrash && winItems.length > 0) list.push({ kind: "sep", key: "sep:trash" });
+        // [apps…] | [windows…] | Apps (vicinae) | Trash
+        list.push({ kind: "sep", key: "sep:win" });
+        for (var wj = 0; wj < winItems.length; wj++) list.push(winItems[wj]);
+        if (winItems.length > 0) list.push({ kind: "sep", key: "sep:trash" });
+        if (!appsPlaced) list.push(appsItem);
         if (showTrash) {
             list.push({ kind: "app", key: "__trash", name: "Trash", icon: "user-trash",
                         entry: null, running: false, pinned: true, special: "trash" });
@@ -5467,6 +5498,7 @@ Scope {
                 property int dragIndex: -1
                 property int dragTarget: -1
                 property string dragKey: ""
+                property bool dragTail: false          // "Apps" is being dragged out of its default spot (everything between shifts, separators included)
                 property real dragPressX: 0
                 property real dragDelta: 0
                 property real dragShiftW: 0
@@ -5589,7 +5621,7 @@ Scope {
                     var n = 0;
                     for (var i = 0; i < root.items.length; i++) {
                         var it = root.items[i];
-                        if (it.kind === "app" && it.pinned && !it.special) n++;
+                        if (it.kind === "app" && it.pinned && (!it.special || it.special === "apps")) n++;
                         else break;
                     }
                     return n;
@@ -5603,6 +5635,7 @@ Scope {
                     dragIndex = index;
                     dragTarget = index;
                     dragKey = key;
+                    dragTail = index >= pinnedCount();
                     dragPressX = pressX;
                     dragDelta = 0;
                     dragShiftW = shiftW;
@@ -5616,6 +5649,8 @@ Scope {
                         if (j === dragIndex) continue;
                         if (naturalCenter(j) < center) t++;
                     }
+                    // from its default spot "Apps" only moves once it is dropped among the pinned icons
+                    if (dragTail) { dragTarget = (t >= P) ? dragIndex : t; return; }
                     dragTarget = t;
                 }
                 function shiftFor(i) {
@@ -5629,6 +5664,7 @@ Scope {
                     dragKey = "";
                     dragIndex = -1;
                     dragTarget = -1;
+                    dragTail = false;
                     dragDelta = 0;
                     justDragged = true;
                     Qt.callLater(function () { ui.justDragged = false; });
@@ -6147,7 +6183,7 @@ Scope {
                                 required property int index
                                 readonly property var modelData: root.itemMap[key] || ({ kind: "sep", key: key, nA: 0, nS: 0 })
                                 readonly property bool isSep: modelData.kind === "sep"
-                                readonly property bool canDrag: !isSep && modelData.pinned === true && !modelData.special
+                                readonly property bool canDrag: !isSep && ((modelData.pinned === true && !modelData.special) || modelData.special === "apps")
                                 readonly property bool torn: ui.tearing && ui.tearItem && !isSep && ui.tearItem.key === modelData.key
                                 opacity: (torn ? 0.3 : (isDragged ? 0.92 : 1)) * (leavingCell ? appear : 1)
                                 Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
@@ -6166,7 +6202,8 @@ Scope {
                                 readonly property bool thumbReady: useThumb && (sv.hasContent === undefined || sv.hasContent === true)
 
                                 property real dx: {
-                                    if (!ui.dragging || isSep) return 0;
+                                    if (!ui.dragging) return 0;
+                                    if (isSep && !ui.dragTail) return 0;
                                     if (isDragged) return ui.dragDelta;
                                     return ui.shiftFor(index);
                                 }
