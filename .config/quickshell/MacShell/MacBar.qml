@@ -502,7 +502,7 @@ Scope {
         sh('sh ~/.config/quickshell/MacLock/lock-via-ipc.sh');
     }
     function sleepMachine() {
-        sh('sh ~/.config/quickshell/MacLock/lock-via-ipc.sh; sleep 0.5; systemctl suspend');
+        sh('sh ~/.config/quickshell/MacLock/lock-via-ipc.sh; sleep 0.5; systemctl suspend || notify-send "MacShell" "Suspend not available on this machine"');
     }
     function logOut() {
         sh('if command -v uwsm >/dev/null 2>&1 && uwsm check is-active >/dev/null 2>&1; then uwsm stop; '
@@ -2416,8 +2416,10 @@ Scope {
                     var f = root.splitNm(lines[i]);
                     if (f.length < 3) continue;
                     var type = f[1];
-                    if (type !== "vpn" && type !== "802-3-ethernet") continue;
-                    rows.push({ name: f[0], type: type, device: f[2] === "--" ? "" : f[2], active: f[2] !== "--" });
+                    if (type !== "vpn" && type !== "wireguard" && type !== "802-3-ethernet") continue;
+                    // nmcli -t leaves DEVICE empty (not "--") for inactive profiles
+                    var dev = (f[2] === "--" || f[2] === "") ? "" : f[2];
+                    rows.push({ name: f[0], type: type, device: dev, active: dev !== "" });
                 }
                 rows.sort(function (a,b) { return (b.active?1:0)-(a.active?1:0); });
                 root.otherConnections = rows;
@@ -6820,7 +6822,7 @@ Scope {
                                     required property var modelData
                                     width: parent.width; height: 30
                                     Rectangle { anchors.fill:parent; radius:8; color:connMa.containsMouse?pp.hover:"transparent" }
-                                    Glyph { x:8; anchors.verticalCenter:parent.verticalCenter; width:14; height:14; kind:modelData.type==="vpn"?"lock":"wifi"; color:pp.fg }
+                                    Glyph { x:8; anchors.verticalCenter:parent.verticalCenter; width:14; height:14; kind:(modelData.type==="vpn"||modelData.type==="wireguard")?"lock":"wifi"; color:pp.fg }
                                     Text { x:30; anchors.verticalCenter:parent.verticalCenter; width:parent.width-42; elide:Text.ElideRight; text:modelData.name+(modelData.active?I18n.tr(" · Connected"):""); color:pp.fg; font.family: root.fontForWeight(Font.Normal, pp.fam); font.weight: (pp === ccPal ? Font.DemiBold : Font.Normal); font.pixelSize:12 }
                                     MouseArea { id:connMa; anchors.fill:parent; hoverEnabled:true; onClicked:root.toggleConnection(modelData) }
                                 }

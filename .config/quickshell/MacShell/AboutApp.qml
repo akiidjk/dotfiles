@@ -57,12 +57,31 @@ Scope {
         }
         info = o;
     }
-    function refresh() { if (!infoProc.running) infoProc.running = true; }
+    function refresh() {
+        if (!infoProc.running) infoProc.running = true;
+        if (!uptimeProc.running) uptimeProc.running = true;
+    }
     Process {
         id: infoProc
         command: ["sh", root.scriptPath]
         stdout: StdioCollector { onStreamFinished: root.parse(text) }
     }
+
+    // uptime as "2d 4h 12m" (days/hours only once non-zero), refreshed every minute while open
+    property string uptime: ""
+    function formatUptime(sec) {
+        var m = Math.floor(sec / 60), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60), p = [];
+        if (d > 0) p.push(d + "d");
+        if (d > 0 || h > 0) p.push(h + "h");
+        p.push(m % 60 + "m");
+        return p.join(" ");
+    }
+    Process {
+        id: uptimeProc
+        command: ["cat", "/proc/uptime"]
+        stdout: StdioCollector { onStreamFinished: { var s = parseFloat(text); if (!isNaN(s)) root.uptime = root.formatUptime(s); } }
+    }
+    Timer { interval: 60000; repeat: true; running: win.visible; onTriggered: if (!uptimeProc.running) uptimeProc.running = true }
 
     // the spec rows: [label, value, small grey line under it]
     readonly property var rows: {
@@ -74,6 +93,7 @@ Scope {
         r.push({ k: I18n.tr("Storage"), v: o.disk || "", s: o.disksub || "" });
         r.push({ k: I18n.tr("Kernel"), v: o.kernel || "", s: "" });
         r.push({ k: o.osname || "Linux", v: o.osver || "", s: "" });
+        if (uptime) r.push({ k: "Uptime", v: uptime, s: "" });
         return r;
     }
 
@@ -308,7 +328,7 @@ Scope {
                         MouseArea {
                             id: moreMa; anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                             onClicked: {
-                                var cmd = (root.bar ? root.bar.terminal : "kitty") + " -e sh -c 'fastfetch || neofetch; echo; read -p \"Press Enter\" _'";
+                                var cmd = (root.bar ? root.bar.terminal : "kitty") + " -e sh -c 'fastfetch || neofetch; echo; printf \"Press Enter\"; read _'";
                                 Quickshell.execDetached(["sh", "-c", cmd]);
                             }
                         }
