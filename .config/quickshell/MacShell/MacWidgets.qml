@@ -628,8 +628,25 @@ Scope {
                     root.wxFails = 0;
                     wxRetry.stop();
                     root.wxSaveCache();
+                    root.notifyIslandWeather(root.wxCode, root.wxTemp, root.wxCity);
                 } catch (err) { root.wxFail("weather lookup failed"); console.log("[macwidgets] forecast:", err, text.substring(0, 120)); }
             }
+        }
+    }
+
+    property int lastAlertCode: -1
+    function notifyIslandWeather(code, temp, city) {
+        if (lastAlertCode === code || !hub || !hub.bar) return;
+        var info = root.wmo(code, true);
+        if (/rain|snow|thunder|fog/i.test(info.k)) {
+            lastAlertCode = code;
+            hub.bar.islandSay({
+                kind: "weather",
+                icon: "󰖐",
+                title: info.t + " • " + temp + "°" + root.tempUnit,
+                sub: city,
+                ms: 4500
+            });
         }
     }
 

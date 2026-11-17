@@ -124,7 +124,25 @@ curl -fsSL https://raw.githubusercontent.com/khanhas/spicetify-cli/main/install.
 sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/
 sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/ -R
 ```
-### SDDM setup
+### Login screen setup (MacGreeter or SDDM)
+
+#### Option A: MacGreeter with greetd (Recommended)
+MacGreeter uses `greetd` and Quickshell nativly on Wayland to render the exact same Liquid Glass lockscreen, fonts, and user wallpaper at system boot.
+```bash
+# Preview without root or touching the system (Ctrl+Shift+Q closes it)
+~/.config/hypr-macshell/scripts/macgreeter.sh preview
+
+# Install greetd & MacGreeter (polkit prompt)
+~/.config/hypr-macshell/scripts/macgreeter.sh apply
+
+# Sync current wallpaper, avatar, and clock look to the greeter
+~/.config/hypr-macshell/scripts/macgreeter.sh sync
+
+# Undo / restore previous display manager (e.g. SDDM) anytime
+~/.config/hypr-macshell/scripts/macgreeter.sh remove
+```
+
+#### Option B: SDDM setup
 ```bash
 # Install SDDM
 sudo pacman -S sddm qt6-5compat qt6-svg qqc2-desktop-style inter-font ttf-nerd-fonts-symbols
@@ -372,9 +390,10 @@ Don't run MacShell's own `install.sh` or `macshell-update`. They'd overwrite the
   - `hyprland-gui.lua` - Settings managed by HyprMod
   - `hyprshade.toml` - Screen shaders (hyprshade timer)
   - `scripts/` - Utility scripts (`wallpapers/apply.sh`, night mode, color picker, mirror, screensharing, Spotify notifications, `screen-text.sh` OCR / QR, `clean-url.py`)
-- **hypr-macshell/scripts/** - MacShell helpers (video wallpapers, UI sound generator, SDDM theme, `claude-island.sh` + `claude-statusline.sh` for Claude Code)
+- **hypr-macshell/scripts/** - MacShell helpers (MacGreeter manager `macgreeter.sh`, Spatial Audio 360 `spatial-audio.sh`, video wallpapers, UI sound generator, SDDM theme, `claude-island.sh` + `claude-statusline.sh` for Claude Code)
 - **quickshell/MacShell/** - The shell, my fork. The island, keybind viewer, wallpaper picker and scratchpad are the `Island*`, `KeybindsPanel`, `WallPickerPanel` and `ScratchpadPanel` files
 - **quickshell/MacLock/** - The lock screen
+- **quickshell/MacGreeter/** - The login screen (greetd native Wayland Quickshell greeter)
 - **kitty/** - Terminal emulator configuration
 - **nvim/** - Neovim configuration with Lazy.vim
 - **starship.toml** - Shell prompt configuration

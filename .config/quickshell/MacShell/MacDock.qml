@@ -52,6 +52,18 @@ Scope {
     }
     property string userName: Quickshell.env("USER") || ""
 
+    function openTerminalCommand(command) {
+        var preferred = bar && bar.terminal ? bar.terminal : "kitty";
+        Quickshell.execDetached(["sh", "-c",
+            "for t in \"$1\" kitty foot alacritty wezterm konsole xterm; do " +
+            "  [ -n \"$t\" ] && command -v \"$t\" >/dev/null 2>&1 || continue; " +
+            "  exec \"$t\" -e sh -c \"$2; echo; read -r -p 'Done. Press Enter to close ' _\"; " +
+            "done; " +
+            "if command -v gnome-terminal >/dev/null 2>&1; then exec gnome-terminal -- sh -c \"$2; echo; read -r -p 'Done. Press Enter to close ' _\"; fi; " +
+            "notify-send 'MacShell' 'No terminal emulator found for the command' 2>/dev/null || true",
+            "sh", preferred, command]);
+    }
+
     // ═════ Displays: main display + resolution / refresh, with a macOS-style "keep or revert" safety net ═════
     property var displays: ({ primary: "", modes: {} })      // saved in ~/.config/macshell/displays.json
     property var monList: []                                  // hyprctl monitors (live)
@@ -1416,7 +1428,8 @@ Scope {
                 readonly property var kindNames: ({ workspace: "Workspace switches", battery: "Battery and charging",
                     bluetooth: "Bluetooth devices", wifi: "Wi-Fi", keyboard: "Input source", privacy: "Microphone and camera",
                     downloads: "Finished downloads", notify: "Commands and Claude Code (island notify)",
-                    updates: "Available updates", alerts: "System alerts (temperature, memory, disk)" })
+                    updates: "Available updates", alerts: "System alerts (temperature, memory, disk)",
+                    weather: "Weather changes (rain, snow, alerts)" })
 
                 SLabel { t: pal; header: true; text: I18n.tr("Style") }
                 SCard {
@@ -3084,6 +3097,25 @@ Scope {
                         }
                     }
                 }
+                SLabel { t: pal; header: true; text: I18n.tr("Layout & Grid") }
+                SCard {
+                    t: pal
+                    SRow {
+                        t: pal
+                        title: I18n.tr("Reset Control Center Layout")
+                        subtitle: I18n.tr("Restores custom positions (ccPos) and tile sizes (ccSizes) to default")
+                        SButton {
+                            t: pal
+                            text: I18n.tr("Reset Layout")
+                            onClicked: {
+                                if (!root.bar) return;
+                                root.bar.ccPos = [];
+                                root.bar.ccSizes = [];
+                                root.bar.saveSettings();
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -3586,6 +3618,28 @@ Scope {
                         subtitle: I18n.tr("App and device sliders go up to 150%. Loud, and it can distort")
                         SSwitch { t: pal; checked: sndPane.b ? sndPane.b.audioBoost : true; onToggled: v => { if (sndPane.b) sndPane.b.audioBoost = v; } }
                     }
+                    SRow {
+                        id: spatialRow
+                        t: pal; title: I18n.tr("Spatial Audio 360 (Virtual Surround)")
+                        subtitle: I18n.tr("Binaural 3D virtual surround sound for headphones via PipeWire filter-chain")
+                        property bool spatialOn: false
+                        Component.onCompleted: spCheck.running = true
+                        Process {
+                            id: spCheck
+                            command: ["sh", Quickshell.env("HOME") + "/.config/hypr-macshell/scripts/spatial-audio.sh", "status"]
+                            stdout: StdioCollector { onStreamFinished: spatialRow.spatialOn = text.trim() === "on" }
+                        }
+                        Process {
+                            id: spToggle
+                            command: ["sh", Quickshell.env("HOME") + "/.config/hypr-macshell/scripts/spatial-audio.sh", "toggle"]
+                            onExited: spCheck.running = true
+                        }
+                        SSwitch {
+                            t: pal
+                            checked: spatialRow.spatialOn
+                            onToggled: spToggle.running = true
+                        }
+                    }
                 }
 
 
@@ -3843,26 +3897,88 @@ Scope {
                     SButton { t: pal; text: I18n.tr("Lock Screen Now"); onClicked: { prefsWindow.visible = false; Quickshell.execDetached(["sh", "-c", "pgrep -f -- \"-c [M]acLock\" >/dev/null 2>&1 || qs -c MacLock"]); } }
                 }
 
-                // ── Login Screen (SDDM) ──
-                // The lock screen as the login screen: maclock-sddm.sh builds the theme from the settings above + these, with a fixed
-                // copy of the background (the greeter can't read your home). Installing it needs root: the polkit prompt opens.
+                // ── Login Screen (MacGreeter & SDDM) ──
+                // The lock screen as the login screen: MacGreeter (greetd native Quickshell) or SDDM theme.
                 SLabel { t: pal; text: I18n.tr("Login Screen"); font.weight: Font.DemiBold; topPadding: 6 }
                 SCard {
                     id: loginCard
                     t: pal
-                    readonly property string script: Quickshell.env("HOME") + "/.config/hypr-macshell/scripts/maclock-sddm.sh"
+                    readonly property string sddmScript: Quickshell.env("HOME") + "/.config/hypr-macshell/scripts/maclock-sddm.sh"
+                    readonly property string greeterScript: Quickshell.env("HOME") + "/.config/hypr-macshell/scripts/macgreeter.sh"
                     readonly property string bg: root.bar ? (root.bar.loginBackground !== "" ? root.bar.loginBackground : root.bar.wallpaperPath) : ""
                     property string current: ""
                     property string status: ""
-                    Component.onCompleted: curProc.running = true
-                    Process { id: curProc; command: ["sh", loginCard.script, "current"]
+                    property bool greetdActive: false
+                    property bool syncing: false
+                    property string syncNotice: ""
+
+                    Component.onCompleted: { curProc.running = true; grStatusProc.running = true; }
+                    Process { id: curProc; command: ["sh", loginCard.sddmScript, "current"]
                               stdout: StdioCollector { onStreamFinished: loginCard.current = text.trim() } }
                     Process {
+                        id: grStatusProc
+                        command: ["sh", loginCard.greeterScript, "status"]
+                        stdout: StdioCollector {
+                            onStreamFinished: {
+                                try {
+                                    var o = JSON.parse(text.trim());
+                                    loginCard.greetdActive = o.enabled === true;
+                                } catch (e) {}
+                            }
+                        }
+                    }
+                    Process {
+                        id: syncProc
+                        command: ["sh", loginCard.greeterScript, "sync"]
+                        onExited: code => {
+                            loginCard.syncing = false;
+                            loginCard.syncNotice = code === 0 ? I18n.tr("Wallpaper & profile synced") : I18n.tr("Sync failed");
+                        }
+                    }
+                    Process {
                         id: applyProc
-                        command: ["sh", loginCard.script, "apply"]
-                        onExited: code => { loginCard.status = code === 0 ? I18n.tr("Installed") : I18n.tr("Not installed (cancelled or failed)"); curProc.running = true; }
+                        command: ["sh", loginCard.greetdActive ? loginCard.greeterScript : loginCard.sddmScript, "apply"]
+                        onExited: code => {
+                            loginCard.status = code === 0 ? I18n.tr("Installed") : I18n.tr("Cancelled or failed");
+                            curProc.running = true; grStatusProc.running = true;
+                        }
                     }
                     Process { id: useProc; onExited: curProc.running = true }
+
+                    SRow {
+                        t: pal; title: I18n.tr("Display Manager")
+                        subtitle: loginCard.greetdActive ? I18n.tr("MacGreeter (greetd) is active • Quickshell Wayland native") : I18n.tr("SDDM is currently active")
+                        Row {
+                            spacing: 8
+                            SButton {
+                                anchors.verticalCenter: parent.verticalCenter
+                                t: pal; text: loginCard.greetdActive ? I18n.tr("Restore SDDM") : I18n.tr("Enable MacGreeter")
+                                onClicked: {
+                                    if (loginCard.greetdActive) {
+                                        Quickshell.execDetached(["sh", loginCard.greeterScript, "remove"]);
+                                        grStatusProc.running = true;
+                                    } else {
+                                        applyProc.command = ["sh", loginCard.greeterScript, "apply"];
+                                        applyProc.running = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    SRow {
+                        t: pal; title: I18n.tr("Sync wallpaper and picture")
+                        subtitle: loginCard.syncNotice !== "" ? loginCard.syncNotice : I18n.tr("Copies current wallpaper, avatar, and clock look to MacGreeter")
+                        SButton {
+                            t: pal
+                            text: loginCard.syncing ? I18n.tr("Syncing…") : I18n.tr("Sync Now")
+                            enabled: !loginCard.syncing
+                            onClicked: {
+                                loginCard.syncNotice = "";
+                                loginCard.syncing = true;
+                                syncProc.running = true;
+                            }
+                        }
+                    }
                     SRow {
                         t: pal; title: I18n.tr("Background")
                         subtitle: root.bar && root.bar.loginBackground !== "" ? root.bar.loginBackground.replace(/^.*\//, "") : I18n.tr("Current wallpaper, copied when you apply")
@@ -3886,7 +4002,8 @@ Scope {
                         SSwitch { t: pal; checked: root.bar ? root.bar.loginShowSessions : true; onToggled: v => { if (root.bar) root.bar.loginShowSessions = v; } }
                     }
                     SRow {
-                        t: pal; title: I18n.tr("In use")
+                        visible: !loginCard.greetdActive
+                        t: pal; title: I18n.tr("SDDM Theme in use")
                         subtitle: loginCard.status !== "" ? loginCard.status : I18n.tr("Clock and 24-hour setting come from the Lock Screen settings above")
                         Row {
                             spacing: 8
@@ -3895,16 +4012,24 @@ Scope {
                                 anchors.verticalCenter: parent.verticalCenter
                                 visible: loginCard.current === "maclock"
                                 t: pal; text: I18n.tr("Use pixel")
-                                onClicked: { useProc.command = ["sh", loginCard.script, "use", "pixel"]; useProc.running = true; }
+                                onClicked: { useProc.command = ["sh", loginCard.sddmScript, "use", "pixel"]; useProc.running = true; }
                             }
                         }
                     }
                 }
                 Row {
                     spacing: 8
-                    // the greeter in test mode for 15 s (no real login)
-                    // settings are saved 400 ms after a change: write them now so the script reads what's on screen
-                    SButton { t: pal; text: I18n.tr("Preview"); onClicked: { if (root.bar) root.bar.saveSettings(); Quickshell.execDetached(["sh", loginCard.script, "preview"]); } }
+                    SButton {
+                        t: pal; text: I18n.tr("Preview")
+                        onClicked: {
+                            if (root.bar) root.bar.saveSettings();
+                            if (loginCard.greetdActive) {
+                                Quickshell.execDetached(["sh", loginCard.greeterScript, "preview"]);
+                            } else {
+                                Quickshell.execDetached(["sh", loginCard.sddmScript, "preview"]);
+                            }
+                        }
+                    }
                     SButton {
                         t: pal; text: applyProc.running ? I18n.tr("Waiting for password…") : I18n.tr("Apply to Login Screen")
                         onClicked: if (!applyProc.running) { if (root.bar) root.bar.saveSettings(); loginCard.status = ""; applyProc.running = true; }
@@ -4416,7 +4541,7 @@ Scope {
                             y: 174
                             width: parent.width
                             horizontalAlignment: Text.AlignHCenter
-                            text: I18n.tr("Version 0.3.5-akiidjk (based on MacShell d4f8500) \u2022 Hyprland \u2022 Quickshell")
+                            text: I18n.tr("Version 0.5.3-akiidjk (MacShell 0.5.3) \u2022 Hyprland \u2022 Quickshell")
                             color: pal.text2
                             font.family: root.fontForWeight(Font.Normal, pal.fam)
                             font.pixelSize: 12

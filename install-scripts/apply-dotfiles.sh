@@ -36,6 +36,7 @@ chmod +x ~/.config/hypr/scripts/*.sh
 chmod +x ~/.config/hypr/scripts/wallpapers/*.sh
 chmod +x ~/.config/hypr-macshell/scripts/*
 chmod +x ~/.config/quickshell/MacLock/*.sh ~/.config/quickshell/MacLock/*.py
+chmod +x ~/.config/quickshell/MacGreeter/*.sh ~/.config/quickshell/MacGreeter/macshell-greeter* 2>/dev/null || true
 
 # MacShell: UI sounds (synthesized into ~/.local/share/sounds/macshell) and the first wallpaper accent
 python3 ~/.config/hypr-macshell/scripts/macshell-make-sounds.py

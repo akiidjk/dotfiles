@@ -98,8 +98,8 @@ Scope {
     property bool islandLyrics: true
     property real islandLyricLead: 0.4       // a lyric line shows this many seconds early
     property bool islandOutline: false       // island style: hairline rim (stays visible on dark wallpapers)
-    readonly property var islandKinds: ["workspace", "battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"]
-    property var islandAlerts: ["workspace", "battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts"]
+    readonly property var islandKinds: ["workspace", "battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts", "weather"]
+    property var islandAlerts: ["workspace", "battery", "bluetooth", "wifi", "keyboard", "privacy", "downloads", "notify", "updates", "alerts", "weather"]
     property bool islandClaudeLimits: true   // Claude plan limits under the date when the island peeks
     // Claude Code's plan limits, written by its status line (hypr-macshell/scripts/claude-statusline.sh):
     // { at, rate_limits: { five_hour: { used_percentage, resets_at }, seven_day: {...} } }, or null

@@ -1,0 +1,1 @@
+../MacLock/MorphText.qml
