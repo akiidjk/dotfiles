@@ -297,7 +297,7 @@ Scope {
         }
     }
     property bool lockArtBackground: true     // lock screen: blurred album art as the background while the cover is enlarged
-    // login screen (SDDM "maclock" theme, built by hypr-macshell/scripts/maclock-sddm.sh): fixed background + controls
+    // login screen (MacGreeter/greetd native Wayland): fixed background + controls
     property string loginBackground: ""       // "" = the wallpaper at the time the theme is applied
     property bool loginShowPower: true
     property bool loginShowSessions: true

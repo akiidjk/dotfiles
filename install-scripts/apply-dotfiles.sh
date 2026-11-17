@@ -58,12 +58,8 @@ curl -fsSL https://raw.githubusercontent.com/khanhas/spicetify-cli/main/install.
 sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/
 sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/ -R
 
-# Install SDDM and dependencies for SDDM themes
-sudo pacman -S sddm qt6-5compat qt6-svg qqc2-desktop-style inter-font ttf-nerd-fonts-symbols
-sudo systemctl enable sddm.service
-sudo cp -r ~/.config/sddm/faces /usr/share/sddm/
-sudo cp -r ~/.config/sddm/themes/pixel /usr/share/sddm/themes/
-echo -e "[Theme]\nCurrent=pixel" | sudo tee /etc/sddm.conf
+# Set up MacGreeter as the login manager (greetd + Quickshell native Wayland)
+bash ~/.config/hypr-macshell/scripts/macgreeter.sh apply || true
 
 # Create Spotify icon symlink
 mkdir -p ~/.icons/hicolor/32x32/apps

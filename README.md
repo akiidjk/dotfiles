@@ -10,7 +10,7 @@ My Hyprland setup for Arch, with the install scripts and my fork of the MacShell
 ## Quick Install
 
 > [!Warning]
-> `install.sh` installs everything, Hyprland and SDDM included, and then copies these configs over the ones in your home.
+> `install.sh` installs everything, Hyprland and greetd (MacGreeter) included, and then copies these configs over the ones in your home.
 > Whatever it replaces gets backed up to `backup/<date>` in this repo (gitignored) first.
 
 ```bash
@@ -124,10 +124,9 @@ curl -fsSL https://raw.githubusercontent.com/khanhas/spicetify-cli/main/install.
 sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/
 sudo chmod a+wr .local/share/spotify-launcher/install/usr/share/spotify/ -R
 ```
-### Login screen setup (MacGreeter or SDDM)
+### Login screen setup (MacGreeter)
 
-#### Option A: MacGreeter with greetd (Recommended)
-MacGreeter uses `greetd` and Quickshell nativly on Wayland to render the exact same Liquid Glass lockscreen, fonts, and user wallpaper at system boot.
+MacGreeter uses `greetd` and Quickshell natively on Wayland to render the exact same Liquid Glass lockscreen, fonts, and user wallpaper at system boot.
 ```bash
 # Preview without root or touching the system (Ctrl+Shift+Q closes it)
 ~/.config/hypr-macshell/scripts/macgreeter.sh preview
@@ -138,23 +137,8 @@ MacGreeter uses `greetd` and Quickshell nativly on Wayland to render the exact s
 # Sync current wallpaper, avatar, and clock look to the greeter
 ~/.config/hypr-macshell/scripts/macgreeter.sh sync
 
-# Undo / restore previous display manager (e.g. SDDM) anytime
+# Undo / restore previous display manager anytime
 ~/.config/hypr-macshell/scripts/macgreeter.sh remove
-```
-
-#### Option B: SDDM setup
-```bash
-# Install SDDM
-sudo pacman -S sddm qt6-5compat qt6-svg qqc2-desktop-style inter-font ttf-nerd-fonts-symbols
-
-# Enable SDDM service
-sudo systemctl enable sddm.service
-
-# Set SDDM theme
-sudo cp -r ~/.config/sddm/faces /usr/share/sddm/
-sudo cp -r ~/.config/sddm/themes/pixel /usr/share/sddm/themes/
-sudo mkdir -p /etc/sddm.conf.d
-echo -e "[Theme]\nCurrent=pixel" | sudo tee /etc/sddm.conf
 ```
 
 ## Post installation
@@ -390,7 +374,7 @@ Don't run MacShell's own `install.sh` or `macshell-update`. They'd overwrite the
   - `hyprland-gui.lua` - Settings managed by HyprMod
   - `hyprshade.toml` - Screen shaders (hyprshade timer)
   - `scripts/` - Utility scripts (`wallpapers/apply.sh`, night mode, color picker, mirror, screensharing, Spotify notifications, `screen-text.sh` OCR / QR, `clean-url.py`)
-- **hypr-macshell/scripts/** - MacShell helpers (MacGreeter manager `macgreeter.sh`, Spatial Audio 360 `spatial-audio.sh`, video wallpapers, UI sound generator, SDDM theme, `claude-island.sh` + `claude-statusline.sh` for Claude Code)
+- **hypr-macshell/scripts/** - MacShell helpers (MacGreeter manager `macgreeter.sh`, Spatial Audio 360 `spatial-audio.sh`, video wallpapers, UI sound generator, `claude-island.sh` + `claude-statusline.sh` for Claude Code)
 - **quickshell/MacShell/** - The shell, my fork. The island, keybind viewer, wallpaper picker and scratchpad are the `Island*`, `KeybindsPanel`, `WallPickerPanel` and `ScratchpadPanel` files
 - **quickshell/MacLock/** - The lock screen
 - **quickshell/MacGreeter/** - The login screen (greetd native Wayland Quickshell greeter)
@@ -408,9 +392,8 @@ Don't run MacShell's own `install.sh` or `macshell-update`. They'd overwrite the
 # From TTY
 start-hyprland
 
-# Or enable display manager
-sudo systemctl enable sddm
-sudo systemctl start sddm
+# Or enable MacGreeter (greetd) for a graphical login screen
+~/.config/hypr-macshell/scripts/macgreeter.sh apply
 ```
 
 ## Keybindings

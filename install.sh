@@ -139,8 +139,8 @@ check_services_running() {
 if check_services_running; then
 	active_list=$(printf "%s\n" "${active_services[@]}")
 
-	whiptail --title "Active non-SDDM login manager(s) detected" \
-		--msgbox "The following login manager(s) are active:\n\n$active_list\n\nIf you want to install SDDM and SDDM theme, stop and disable the active services above, reboot before running this script\n\nYour option to install SDDM and SDDM theme has now been removed\n\n- Ja " \
+	whiptail --title "Active login manager(s) detected" \
+		--msgbox "The following login manager(s) are active:\n\n$active_list\n\nPlease stop and disable them before running this script, then reboot.\n\n- Ja " \
 		23 80
 fi
 
@@ -181,16 +181,8 @@ INFO "Setup ${SKY_BLUE}some XDG Mime...${RESET}"
 sleep 1
 execute_script "xdg-setup.sh"
 
-if check_services_running; then
-	active_list=$(printf "%s\n" "${active_services[@]}")
-	whiptail --title "Error" \
-		--msgbox "One of the following login services is running:\n$active_list\n\nPlease stop & disable it or DO not choose SDDM." \
-		12 60
-	exec "$0"
-else
-	INFO "Installing and configuring ${SKY_BLUE}SDDM...${RESET}"
-	execute_script "sddm.sh"
-fi
+INFO "Installing and configuring ${SKY_BLUE}greetd (MacGreeter)...${RESET}"
+execute_script "greetd.sh"
 
 if [ "$nvidia_detected" == "true" ]; then
 	INFO "Configuring ${SKY_BLUE}nvidia stuff${RESET}"
@@ -208,9 +200,6 @@ execute_script "xdph.sh"
 
 INFO "Configuring ${SKY_BLUE}Bluetooth...${RESET}"
 execute_script "bluetooth.sh"
-
-INFO "Downloading & Installing ${SKY_BLUE}Additional SDDM theme...${RESET}"
-execute_script "sddm_theme.sh"
 
 INFO "Installing ${SKY_BLUE}zsh with Oh-My-Zsh...${RESET}"
 execute_script "zsh.sh"
@@ -231,7 +220,7 @@ if pacman -Q hyprland &>/dev/null || pacman -Q hyprland-git &>/dev/null; then
 	sleep 2
 
 	printf "${SKY_BLUE}Thank you${RESET} for using ${MAGENTA}Custom KooL's Hyprland Dots by @akiidjk${RESET}. ${YELLOW}Enjoy and Have a good day!${RESET}\n\n"
-	printf "\n${NOTE} You can start Hyprland by typing ${SKY_BLUE}Hyprland${RESET} (IF SDDM is not installed) (note the capital H!).\n"
+	printf "\n${NOTE} You can start Hyprland by typing ${SKY_BLUE}Hyprland${RESET} from a TTY (note the capital H!), or use greetd/MacGreeter if installed.\n"
 	printf "\n${NOTE} However, it is ${YELLOW}highly recommended to reboot${RESET} your system.\n\n"
 
 	while true; do

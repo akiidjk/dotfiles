@@ -3897,24 +3897,20 @@ Scope {
                     SButton { t: pal; text: I18n.tr("Lock Screen Now"); onClicked: { prefsWindow.visible = false; Quickshell.execDetached(["sh", "-c", "pgrep -f -- \"-c [M]acLock\" >/dev/null 2>&1 || qs -c MacLock"]); } }
                 }
 
-                // ── Login Screen (MacGreeter & SDDM) ──
-                // The lock screen as the login screen: MacGreeter (greetd native Quickshell) or SDDM theme.
+                // ── Login Screen (MacGreeter) ──
+                // MacGreeter: greetd native Quickshell Wayland greeter — the same Liquid Glass UI at boot.
                 SLabel { t: pal; text: I18n.tr("Login Screen"); font.weight: Font.DemiBold; topPadding: 6 }
                 SCard {
                     id: loginCard
                     t: pal
-                    readonly property string sddmScript: Quickshell.env("HOME") + "/.config/hypr-macshell/scripts/maclock-sddm.sh"
                     readonly property string greeterScript: Quickshell.env("HOME") + "/.config/hypr-macshell/scripts/macgreeter.sh"
                     readonly property string bg: root.bar ? (root.bar.loginBackground !== "" ? root.bar.loginBackground : root.bar.wallpaperPath) : ""
-                    property string current: ""
                     property string status: ""
                     property bool greetdActive: false
                     property bool syncing: false
                     property string syncNotice: ""
 
-                    Component.onCompleted: { curProc.running = true; grStatusProc.running = true; }
-                    Process { id: curProc; command: ["sh", loginCard.sddmScript, "current"]
-                              stdout: StdioCollector { onStreamFinished: loginCard.current = text.trim() } }
+                    Component.onCompleted: { grStatusProc.running = true; }
                     Process {
                         id: grStatusProc
                         command: ["sh", loginCard.greeterScript, "status"]
@@ -3937,28 +3933,26 @@ Scope {
                     }
                     Process {
                         id: applyProc
-                        command: ["sh", loginCard.greetdActive ? loginCard.greeterScript : loginCard.sddmScript, "apply"]
+                        command: ["sh", loginCard.greeterScript, "apply"]
                         onExited: code => {
                             loginCard.status = code === 0 ? I18n.tr("Installed") : I18n.tr("Cancelled or failed");
-                            curProc.running = true; grStatusProc.running = true;
+                            grStatusProc.running = true;
                         }
                     }
-                    Process { id: useProc; onExited: curProc.running = true }
 
                     SRow {
                         t: pal; title: I18n.tr("Display Manager")
-                        subtitle: loginCard.greetdActive ? I18n.tr("MacGreeter (greetd) is active • Quickshell Wayland native") : I18n.tr("SDDM is currently active")
+                        subtitle: loginCard.greetdActive ? I18n.tr("MacGreeter (greetd) active • Quickshell Wayland native") : I18n.tr("MacGreeter not yet enabled — click Apply to activate")
                         Row {
                             spacing: 8
                             SButton {
                                 anchors.verticalCenter: parent.verticalCenter
-                                t: pal; text: loginCard.greetdActive ? I18n.tr("Restore SDDM") : I18n.tr("Enable MacGreeter")
+                                t: pal; text: loginCard.greetdActive ? I18n.tr("Disable MacGreeter") : I18n.tr("Enable MacGreeter")
                                 onClicked: {
                                     if (loginCard.greetdActive) {
                                         Quickshell.execDetached(["sh", loginCard.greeterScript, "remove"]);
                                         grStatusProc.running = true;
                                     } else {
-                                        applyProc.command = ["sh", loginCard.greeterScript, "apply"];
                                         applyProc.running = true;
                                     }
                                 }
@@ -4001,21 +3995,6 @@ Scope {
                         subtitle: I18n.tr("Bottom left, click to switch between installed sessions")
                         SSwitch { t: pal; checked: root.bar ? root.bar.loginShowSessions : true; onToggled: v => { if (root.bar) root.bar.loginShowSessions = v; } }
                     }
-                    SRow {
-                        visible: !loginCard.greetdActive
-                        t: pal; title: I18n.tr("SDDM Theme in use")
-                        subtitle: loginCard.status !== "" ? loginCard.status : I18n.tr("Clock and 24-hour setting come from the Lock Screen settings above")
-                        Row {
-                            spacing: 8
-                            Text { anchors.verticalCenter: parent.verticalCenter; text: loginCard.current || "—"; color: pal.text2; font.family: root.fontForWeight(Font.Normal, pal.fam); font.pixelSize: 13 }
-                            SButton {
-                                anchors.verticalCenter: parent.verticalCenter
-                                visible: loginCard.current === "maclock"
-                                t: pal; text: I18n.tr("Use pixel")
-                                onClicked: { useProc.command = ["sh", loginCard.sddmScript, "use", "pixel"]; useProc.running = true; }
-                            }
-                        }
-                    }
                 }
                 Row {
                     spacing: 8
@@ -4023,11 +4002,7 @@ Scope {
                         t: pal; text: I18n.tr("Preview")
                         onClicked: {
                             if (root.bar) root.bar.saveSettings();
-                            if (loginCard.greetdActive) {
-                                Quickshell.execDetached(["sh", loginCard.greeterScript, "preview"]);
-                            } else {
-                                Quickshell.execDetached(["sh", loginCard.sddmScript, "preview"]);
-                            }
+                            Quickshell.execDetached(["sh", loginCard.greeterScript, "preview"]);
                         }
                     }
                     SButton {
