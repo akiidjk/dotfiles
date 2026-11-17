@@ -892,16 +892,27 @@ Scope {
                 ctx.closePath();
                 ctx.fill();
             } else if (k === "wifi") {
-                var radii = [3.8, 7.2, 10.6];
+                // Filled fan: a wedge (the dot) and two bold arcs above it, flat sharp ends with a very slight rounding
+                var wcx = 9, wcy = 15, a0 = -PI * 0.75, a1 = -PI * 0.25;
+                var wr = [[0, 3.6], [5.6, 7.7], [9.7, 11.8]];      // [inner, outer] radius per bar, bottom to top
                 for (i2 = 0; i2 < 3; i2++) {
-                    if (i2 >= level) ctx.globalAlpha = 0.3; else ctx.globalAlpha = 1;
-                    ctx.beginPath(); ctx.arc(9, 14.6, radii[i2], -PI * 0.75, -PI * 0.25); ctx.stroke();
+                    ctx.globalAlpha = (i2 >= level) ? 0.3 : 1;
+                    ctx.beginPath();
+                    ctx.arc(wcx, wcy, wr[i2][1], a0, a1, false);
+                    if (wr[i2][0] > 0) ctx.arc(wcx, wcy, wr[i2][0], a1, a0, true);
+                    else ctx.lineTo(wcx, wcy);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.lineWidth = 0.7; ctx.lineJoin = "round"; ctx.lineCap = "round";
+                    ctx.stroke();
                 }
                 ctx.globalAlpha = 1;
-                circ(9, 14.6, 1.3); ctx.fill();
+                ctx.lineWidth = 1.5;
                 if (flag) line(2.5, 2.5, 15.5, 15.5);
             } else if (k === "bluetooth") {
+                ctx.lineWidth = 2.1;
                 poly([5, 5.5, 13, 12.5, 9, 16, 9, 2, 13, 5.5, 5, 12.5], false);
+                ctx.lineWidth = 1.5;
                 if (flag) line(2.5, 2.5, 15.5, 15.5);
             } else if (k === "airplane") {
                 line(9, 1.8, 9, 16.2);
