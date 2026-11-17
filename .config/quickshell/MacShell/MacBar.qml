@@ -355,6 +355,12 @@ Scope {
     property int nightTemp: 4000
     // Control Center: ids of the enabled controls, in order (edit with Control Center → Edit Controls)
     property var ccControls: ["wifi", "nowplaying", "bluetooth", "airplane", "focus", "record", "nightshift", "keepawake", "display", "sound"]
+    // Control Center: where each control sits, "id:col:row" strings (a string list so the settings signature notices changes). Controls
+    // without an entry are placed first-fit; once the user edits the layout every control gets an entry, so nothing re-flows by itself.
+    property var ccPos: []
+    // Control Center: the size picked for a control with the corner knob, "id:w:h" strings (cells). Controls without an entry keep their default size.
+    property var ccSizes: []
+    property bool ccEditing: false             // Control Center is in "Edit Controls" mode (shows the empty cells and two spare rows)
     property bool ccMigRec: false              // one-time: add the Screen Recording tile to an existing Control Center layout
     property bool recording: false
     property int recSecs: 0
@@ -370,7 +376,7 @@ Scope {
         "barStyle", "barGlass", "glassRim", "glassGrain", "glassLiquid", "glassBlur", "barBgOpacity", "glassRealtime", "liveWallGlass", "glassDebug", "wallpaperPath", "use24h", "showDate",
         "showSeconds", "showBatteryPercent", "showTray",
         "ccEnabled", "notificationsEnabled", "clockAppEnabled", "ccStyle", "barLogoMode", "barCustomLogoPath", "barWidgets", "weekStartsMonday", "terminal", "launcher",
-        "filesCmd", "screenshotDir", "screenshotSave", "screenshotClipboard", "screenshotNotify", "nightTemp", "ccControls", "ccMigRec", "wallpaperDir", "wallpaperFavs", "wallpaperCmd", "wallpaperVideo", "wpRestorePath", "uiSounds", "lockArtBackground",
+        "filesCmd", "screenshotDir", "screenshotSave", "screenshotClipboard", "screenshotNotify", "nightTemp", "ccControls", "ccPos", "ccSizes", "ccMigRec", "wallpaperDir", "wallpaperFavs", "wallpaperCmd", "wallpaperVideo", "wpRestorePath", "uiSounds", "lockArtBackground",
         "lockClockStyle", "switcherStyle", "lockClockFont", "lockClockWeight", "lockClockMaterial", "lockClockIntensity", "lockClockTint", "lockClockDate", "loginBackground", "loginShowPower", "loginShowSessions", "autoContrast", "wallpaperAppearance", "wpPairLight", "wpPairDark",
         "notifDnd", "dnd", "nightOn", "keepAwake",
         "kbRepeatRate", "kbRepeatDelay", "mouseSens", "mouseNatural", "tpNatural", "tpTap", "tpDwt", "tpScroll"]
@@ -403,26 +409,46 @@ Scope {
     // ═════════════ CONTROL CENTER LAYOUT ═════════════
     // The Control Center is a 4-column grid. Every control has a size in grid cells; the enabled ones are packed
     // first-fit in the order of `ccControls`, so dragging a control onto another one simply reorders the list.
+    // w / h = the default size in grid cells; `sizes` = every size the corner knob can pick (the 1x1 circle, the 2x1 pill, the 2x2 big square).
+    readonly property var ccBtnSizes: [[1, 1], [2, 1], [2, 2]]
     readonly property var ccCatalog: [
-        { id: "wifi",       label: I18n.tr("Wi-Fi"),         glyph: "wifi",       w: 2, h: 1 },
-        { id: "bluetooth",  label: I18n.tr("Bluetooth"),     glyph: "bluetooth",  w: 2, h: 1 },
-        { id: "airplane",   label: I18n.tr("Airplane Mode"), glyph: "airplane",   w: 1, h: 1 },
-        { id: "focus",      label: I18n.tr("Focus"),         glyph: "moon",       w: 2, h: 1 },
-        { id: "nightshift", label: I18n.tr("Night Shift"),   glyph: "nightshift", w: 1, h: 1 },
-        { id: "keepawake",  label: I18n.tr("Keep Awake"),    glyph: "coffee",     w: 1, h: 1 },
-        { id: "darkmode",   label: I18n.tr("Dark Mode"),     glyph: "contrast",   w: 1, h: 1 },
-        { id: "record",     label: I18n.tr("Screen Recording"), glyph: "record",  w: 2, h: 1 },
-        { id: "nowplaying", label: I18n.tr("Now Playing"),   glyph: "note",       w: 2, h: 2 },
-        { id: "display",    label: I18n.tr("Display"),       glyph: "sun",        w: 4, h: 1 },
-        { id: "sound",      label: I18n.tr("Sound"),         glyph: "speaker",    w: 4, h: 1 }
+        { id: "wifi",       label: I18n.tr("Wi-Fi"),         glyph: "wifi",       w: 2, h: 1, sizes: ccBtnSizes },
+        { id: "bluetooth",  label: I18n.tr("Bluetooth"),     glyph: "bluetooth",  w: 2, h: 1, sizes: ccBtnSizes },
+        { id: "airplane",   label: I18n.tr("Airplane Mode"), glyph: "airplane",   w: 1, h: 1, sizes: ccBtnSizes },
+        { id: "focus",      label: I18n.tr("Focus"),         glyph: "moon",       w: 2, h: 1, sizes: ccBtnSizes },
+        { id: "nightshift", label: I18n.tr("Night Shift"),   glyph: "nightshift", w: 1, h: 1, sizes: ccBtnSizes },
+        { id: "keepawake",  label: I18n.tr("Keep Awake"),    glyph: "coffee",     w: 1, h: 1, sizes: ccBtnSizes },
+        { id: "darkmode",   label: I18n.tr("Dark Mode"),     glyph: "contrast",   w: 1, h: 1, sizes: ccBtnSizes },
+        { id: "record",     label: I18n.tr("Screen Recording"), glyph: "record",  w: 2, h: 1, sizes: ccBtnSizes },
+        { id: "nowplaying", label: I18n.tr("Now Playing"),   glyph: "note",       w: 2, h: 2, sizes: [[2, 2], [4, 1], [4, 2]] },
+        { id: "display",    label: I18n.tr("Display"),       glyph: "sun",        w: 4, h: 1, sizes: [[4, 1]] },
+        { id: "sound",      label: I18n.tr("Sound"),         glyph: "speaker",    w: 4, h: 1, sizes: [[4, 1]] }
     ]
     readonly property var ccDefault: ["wifi", "nowplaying", "bluetooth", "airplane", "focus", "record", "nightshift", "keepawake", "display", "sound"]
+    // the control's definition with the size picked for it (the default when none is saved, or when the saved one isn't allowed any more)
     function ccDef(id) {
-        for (var i = 0; i < ccCatalog.length; i++) if (ccCatalog[i].id === id) return ccCatalog[i];
+        for (var i = 0; i < ccCatalog.length; i++) {
+            var b = ccCatalog[i];
+            if (b.id !== id) continue;
+            var w = b.w, h = b.h;
+            for (var k = 0; k < ccSizes.length; k++) {
+                var pp = String(ccSizes[k]).split(":");
+                if (pp.length !== 3 || pp[0] !== id) continue;
+                var sw = parseInt(pp[1]), sh = parseInt(pp[2]);
+                for (var j = 0; j < b.sizes.length; j++) if (b.sizes[j][0] === sw && b.sizes[j][1] === sh) { w = sw; h = sh; }
+            }
+            return { id: b.id, label: b.label, glyph: b.glyph, w: w, h: h, sizes: b.sizes };
+        }
         return null;
     }
-    function ccLayout(ids) {
-        var cols = 4, occ = [], out = [], seen = {}, rows = 0;
+    // `extra`: spare empty rows below the last control (edit mode), so a control can be dragged into free space
+    function ccLayout(ids, extra, posList) {
+        var cols = 4, occ = [], out = [], seen = {}, rows = 0, posOf = {};
+        var pl = posList || ccPos;
+        for (var pi = 0; pi < pl.length; pi++) {
+            var pp = String(pl[pi]).split(":");
+            if (pp.length === 3) posOf[pp[0]] = { col: parseInt(pp[1]), row: parseInt(pp[2]) };
+        }
         function isFree(r, c, w, h) {
             for (var y = r; y < r + h; y++) for (var x = c; x < c + w; x++) if (occ[y] && occ[y][x]) return false;
             return true;
@@ -430,65 +456,143 @@ Scope {
         function mark(r, c, w, h) {
             for (var y = r; y < r + h; y++) { if (!occ[y]) occ[y] = []; for (var x = c; x < c + w; x++) occ[y][x] = true; }
         }
+        function put(d, r, c) {
+            mark(r, c, d.w, d.h);
+            out.push({ id: d.id, col: c, row: r, w: d.w, h: d.h });
+            rows = Math.max(rows, r + d.h);
+        }
+        var rest = [];
+        // 1st pass: controls that have a saved place keep it (nothing moves to close a gap)
         for (var i = 0; i < ids.length; i++) {
             var d = ccDef(ids[i]);
             if (!d || seen[d.id]) continue;
             seen[d.id] = true;
+            var ps = posOf[d.id];
+            if (ps && !isNaN(ps.col) && !isNaN(ps.row) && ps.col >= 0 && ps.row >= 0 && ps.col + d.w <= cols && isFree(ps.row, ps.col, d.w, d.h)) put(d, ps.row, ps.col);
+            else rest.push(d);
+        }
+        // 2nd pass: the others (new, or never placed) go to the first free spot
+        for (var j = 0; j < rest.length; j++) {
             var placed = false;
             for (var r = 0; !placed; r++) {
-                for (var c = 0; c + d.w <= cols; c++) {
-                    if (isFree(r, c, d.w, d.h)) {
-                        mark(r, c, d.w, d.h);
-                        out.push({ id: d.id, col: c, row: r, w: d.w, h: d.h });
-                        rows = Math.max(rows, r + d.h);
-                        placed = true;
-                        break;
-                    }
+                for (var c = 0; c + rest[j].w <= cols; c++) {
+                    if (isFree(r, c, rest[j].w, rest[j].h)) { put(rest[j], r, c); placed = true; break; }
                 }
             }
         }
+        var gridRows = Math.max(rows, Math.min(ccMaxRows, rows + (extra || 0)));   // never more than ccMaxRows tall
         // pixel layout: tiles sit ccGap apart; the two slider tiles (Display, Sound) keep the wider ccSliderGap around them
         var sliderRow = [], ys = [];
         for (var k = 0; k < out.length; k++) {
             if (out[k].id === "display" || out[k].id === "sound")
                 for (var rr = out[k].row; rr < out[k].row + out[k].h; rr++) sliderRow[rr] = true;
         }
-        for (var r2 = 0; r2 < rows; r2++)
+        for (var r2 = 0; r2 < gridRows; r2++)
             ys[r2] = r2 === 0 ? 0 : ys[r2 - 1] + ccCellH + ((sliderRow[r2] || sliderRow[r2 - 1]) ? ccSliderGap : ccGap);
         for (var m = 0; m < out.length; m++) {
             out[m].y = ys[out[m].row];
             out[m].hpx = ys[out[m].row + out[m].h - 1] + ccCellH - ys[out[m].row];
         }
-        return { items: out, rows: rows, total: rows > 0 ? ys[rows - 1] + ccCellH : 0 };
+        var free = [];
+        if (extra > 0)
+            for (var fr = 0; fr < gridRows; fr++)
+                for (var fc = 0; fc < cols; fc++) if (!(occ[fr] && occ[fr][fc])) free.push({ col: fc, row: fr, y: ys[fr] });
+        return { items: out, rows: rows, gridRows: gridRows, ys: ys, free: free, total: gridRows > 0 ? ys[gridRows - 1] + ccCellH : 0 };
     }
     readonly property real ccCellH: 66
+    readonly property int ccMaxRows: 8             // the Control Center grid is at most 8 rows tall
     readonly property real ccGap: 6
     readonly property real ccSliderGap: 10
-    readonly property var ccPlan: ccLayout(ccControls)
-    function ccAdd(id) {
-        if (ccControls.indexOf(id) < 0) ccControls = ccControls.concat([id]);
+    readonly property var ccPlan: ccLayout(ccControls, ccEditing ? 2 : 0)
+    // remember where every control is now (optionally leaving one out, and/or putting one somewhere else)
+    function ccFreeze(plan, skipId, moveId, mc, mr) {
+        var o = [];
+        for (var i = 0; i < plan.items.length; i++) {
+            var it = plan.items[i];
+            if (it.id === skipId) continue;
+            o.push(it.id + ":" + (it.id === moveId ? mc : it.col) + ":" + (it.id === moveId ? mr : it.row));
+        }
+        return o;
     }
+    function ccCanAdd(id) {
+        if (ccControls.indexOf(id) >= 0) return false;
+        var frozen = ccFreeze(ccLayout(ccControls, 0));
+        return ccLayout(ccControls.concat([id]), 0, frozen).rows <= ccMaxRows;
+    }
+    function ccAdd(id) {
+        if (ccControls.indexOf(id) >= 0) return;
+        if (!ccCanAdd(id)) return;                      // no room left within ccMaxRows rows
+        ccControls = ccControls.concat([id]);
+        ccPos = ccFreeze(ccLayout(ccControls, 0));       // the new one took the first free spot; everything keeps its place
+    }
+    // removing a control leaves its cells empty: the others stay exactly where they are
     function ccRemove(id) {
+        ccPos = ccFreeze(ccLayout(ccControls, 0), id);
         ccControls = ccControls.filter(function (x) { return x !== id; });
     }
-    // dropped control `id` with the pointer at (px, py) in grid coordinates: it takes the slot of the nearest control
-    function ccDrop(id, px, py, cw, ch, gridH) {
-        var order = ccControls.slice(), from = order.indexOf(id);
-        if (from < 0) return;
-        var to = -1, best = 1e18, it = ccPlan.items;
-        for (var i = 0; i < it.length; i++) {
-            if (it[i].id === id) continue;
-            var o = it[i];
-            var cx = o.col * (cw + ccGap) + (o.w * cw + (o.w - 1) * ccGap) / 2;
-            var cy = o.y + o.hpx / 2;
-            var dd = (cx - px) * (cx - px) + (cy - py) * (cy - py);
-            if (dd < best) { best = dd; to = order.indexOf(o.id); }
+    // the free spot nearest to where the control's top-left corner was let go (tx, ty in grid pixels), or null
+    function ccSnap(id, tx, ty, cw) {
+        var plan = ccPlan, d = ccDef(id);
+        if (!d) return null;
+        var best = null, bd = 1e18;
+        for (var r = 0; r + d.h <= plan.gridRows; r++) {
+            for (var c = 0; c + d.w <= 4; c++) {
+                var ok = true;
+                for (var i = 0; i < plan.items.length && ok; i++) {
+                    var o = plan.items[i];
+                    if (o.id === id) continue;
+                    if (c < o.col + o.w && c + d.w > o.col && r < o.row + o.h && r + d.h > o.row) ok = false;
+                }
+                if (!ok) continue;
+                var x = c * (cw + ccGap), y = plan.ys[r];
+                var dd = (x - tx) * (x - tx) + (y - ty) * (y - ty);
+                if (dd < bd) {
+                    bd = dd;
+                    best = { col: c, row: r, x: x, y: y, w: d.w * cw + (d.w - 1) * ccGap, h: plan.ys[r + d.h - 1] + ccCellH - y };
+                }
+            }
         }
-        if (py > gridH + ccSliderGap) to = order.length - 1;
-        if (to < 0 || to === from) return;
-        order.splice(from, 1);
-        order.splice(to, 0, id);
-        ccControls = order;
+        return best;
+    }
+    function ccMove(id, snap) {
+        if (!snap) return;
+        ccPos = ccFreeze(ccPlan, "", id, snap.col, snap.row);
+    }
+    // Resize with the corner knob: the control keeps its top-left cell and only takes a size that is free there (inside the
+    // 4 columns / ccMaxRows rows, not on top of another control). `wantCols` / `wantRows` = where the pointer is, in cells; the
+    // nearest allowed size wins.
+    function ccFitsSize(id, w, h) {
+        var plan = ccLayout(ccControls, 0), me = null;
+        for (var i = 0; i < plan.items.length; i++) if (plan.items[i].id === id) me = plan.items[i];
+        if (!me || me.col + w > 4 || me.row + h > ccMaxRows) return false;
+        for (var j = 0; j < plan.items.length; j++) {
+            var o = plan.items[j];
+            if (o.id === id) continue;
+            if (me.col < o.col + o.w && me.col + w > o.col && me.row < o.row + o.h && me.row + h > o.row) return false;
+        }
+        return true;
+    }
+    function ccSizeForDrag(id, wantCols, wantRows) {
+        var d = ccDef(id);
+        if (!d) return null;
+        var best = [d.w, d.h], bd = 1e18;
+        for (var i = 0; i < d.sizes.length; i++) {
+            var sz = d.sizes[i];
+            if (!(sz[0] === d.w && sz[1] === d.h) && !ccFitsSize(id, sz[0], sz[1])) continue;
+            var dd = (sz[0] - wantCols) * (sz[0] - wantCols) + (sz[1] - wantRows) * (sz[1] - wantRows);
+            if (dd < bd) { bd = dd; best = sz; }
+        }
+        return best;
+    }
+    function ccResize(id, w, h) {
+        var d = ccDef(id);
+        if (!d || (d.w === w && d.h === h) || !ccFitsSize(id, w, h)) return;
+        var frozen = ccFreeze(ccLayout(ccControls, 0));          // everything keeps its cell; only this one changes size
+        var next = [];
+        for (var i = 0; i < ccSizes.length; i++) if (String(ccSizes[i]).split(":")[0] !== id) next.push(ccSizes[i]);
+        next.push(id + ":" + w + ":" + h);
+        ccPos = frozen;
+        ccSizes = next;
     }
 
     readonly property string configDir: Quickshell.env("HOME") + "/.config/macbar"
@@ -993,6 +1097,13 @@ Scope {
                 poly([11, 3.5, 5.5, 9, 11, 14.5], false);
             } else if (k === "chevR") {
                 poly([7, 3.5, 12.5, 9, 7, 14.5], false);
+            } else if (k === "airplay") {          // AirPlay Audio: two open rings with a little triangle under them
+                ctx.lineWidth = 1.6;
+                ctx.beginPath(); ctx.arc(9, 8.1, 7.1, PI * 0.80, PI * 2.20, false); ctx.stroke();
+                ctx.beginPath(); ctx.arc(9, 8.1, 3.9, PI * 0.72, PI * 2.28, false); ctx.stroke();
+                circ(9, 8.1, 1.15); ctx.fill();
+                rpoly([9, 11.3, 13.6, 16.8, 4.4, 16.8], 0.8);
+                ctx.lineWidth = 1.5;
             } else if (k === "bell") {
                 ctx.beginPath(); ctx.moveTo(3.4, 12.9);
                 ctx.bezierCurveTo(4.6, 11.8, 5.0, 10.6, 5.0, 8.2);
@@ -1250,7 +1361,7 @@ Scope {
         property real fullW: pop.width
         property real fullH: pop.height
         property bool fromCC: false                 // opened from the Control Center: keeps the global blur setting
-        readonly property real topBarBlur: 42       // opened from the top bar: the stronger blur of the old version
+        readonly property real topBarBlur: 28       // opened from the top bar: between the old 42 and the later 16 (upstream 0.5.2)
         property alias ctx: pgc
         readonly property real m: 64
         // The popover is drawn scaled by barPopupScale around its top-left corner, but the glass shaders position every slab in the
@@ -1404,6 +1515,10 @@ Scope {
         readonly property color fg: whole ? Qt.rgba(0.07, 0.07, 0.09, 1) : t.fg
         readonly property color fg2: whole ? Qt.rgba(0.07, 0.07, 0.09, 0.55) : t.fg2
         signal clicked()
+        // true while the pointer is anywhere over the tile (a HoverHandler, so a MouseArea on top of the tile doesn't hide it)
+        readonly property bool hovered: tileHover.hovered
+        readonly property bool pressed: tma.pressed
+        HoverHandler { id: tileHover }
         scale: (clickable && tma.pressed) ? 0.97 : 1
         Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutBack; easing.overshoot: 2.4 } }
         GGlass { anchors.fill: parent; gx: tile.gx; cornerR: tile.radius; thickness: 22; shadowAmt: 0; flatInner: 1 }
@@ -1422,6 +1537,108 @@ Scope {
         }
         CornerBorder { z: 2; anchors.fill: parent; cornerR: tile.radius; dark: tile.gx.dark; tint: tile.gx.borderTint; amount: tile.gx.borderAmount; lineW: 0.8 }
         MouseArea { id: tma; anchors.fill: parent; enabled: tile.clickable; hoverEnabled: true; onClicked: tile.clicked() }
+    }
+
+    // A normal Control Center button. It has three sizes, picked with the corner knob in Edit Controls:
+    //   small (1x1)  just the round icon, the whole tile turns white when it is on
+    //   wide  (2x1)  icon on the left, name + state next to it
+    //   big   (2x2)  icon top-left, name + state at the bottom-left (the macOS "Start Screen Saver" look)
+    // hasArrow (Wi-Fi, Bluetooth): a small arrow fades in at the right edge while the pointer is over the tile; clicking it
+    // opens the page (arrowClicked), clicking anywhere else toggles (clicked).
+    component CCButton: Item {
+        id: btn
+        // NOTE: this used to be `component CCButton: CCTile`. An inline component that extends another inline component
+        // of the same file is rejected by some Qt versions ("CCButton is not a type"), so it now wraps a CCTile instead.
+        required property var t
+        required property var gx
+        property bool on: false
+        property string onTint: ""
+        signal clicked()
+        readonly property bool hovered: tile.hovered
+        readonly property bool whole: on && width <= 110
+        readonly property color fg: whole ? Qt.rgba(0.07, 0.07, 0.09, 1) : t.fg
+        readonly property color fg2: whole ? Qt.rgba(0.07, 0.07, 0.09, 0.55) : t.fg2
+        scale: tile.pressed ? 0.97 : 1
+        Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutBack; easing.overshoot: 2.4 } }
+        CCTile {
+            id: tile
+            anchors.fill: parent
+            t: btn.t; gx: btn.gx
+            on: btn.on; onTint: btn.onTint
+            clickable: true
+            radius: btn.radius
+            scale: 1
+            onClicked: btn.clicked()
+        }
+        property string kind: ""
+        property real level: 3
+        property string title: ""
+        property string subtitle: ""
+        property bool hasArrow: false
+        signal arrowClicked()
+        readonly property bool isSmall: width <= 110
+        readonly property bool isBig: !isSmall && height > 100
+        readonly property bool isWide: !isSmall && !isBig
+        readonly property bool arrowOn: hasArrow && !isSmall
+        readonly property real radius: isBig ? 30 : 34
+
+        CCBtn {
+            id: btnIcon
+            plain: true
+            t: btn.t; gx: btn.gx
+            d: btn.isBig ? 44 : 40
+            x: btn.isSmall ? (btn.width - width) / 2 : 12
+            y: btn.isBig ? 12 : (btn.height - height) / 2
+            kind: btn.kind; level: btn.level
+            on: btn.on; onTint: btn.onTint
+        }
+        Column {
+            visible: !btn.isSmall
+            x: btn.isBig ? 14 : 62
+            y: btn.isBig ? btn.height - height - 13 : (btn.height - height) / 2
+            width: btn.width - x - (btn.arrowOn && btn.isWide ? 28 : 12)
+            spacing: 1
+            MorphText {
+                animateWidth: false; duration: 420
+                width: parent.width; elide: Text.ElideRight
+                text: btn.title; color: btn.fg
+                font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 13; font.weight: Font.DemiBold
+            }
+            MorphText {
+                animateWidth: false; duration: 420
+                width: parent.width; elide: Text.ElideRight
+                visible: btn.subtitle !== ""
+                text: btn.subtitle; color: btn.fg2
+                font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 12; font.weight: Font.DemiBold
+            }
+        }
+        // the arrow: right edge of a wide tile, top-right of a big one
+        Item {
+            id: btnArrow
+            visible: btn.arrowOn
+            width: 40
+            height: btn.isBig ? 44 + 24 : btn.height
+            x: btn.width - width; y: 0
+            opacity: btn.hovered ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+            Glyph {
+                width: 14; height: 14
+                x: parent.width - 8 - width
+                y: btn.isBig ? 12 + (44 - height) / 2 : (parent.height - height) / 2
+                kind: "chevR"
+                color: btn.fg2
+                scale: arrowMa.containsMouse ? 1.18 : 1
+                Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack; easing.overshoot: 2.4 } }
+            }
+            MouseArea {
+                id: arrowMa
+                anchors.fill: parent
+                enabled: btnArrow.opacity > 0.2
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: btn.arrowClicked()
+            }
+        }
     }
 
     // small glass pill button ("Edit Controls", "Done", "Reset")
@@ -3729,7 +3946,7 @@ Scope {
         ccEnabled = true; notificationsEnabled = true; clockAppEnabled = true; ccStyle = "tiles";
         barLogoMode = "arch"; barCustomLogoPath = "";
         barWidgets = ["appleMenu", "appMenus", "workspaces", "volume", "keyboard", "notifications", "wifi", "bluetooth", "privacy", "controlCenter", "clock"];
-        ccControls = ccDefault.slice();
+        ccControls = ccDefault.slice(); ccPos = []; ccSizes = [];
     }
 
     // inherit look from macdock first, then macbar's own file wins
@@ -4588,6 +4805,7 @@ Scope {
                 property int calMonth: 0
                 property string wifiPrompt: ""      // ssid whose password field is open in the Wi-Fi popover
                 property bool ccEdit: false         // Control Center is in "Edit Controls" mode
+                onCcEditChanged: root.ccEditing = ccEdit
                 property string ccPage: ""          // "" = the control grid, "wifi" = the Wi-Fi list shown inside the Control Center
                 onCcPageChanged: wifiPrompt = ""
                 property var trayItem: null         // SystemTrayItem whose menu is open in the tray popover
@@ -7705,184 +7923,100 @@ Scope {
                         }
                         return null;
                     }
+                    // every normal button is one CCButton: it picks its look (circle / pill / big square) from its size
                     Component {
                         id: cWifi
-                        CCTile {
-                            id: tl
-                            clickable: true
-                            on: root.wifiOn
-                            onClicked: root.toggleWifi()
+                        CCButton {
                             t: ccPal; gx: ccg
-                            CCBtn {
-                                plain: true
-                                t: ccPal; gx: ccg
-                                x: 12; anchors.verticalCenter: parent.verticalCenter
-                                kind: "wifi"; level: root.wifiOn ? (root.wifiLevel || 3) : 3
-                                on: root.wifiOn
-                            }
-                            MouseArea {
-                                // only the arrow end opens the Wi-Fi page inside the Control Center; the rest of the tile switches Wi-Fi on / off
-                                x: parent.width - 48; width: 48; height: parent.height
-                                onClicked: { root.wifiError = ""; root.scanWifi(); root.refreshConnections(); ui.ccPage = "wifi"; }
-                            }
-                            Column {
-                                x: 62; anchors.verticalCenter: parent.verticalCenter
-                                width: parent.width - 62 - 24
-                                spacing: 1
-                                Text { text: I18n.tr("Wi-Fi"); color: tl.fg; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 13; font.weight: Font.DemiBold }
-                                MorphText {
-                                    animateWidth: false; duration: 420
-                                    width: parent.width; elide: Text.ElideRight
-                                    text: !root.wifiOn ? I18n.tr("Off") : (root.wifiSsid !== "" ? root.wifiSsid : I18n.tr("Not Connected"))
-                                    color: tl.fg2; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.weight: Font.DemiBold; font.pixelSize: 12
-                                }
-                            }
+                            on: root.wifiOn
+                            kind: "wifi"; level: root.wifiOn ? (root.wifiLevel || 3) : 3
+                            onTint: String(root.accent)
+                            title: I18n.tr("Wi-Fi")
+                            subtitle: !root.wifiOn ? I18n.tr("Off") : (root.wifiSsid !== "" ? root.wifiSsid : I18n.tr("Not Connected"))
+                            hasArrow: true
+                            onClicked: root.toggleWifi()
+                            // only the arrow opens the Wi-Fi page inside the Control Center; the rest of the tile switches Wi-Fi on / off
+                            onArrowClicked: { root.wifiError = ""; root.scanWifi(); root.refreshConnections(); ui.ccPage = "wifi"; }
                         }
                     }
                     Component {
                         id: cBt
-                        CCTile {
-                            clickable: true
-                            on: root.btOn
-                            onClicked: root.toggleBt()
-                            id: btTile
+                        CCButton {
                             t: ccPal; gx: ccg
-                            // one grid cell is ~70 px wide, two are ~150 px: wide = shows the label and opens the device list
-                            // (the cell's `slot` is not visible from inside this Component, which left the icon unplaced)
-                            readonly property bool wide: width > 110
-                            CCBtn {
-                                plain: true
-                                t: ccPal; gx: ccg
-                                x: btTile.wide ? 12 : (parent.width - width) / 2
-                                anchors.verticalCenter: parent.verticalCenter
-                                kind: "bluetooth"; on: root.btOn
-                            }
-                            MouseArea {
-                                visible: btTile.wide
-                                // only the arrow end opens the Bluetooth page inside the Control Center; the rest of the tile switches Bluetooth on / off
-                                x: parent.width - 48; width: 48; height: parent.height
-                                onClicked: { root.btError = ""; root.scanBt(); root.refreshBt(); ui.ccPage = "bt"; }
-                            }
-                            Column {
-                                visible: btTile.wide
-                                x: 62; anchors.verticalCenter: parent.verticalCenter
-                                width: parent.width - 62 - 24
-                                spacing: 1
-                                Text { text: I18n.tr("Bluetooth"); color: btTile.fg; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 13; font.weight: Font.DemiBold }
-                                MorphText {
-                                    animateWidth: false; duration: 420
-                                    width: parent.width; elide: Text.ElideRight
-                                    text: !root.btOn ? I18n.tr("Off") : (root.btConnected > 0 ? (root.btConnectedName || (root.btConnected + I18n.tr(" Connected"))) : I18n.tr("Not Connected"))
-                                    color: btTile.fg2; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.weight: Font.DemiBold; font.pixelSize: 12
-                                }
-                            }
+                            on: root.btOn
+                            kind: "bluetooth"
+                            onTint: String(root.accent)
+                            title: I18n.tr("Bluetooth")
+                            subtitle: !root.btOn ? I18n.tr("Off") : (root.btConnected > 0 ? (root.btConnectedName || (root.btConnected + I18n.tr(" Connected"))) : I18n.tr("Not Connected"))
+                            hasArrow: true
+                            onClicked: root.toggleBt()
+                            onArrowClicked: { root.btError = ""; root.scanBt(); root.refreshBt(); ui.ccPage = "bt"; }
                         }
                     }
                     Component {
                         id: cAirplane
-                        CCTile {
-                            id: tl
-                            clickable: true
-                            on: root.airplane
-                            onClicked: root.toggleAirplane()
+                        CCButton {
                             t: ccPal; gx: ccg
-                            CCBtn {
-                                plain: true
-                                t: ccPal; gx: ccg; anchors.centerIn: parent
-                                kind: "airplane"; on: root.airplane
-                            }
+                            on: root.airplane
+                            kind: "airplane"
+                            title: I18n.tr("Airplane Mode")
+                            subtitle: root.airplane ? I18n.tr("On") : I18n.tr("Off")
+                            onClicked: root.toggleAirplane()
                         }
                     }
                     Component {
                         id: cFocus
-                        CCTile {
-                            id: tl
-                            clickable: true
-                            on: root.dnd
-                            onClicked: root.toggleDnd()
+                        CCButton {
                             t: ccPal; gx: ccg
-                            CCBtn {
-                                plain: true
-                                t: ccPal; gx: ccg
-                                x: 12; anchors.verticalCenter: parent.verticalCenter
-                                kind: "moon"; on: root.dnd
-                            }
-                            Column {
-                                x: 62; anchors.verticalCenter: parent.verticalCenter
-                                width: parent.width - 62 - 10
-                                spacing: 1
-                                Text { width: parent.width; elide: Text.ElideRight; text: I18n.tr("Focus"); color: tl.fg; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 13; font.weight: Font.DemiBold }
-                                MorphText { animateWidth: false; duration: 420; width: parent.width; elide: Text.ElideRight; text: root.dnd ? I18n.tr("On") : I18n.tr("Off"); color: tl.fg2; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.weight: Font.DemiBold; font.pixelSize: 12 }
-                            }
+                            on: root.dnd
+                            kind: "moon"; onTint: "#AF52DE"
+                            title: I18n.tr("Focus")
+                            subtitle: root.dnd ? I18n.tr("On") : I18n.tr("Off")
+                            onClicked: root.toggleDnd()
                         }
                     }
                     Component {
                         id: cRecord
-                        CCTile {
-                            id: tl
-                            clickable: true
-                            on: root.recording
-                            onTint: "#FF453A"
-                            onClicked: root.toggleRecording()
+                        CCButton {
                             t: ccPal; gx: ccg
-                            CCBtn {
-                                plain: true
-                                t: ccPal; gx: ccg
-                                x: 12; anchors.verticalCenter: parent.verticalCenter
-                                kind: root.recording ? "stoprec" : "record"; on: root.recording; onTint: "#FF453A"
-                            }
-                            Column {
-                                x: 62; anchors.verticalCenter: parent.verticalCenter
-                                width: parent.width - 62 - 10
-                                spacing: 1
-                                MorphText { animateWidth: false; duration: 420; width: parent.width; elide: Text.ElideRight; text: root.recording ? "Stop" : I18n.tr("Record"); color: tl.fg; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 13; font.weight: Font.DemiBold }
-                                MorphText { animateWidth: false; duration: 420; width: parent.width; elide: Text.ElideRight; text: root.recording ? root.recTime() : I18n.tr("Screen"); color: tl.fg2; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.weight: Font.DemiBold; font.pixelSize: 12 }
-                            }
+                            on: root.recording
+                            kind: root.recording ? "stoprec" : "record"; onTint: "#FF453A"
+                            title: root.recording ? "Stop" : I18n.tr("Record")
+                            subtitle: root.recording ? root.recTime() : I18n.tr("Screen")
+                            onClicked: root.toggleRecording()
                         }
                     }
                     Component {
                         id: cNight
-                        CCTile {
-                            id: tl
-                            clickable: true
-                            on: root.nightOn
-                            onClicked: root.nightOn = !root.nightOn
+                        CCButton {
                             t: ccPal; gx: ccg
-                            CCBtn {
-                                plain: true
-                                t: ccPal; gx: ccg; anchors.centerIn: parent
-                                kind: "nightshift"; on: root.nightOn
-                            }
+                            on: root.nightOn
+                            kind: "nightshift"
+                            title: I18n.tr("Night Shift")
+                            subtitle: root.nightOn ? I18n.tr("On") : I18n.tr("Off")
+                            onClicked: root.nightOn = !root.nightOn
                         }
                     }
                     Component {
                         id: cAwake
-                        CCTile {
-                            id: tl
-                            clickable: true
-                            on: root.keepAwake
-                            onClicked: root.keepAwake = !root.keepAwake
+                        CCButton {
                             t: ccPal; gx: ccg
-                            CCBtn {
-                                plain: true
-                                t: ccPal; gx: ccg; anchors.centerIn: parent
-                                kind: "coffee"; on: root.keepAwake
-                            }
+                            on: root.keepAwake
+                            kind: "coffee"
+                            title: I18n.tr("Keep Awake")
+                            subtitle: root.keepAwake ? I18n.tr("On") : I18n.tr("Off")
+                            onClicked: root.keepAwake = !root.keepAwake
                         }
                     }
                     Component {
                         id: cDark
-                        CCTile {
-                            id: tl
-                            clickable: true
-                            on: root.darkMode
-                            onClicked: root.setAppearance(root.darkMode ? "light" : "dark")
+                        CCButton {
                             t: ccPal; gx: ccg
-                            CCBtn {
-                                plain: true
-                                t: ccPal; gx: ccg; anchors.centerIn: parent
-                                kind: "contrast"; on: root.darkMode
-                            }
+                            on: root.darkMode
+                            kind: "contrast"
+                            title: I18n.tr("Dark Mode")
+                            subtitle: root.darkMode ? I18n.tr("On") : I18n.tr("Off")
+                            onClicked: root.setAppearance(root.darkMode ? "light" : "dark")
                         }
                     }
                     Component {
@@ -7891,12 +8025,33 @@ Scope {
                             id: np
                             t: ccPal; gx: ccg
                             readonly property var pl: root.player
+                            // 2x2 = cover on top, title, buttons at the bottom; 4x2 (wide) = cover on the left, title + AirPlay,
+                            // the three buttons and the progress bar on the right
+                            readonly property bool wide: width > 200
+                            // 4x1 (compact) = one pill row: cover on the left, title, then play / next / AirPlay on the right
+                            readonly property bool compact: wide && height < 100
+                            radius: compact ? 33 : (wide ? 30 : 34)
+                            function fmt(sec) {
+                                var v = Math.max(0, Math.round(sec)), m = Math.floor(v / 60), r = v % 60;
+                                return m + ":" + (r < 10 ? "0" : "") + r;
+                            }
+                            readonly property bool hasLen: !!pl && pl.lengthSupported && pl.positionSupported && pl.length > 0
+                            readonly property real frac: hasLen ? Math.max(0, Math.min(1, pl.position / pl.length)) : 0
+                            // the position is not pushed by the player: ask for it twice a second while it plays and the wide player is on screen
+                            Timer {
+                                interval: 500; repeat: true
+                                running: np.wide && !np.compact && !!np.pl && np.pl.isPlaying && ui.pop === "cc"
+                                onTriggered: { try { np.pl.positionChanged(); } catch (e) { } }
+                            }
                             Rectangle {
                                 id: art
-                                x: 12; y: 12
-                                width: 52; height: 52; radius: 10
+                                x: np.compact ? 8 : 12
+                                y: x
+                                width: np.compact ? np.height - 16 : (np.wide ? np.height - 30 : 52)
+                                height: width
+                                radius: np.compact ? 18 : (np.wide ? 18 : 13)
                                 color: ccPal.btnOff
-                                Glyph { visible: artImg.status !== Image.Ready; anchors.centerIn: parent; width: 22; height: 22; kind: "note"; color: ccPal.fg2 }
+                                Glyph { visible: artImg.status !== Image.Ready; anchors.centerIn: parent; width: np.wide ? 40 : 22; height: width; kind: "note"; color: ccPal.fg2 }
                                 // `clip: true` only clips to a plain rectangle, so the cover is masked with a rounded shape instead
                                 Item {
                                     id: artMask
@@ -7932,12 +8087,14 @@ Scope {
                                 }
                             }
                             Column {
-                                x: 12; y: 66
-                                width: parent.width - 24
+                                x: np.wide ? art.x + art.width + 14 : 12
+                                y: np.compact ? (np.height - height) / 2 : (np.wide ? 14 : 66)
+                                width: np.compact ? parent.width - x - 12 - airBtn.width - 8 - ctrlRow.width - 8
+                                       : (np.wide ? parent.width - x - 12 - 40 : parent.width - 24)
                                 spacing: 1
                                 Text {
                                     width: parent.width; elide: Text.ElideRight
-                                    text: np.pl && np.pl.trackTitle ? np.pl.trackTitle : I18n.tr("Now Playing")
+                                    text: np.pl && np.pl.trackTitle ? np.pl.trackTitle : (np.wide ? I18n.tr("Not Playing") : I18n.tr("Now Playing"))
                                     color: np.pl ? ccPal.fg : ccPal.fg2
                                     font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 13; font.weight: Font.DemiBold
                                 }
@@ -7948,13 +8105,26 @@ Scope {
                                     color: ccPal.fg2; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.weight: Font.DemiBold; font.pixelSize: 12
                                 }
                             }
+                            // wide player only: the AirPlay-style button (opens the audio output list)
+                            CCBtn {
+                                id: airBtn
+                                visible: np.wide
+                                t: ccPal; gx: ccg
+                                d: 32
+                                glass: false
+                                x: parent.width - 12 - width; y: np.compact ? (np.height - height) / 2 : 12
+                                kind: "airplay"
+                                onClicked: ui.openPop("vol", airBtn.mapToItem(ui, 0, 0).x + airBtn.width / 2)
+                            }
                             Row {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                y: parent.height - 38
+                                id: ctrlRow
+                                x: np.compact ? np.width - 12 - airBtn.width - 8 - width
+                                   : (np.wide ? art.x + art.width + 14 + (np.width - (art.x + art.width + 14) - 12 - width) / 2 : (parent.width - width) / 2)
+                                y: np.compact ? (np.height - height) / 2 : (np.wide ? 52 : parent.height - 38)
                                 spacing: 2
                                 opacity: np.pl ? 1 : 0.4
                                 Repeater {
-                                    model: ["prev", "play", "next"]
+                                    model: np.compact ? ["play", "next"] : ["prev", "play", "next"]
                                     delegate: Item {
                                         id: pbtn
                                         required property string modelData
@@ -7978,6 +8148,42 @@ Scope {
                                             }
                                         }
                                     }
+                                }
+                            }
+                            // wide player only: progress bar with the elapsed / remaining time under it
+                            Item {
+                                id: prog
+                                visible: np.wide && !np.compact
+                                x: art.x + art.width + 14
+                                y: np.height - 12 - 34
+                                width: np.width - x - 14
+                                height: 34
+                                Rectangle {
+                                    id: progTrack
+                                    y: 6; width: parent.width; height: 5; radius: 2.5
+                                    color: ccPal.dark ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(0, 0, 0, 0.16)
+                                    Rectangle {
+                                        width: parent.width * np.frac; height: parent.height; radius: parent.radius
+                                        color: ccPal.fg
+                                        opacity: np.hasLen ? 0.85 : 0
+                                    }
+                                }
+                                MouseArea {
+                                    anchors.left: parent.left; anchors.right: parent.right
+                                    y: 0; height: 18
+                                    enabled: np.hasLen && np.pl.canSeek
+                                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    onClicked: mouse => { np.pl.position = Math.max(0, Math.min(1, mouse.x / width)) * np.pl.length; }
+                                }
+                                Text {
+                                    y: 16
+                                    text: np.hasLen ? np.fmt(np.pl.position) : "-:--"
+                                    color: ccPal.fg2; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 10; font.weight: Font.DemiBold
+                                }
+                                Text {
+                                    y: 16; anchors.right: parent.right
+                                    text: np.hasLen ? "-" + np.fmt(Math.max(0, np.pl.length - np.pl.position)) : "--:--"
+                                    color: ccPal.fg2; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.pixelSize: 10; font.weight: Font.DemiBold
                                 }
                             }
                         }
@@ -8189,6 +8395,36 @@ Scope {
                                 color: ccPal.fg2; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.weight: Font.DemiBold; font.pixelSize: 12
                             }
 
+                            // edit mode: the empty cells of the grid (and two spare rows) as soft circles, like the Home Screen grid
+                            Repeater {
+                                model: ui.ccEdit ? root.ccPlan.free : []
+                                delegate: Rectangle {
+                                    required property var modelData
+                                    x: modelData.col * (ccGrid.cw + root.ccGap) + (ccGrid.cw - width) / 2
+                                    y: modelData.y + (root.ccCellH - height) / 2
+                                    width: 63; height: 63; radius: 31.5
+                                    color: ccPal.dark ? Qt.rgba(1, 1, 1, 0.13) : Qt.rgba(0, 0, 0, 0.09)
+                                    border.width: 1
+                                    border.color: ccPal.dark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08)
+                                }
+                            }
+                            // nearest free spot for the control being dragged (used on release; nothing is drawn for it)
+                            property var ghost: null
+                            // cells the dragged control came from: they keep showing as empty circles while it is moved
+                            property var dragCells: []
+                            Repeater {
+                                model: ccGrid.dragCells
+                                delegate: Rectangle {
+                                    required property var modelData
+                                    x: modelData.col * (ccGrid.cw + root.ccGap) + (ccGrid.cw - width) / 2
+                                    y: modelData.y + (root.ccCellH - height) / 2
+                                    width: 63; height: 63; radius: 31.5
+                                    color: ccPal.dark ? Qt.rgba(1, 1, 1, 0.13) : Qt.rgba(0, 0, 0, 0.09)
+                                    border.width: 1
+                                    border.color: ccPal.dark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08)
+                                }
+                            }
+
                             Repeater {
                                 model: root.ccCatalog
                                 delegate: Item {
@@ -8202,12 +8438,17 @@ Scope {
                                     property real dx: 0
                                     property real dy: 0
                                     property bool dragging: false
+                                    property bool sizing: false                  // the corner knob is held (and for a moment after): the tile eases to its new size
+                                    property real liveW: -1                      // while the knob is held the tile follows the pointer in real time
+                                    property real liveH: -1
+                                    Timer { id: sizeSettle; interval: 200; onTriggered: ct.sizing = false }
+                                    readonly property int sizeCount: modelData.sizes ? modelData.sizes.length : 1
 
                                     visible: slot !== null
                                     x: (slot ? slot.col * (ccGrid.cw + root.ccGap) : 0) + dx
                                     y: (slot ? slot.y : 0) + dy
-                                    width: slot ? slot.w * ccGrid.cw + (slot.w - 1) * root.ccGap : 0
-                                    height: slot ? slot.hpx : 0
+                                    width: liveW >= 0 ? liveW : (slot ? slot.w * ccGrid.cw + (slot.w - 1) * root.ccGap : 0)
+                                    height: liveH >= 0 ? liveH : (slot ? slot.hpx : 0)
                                     z: dragging ? 100 : 0
                                     // stretch-and-settle, a touch later for each row / column (ColorOS 17)
                                     property real ap: 1
@@ -8226,15 +8467,61 @@ Scope {
                                     Behavior on x { enabled: !ct.dragging; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                                     Behavior on y { enabled: !ct.dragging; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                                     Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutCubic } }
+                                    Behavior on width { enabled: ct.sizing && ct.liveW < 0; NumberAnimation { duration: 170; easing.type: Easing.OutCubic } }
+                                    Behavior on height { enabled: ct.sizing && ct.liveH < 0; NumberAnimation { duration: 170; easing.type: Easing.OutCubic } }
 
                                     // one-cell controls (the circle buttons) are drawn as a smaller circle centred in their grid cell
                                     readonly property bool small: slot !== null && slot.w === 1 && slot.h === 1
                                     Loader {
+                                        id: ctLoader
                                         anchors.centerIn: parent
-                                        width: ct.small ? 63 : ct.width
-                                        height: ct.small ? 63 : ct.height
+                                        width: (ct.small && ct.liveW < 0) ? 63 : ct.width
+                                        height: (ct.small && ct.liveH < 0) ? 63 : ct.height
                                         active: ct.slot !== null
                                         sourceComponent: cc.ccComp(ct.modelData.id)
+                                    }
+
+                                    // edit mode: the resize knob on the control's bottom-right corner (same one the desktop widgets have).
+                                    // Dragging it steps through the sizes the control has (circle / pill / big square, narrow / wide player).
+                                    Item {
+                                        id: ctShape
+                                        anchors.centerIn: parent
+                                        width: (ct.small && ct.liveW < 0) ? 63 : ct.width
+                                        height: (ct.small && ct.liveH < 0) ? 63 : ct.height
+                                        z: 70
+                                        ResizeKnob {
+                                            id: ctKnob
+                                            active: ui.ccEdit && ct.slot !== null && ct.sizeCount > 1
+                                            ref: ccGrid
+                                            tightHit: true              // the clickable area is just the drawn knob
+                                            hitInset: 4                 // ...and a little smaller than it (the stroke's padding + 1px)
+                                            cornerR: ct.small ? 31.5
+                                                     : Math.min((ctLoader.item && ctLoader.item.radius !== undefined) ? ctLoader.item.radius : 34, ctShape.width / 2, ctShape.height / 2)
+                                            inset: ct.small ? 1.5 : 1
+                                            property real p0x: 0
+                                            property real p0y: 0
+                                            property real w0: 0
+                                            property real h0: 0
+                                            property bool armed: false
+                                            onDragStarted: { armed = false; sizeSettle.stop(); ct.sizing = true; ct.liveW = ct.width; ct.liveH = ct.height; }
+                                            onDragMoved: (x, y) => {
+                                                if (!armed) { p0x = x; p0y = y; w0 = ct.width; h0 = ct.height; armed = true; return; }
+                                                var gw = ccGrid.cw + root.ccGap, gh = root.ccCellH + root.ccGap;
+                                                var sz = root.ccSizeForDrag(ct.modelData.id, (w0 + (x - p0x) + root.ccGap) / gw, (h0 + (y - p0y) + root.ccGap) / gh);
+                                                if (sz) root.ccResize(ct.modelData.id, sz[0], sz[1]);
+                                                // real time: the tile's frame tracks the pointer between its smallest and largest size
+                                                var dd = root.ccDef(ct.modelData.id), minC = 4, maxC = 1, minR = 4, maxR = 1;
+                                                if (dd && dd.sizes) for (var q = 0; q < dd.sizes.length; q++) {
+                                                    minC = Math.min(minC, dd.sizes[q][0]); maxC = Math.max(maxC, dd.sizes[q][0]);
+                                                    minR = Math.min(minR, dd.sizes[q][1]); maxR = Math.max(maxR, dd.sizes[q][1]);
+                                                }
+                                                var loW = minC * ccGrid.cw + (minC - 1) * root.ccGap, hiW = maxC * ccGrid.cw + (maxC - 1) * root.ccGap;
+                                                var loH = minR * root.ccCellH + (minR - 1) * root.ccGap, hiH = maxR * root.ccCellH + (maxR - 1) * root.ccGap;
+                                                ct.liveW = Math.max(loW, Math.min(hiW, w0 + (x - p0x)));
+                                                ct.liveH = Math.max(loH, Math.min(hiH, h0 + (y - p0y)));
+                                            }
+                                            onDragEnded: { armed = false; ct.liveW = -1; ct.liveH = -1; sizeSettle.restart(); }
+                                        }
                                     }
 
                                     // edit mode: this layer sits above the control, so clicks drag it instead of using it
@@ -8250,6 +8537,11 @@ Scope {
                                         onPressed: mouse => {
                                             var q = mapToItem(ccGrid, mouse.x, mouse.y);
                                             startP = Qt.point(q.x, q.y);
+                                            var cells = [];
+                                            for (var rr = 0; rr < ct.slot.h; rr++)
+                                                for (var cc2 = 0; cc2 < ct.slot.w; cc2++)
+                                                    cells.push({ col: ct.slot.col + cc2, y: root.ccPlan.ys[ct.slot.row + rr] });
+                                            ccGrid.dragCells = cells;
                                             ct.dragging = true;
                                         }
                                         onPositionChanged: mouse => {
@@ -8257,14 +8549,18 @@ Scope {
                                             var q = mapToItem(ccGrid, mouse.x, mouse.y);
                                             ct.dx = q.x - startP.x;
                                             ct.dy = q.y - startP.y;
+                                            // preview of the cell it would land in (the nearest free spot)
+                                            ccGrid.ghost = root.ccSnap(ct.modelData.id, ct.slot.col * (ccGrid.cw + root.ccGap) + ct.dx, ct.slot.y + ct.dy, ccGrid.cw);
                                         }
                                         onReleased: mouse => {
-                                            var q = mapToItem(ccGrid, mouse.x, mouse.y);
+                                            var snap = ccGrid.ghost;
+                                            ccGrid.ghost = null;
+                                            ccGrid.dragCells = [];
                                             ct.dragging = false;
                                             ct.dx = 0; ct.dy = 0;
-                                            root.ccDrop(ct.modelData.id, q.x, q.y, ccGrid.cw, ccGrid.chh, ccGrid.height);
+                                            root.ccMove(ct.modelData.id, snap);       // nothing else moves: the other controls keep their cells
                                         }
-                                        onCanceled: { ct.dragging = false; ct.dx = 0; ct.dy = 0; }
+                                        onCanceled: { ccGrid.ghost = null; ccGrid.dragCells = []; ct.dragging = false; ct.dx = 0; ct.dy = 0; }
                                     }
 
                                     // remove badge
@@ -8273,10 +8569,9 @@ Scope {
                                         z: 60
                                         x: -5; y: -5
                                         width: 22; height: 22; radius: 11
-                                        color: ccPal.dark ? "#636366" : "#8E8E93"
-                                        border.width: 1.5
-                                        border.color: ccPal.dark ? Qt.rgba(1, 1, 1, 0.35) : "white"
-                                        Rectangle { anchors.centerIn: parent; width: 10; height: 2; radius: 1; color: "white" }
+                                        color: Qt.rgba(1, 1, 1, 0.65)
+                                        border.width: 0
+                                        Rectangle { anchors.centerIn: parent; width: 10; height: 2; radius: 1; color: "#314C67" }
                                         MouseArea {
                                             anchors.fill: parent; anchors.margins: -3
                                             onClicked: root.ccRemove(ct.modelData.id)
@@ -8330,6 +8625,7 @@ Scope {
                                                 color: ccPal.fg; font.family: Fonts.forWeight(Font.DemiBold, root.boldFontFamily); font.weight: Font.DemiBold; font.pixelSize: 12
                                             }
                                         }
+                                        opacity: root.ccCanAdd(chip.modelData.id) ? 1 : 0.4
                                         MouseArea { anchors.fill: parent; onClicked: root.ccAdd(chip.modelData.id) }
                                     }
                                 }
@@ -8360,7 +8656,7 @@ Scope {
                                     visible: ui.ccEdit
                                     t: ccPal; gx: ccg
                                     text: I18n.tr("Reset")
-                                    onClicked: root.ccControls = root.ccDefault.slice()
+                                    onClicked: { root.ccControls = root.ccDefault.slice(); root.ccPos = []; root.ccSizes = []; }
                                 }
                                 CCPill {
                                     t: ccPal; gx: ccg

@@ -4777,16 +4777,26 @@ Scope {
         var x = Quickshell.env("XDG_DATA_HOME");
         return ((x && x !== "") ? x : Quickshell.env("HOME") + "/.local/share") + "/Trash/files";
     }
+    property int trashCount: 0
+    property bool trashCountKnown: false
+    property int trashKick: 0           // ++ → the Trash icon hops (something landed in it)
+    property int trashEmptyKick: 0      // ++ → the Trash icon shakes and hops (Empty Trash)
     function trashCheck() { if (!trashCheckProc.running) trashCheckProc.running = true; }
     Process {
         id: trashCheckProc
-        command: ["sh", "-c", "mkdir -p \"$1\"; if [ -n \"$(ls -A \"$1\" 2>/dev/null | head -n 1)\" ]; then s=1; else s=0; fi; "
-                              + "if command -v inotifywait >/dev/null 2>&1; then w=w; else w=p; fi; echo \"$s $w\"", "sh", root.trashDir]
+        command: ["sh", "-c", "mkdir -p \"$1\"; n=$(ls -A \"$1\" 2>/dev/null | wc -l); if [ \"$n\" -gt 0 ]; then s=1; else s=0; fi; "
+                              + "if command -v inotifywait >/dev/null 2>&1; then w=w; else w=p; fi; echo \"$s $w $n\"", "sh", root.trashDir]
         stdout: StdioCollector {
             onStreamFinished: {
                 var t = text.trim().split(" ");
                 root.trashFull = t[0] === "1";
                 root.trashPoll = t[1] === "p";
+                // something new landed in the Trash (file manager, terminal, another app): the Trash icon hops
+                var n = Number(t[2]);
+                if (!isNaN(n)) {
+                    if (root.trashCountKnown && n > root.trashCount) root.trashKick++;
+                    root.trashCount = n; root.trashCountKnown = true;
+                }
                 root.trashReady = true;
             }
         }
@@ -4809,9 +4819,11 @@ Scope {
             + "find \"$d/files\" \"$d/info\" -mindepth 1 -delete 2>/dev/null; "
             + "rm -f \"$d/directorysizes\""]);
         trashAfterEmpty.restart();
+        trashEmptyKick++;
         if (bar) bar.playSound("trash", 0.8);
     }
-    Timer { id: trashAfterEmpty; interval: 900; onTriggered: root.trashCheck() }
+    // the icon turns "empty" as the hop starts (≈ 520 ms in); the real check follows and corrects it if needed
+    Timer { id: trashAfterEmpty; interval: 520; onTriggered: { root.trashFull = false; root.trashCheck(); } }
     Timer { id: trashDebounce; interval: 150; onTriggered: root.trashCheck() }
     Timer { interval: 3000; repeat: true; running: root.showTrash && root.trashPoll; onTriggered: root.trashCheck() }
 
@@ -6248,6 +6260,7 @@ Scope {
                                     id: img
                                     visible: false
                                     property real lift: 0
+                                    property real wob: 0         // Empty Trash shake: rotation (deg), pivot at the icon's bottom
                                     // whole pixels only: a fractional size / x made the GPU re-sample the icon texture (blurry at rest)
                                     width: Math.max(1, Math.round(root.iconSize * cell.s * cell.appear))
                                     height: width
@@ -6266,6 +6279,8 @@ Scope {
                                     visible: !cell.isSep && !cell.thumbReady
                                     source: img
                                     anchors.fill: img
+                                    rotation: img.wob
+                                    transformOrigin: Item.Bottom
                                     shadowEnabled: true
                                     shadowColor: "black"
                                     shadowOpacity: 0.32
@@ -6363,6 +6378,26 @@ Scope {
                                             bounceAnim.stop(); settleAnim.stop(); img.lift = 0; cell.bounceShown = false;
                                         } else cell.bounceStep();
                                     }
+                                }
+                                // Trash: hop when something lands in it, shake + hop on Empty Trash
+                                Connections {
+                                    target: root
+                                    enabled: cell.modelData.special === "trash"
+                                    function onTrashKickChanged() { if (!ui.tucked) trashHop.restart(); }
+                                    function onTrashEmptyKickChanged() { if (!ui.tucked) trashEmpty.restart(); }
+                                }
+                                SequentialAnimation {
+                                    id: trashHop
+                                    NumberAnimation { target: img; property: "lift"; to: root.iconSize * 0.30; duration: 150; easing.type: Easing.OutCubic }
+                                    NumberAnimation { target: img; property: "lift"; to: 0; duration: 420; easing.type: Easing.OutBounce }
+                                }
+                                SequentialAnimation {
+                                    id: trashEmpty
+                                    NumberAnimation { target: img; property: "wob"; to: -7; duration: 70 }
+                                    NumberAnimation { target: img; property: "wob"; to: 7; duration: 110 }
+                                    NumberAnimation { target: img; property: "wob"; to: 0; duration: 80 }
+                                    NumberAnimation { target: img; property: "lift"; to: root.iconSize * 0.34; duration: 160; easing.type: Easing.OutCubic }
+                                    NumberAnimation { target: img; property: "lift"; to: 0; duration: 420; easing.type: Easing.OutBounce }
                                 }
                                 SequentialAnimation {
                                     id: bounceAnim
@@ -6524,6 +6559,7 @@ Scope {
                 // Dock. Rows are 22 pt with capsule highlights, as in macOS 26.
                 DockGlassPanel {
                     id: menu
+                    shadow: false
                     z: 60
                     visible: opacity > 0
                     opacity: ui.menuOpen ? 1 : 0

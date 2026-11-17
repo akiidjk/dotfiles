@@ -43,6 +43,7 @@ Item {
 
     readonly property real m: 64         // backdrop captured around the bubble (blur reach)
     readonly property real sp: 48        // room around the bubble for the shadow
+    property bool shadow: true           // false: no drop shadow at all (the canvas is not even painted)
     readonly property real hp: 2         // room around the bubble for the hairline
     // where the bubble's top-left corner lies in the backdrop (kept up to date every frame while it can be seen: the hover label moves
     // with the magnified icon it belongs to)
@@ -77,13 +78,14 @@ Item {
     // ── soft shadow: drawn once (only the part outside the bubble is kept) ──
     Canvas {
         id: shadowCv
+        visible: gp.shadow
         x: -gp.sp; y: -gp.sp
         width: gp.width + 2 * gp.sp
         height: gp.height + 2 * gp.sp
         onPaint: {
             var ctx = getContext("2d");
             ctx.reset();
-            if (gp.width < 2 || gp.bodyH < 2) return;
+            if (!gp.shadow || gp.width < 2 || gp.bodyH < 2) return;
             ctx.shadowColor = gp.dark ? "rgba(0,0,0,0.50)" : "rgba(0,0,0,0.26)";
             ctx.shadowBlur = 20 * gp.k;
             ctx.shadowOffsetX = 0;
